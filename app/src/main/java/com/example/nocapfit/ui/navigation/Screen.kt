@@ -1,0 +1,17 @@
+package com.example.nocapfit.ui.navigation
+
+sealed class Screen(val route: String) {
+    data object WorkoutHistory : Screen("workout_history")
+    data object ExerciseList : Screen("exercise_list")
+    data object ProgramList : Screen("program_list")
+    data object AddWorkout : Screen("add_workout")
+    data object ProgramForm : Screen("program_form/{programId}") {
+        fun createRoute(programId: Long? = null) = "program_form/${programId ?: -1}"
+    }
+    data object WorkoutInProgress : Screen("workout_in_progress/{workoutId}") {
+        fun createRoute(workoutId: Long) = "workout_in_progress/$workoutId"
+    }
+    data object WorkoutDetail : Screen("workout_detail/{workoutId}") {
+        fun createRoute(workoutId: Long) = "workout_detail/$workoutId"
+    }
+}

@@ -39,13 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.example.nocapfit.data.db.entity.Exercise
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseListScreen(
-    navController: NavController,
     viewModel: ExerciseListViewModel = hiltViewModel()
 ) {
     val exercises by viewModel.exercises.collectAsState()

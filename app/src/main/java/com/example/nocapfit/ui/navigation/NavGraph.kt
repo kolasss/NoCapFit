@@ -26,7 +26,7 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             WorkoutHistoryScreen(navController = navController)
         }
         composable(Screen.ExerciseList.route) {
-            ExerciseListScreen(navController = navController)
+            ExerciseListScreen()
         }
         composable(Screen.ProgramList.route) {
             ProgramListScreen(navController = navController)
@@ -38,8 +38,7 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             route = Screen.ProgramForm.route,
             arguments = listOf(navArgument("programId") { type = NavType.LongType })
         ) {
-            val programId = it.arguments?.getLong("programId") ?: -1L
-            ProgramFormScreen(navController = navController, programId = programId)
+            ProgramFormScreen(navController = navController)
         }
         composable(
             route = Screen.WorkoutInProgress.route,

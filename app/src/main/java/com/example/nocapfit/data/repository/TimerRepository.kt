@@ -17,7 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class TimerRepository @Inject constructor(
     private val activeTimerDao: ActiveTimerDao,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     suspend fun insert(timer: ActiveTimer): Long = activeTimerDao.insert(timer)
     suspend fun update(timer: ActiveTimer) = activeTimerDao.update(timer)

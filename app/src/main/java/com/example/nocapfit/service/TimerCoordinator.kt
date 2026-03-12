@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class TimerCoordinator @Inject constructor(
     private val timerRepository: TimerRepository,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     sealed class TimerUiState {
@@ -122,18 +122,26 @@ class TimerCoordinator @Inject constructor(
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = createAlarmIntent(timerId)
         try {
-            alarmManager.setAlarmClock(
-                AlarmManager.AlarmClockInfo(endAtEpochMs, null),
-                intent
-            )
-        } catch (_: Exception) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setAlarmClock(
+                    AlarmManager.AlarmClockInfo(endAtEpochMs, null),
+                    intent
+                )
+            } else {
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    endAtEpochMs,
+                    intent
+                )
+            }
+        } catch (_: SecurityException) {
             try {
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     endAtEpochMs,
                     intent
                 )
-            } catch (_: Exception) {
+            } catch (_: SecurityException) {
                 // Best effort
             }
         }

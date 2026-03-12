@@ -3,7 +3,7 @@ package com.example.nocapfit.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,7 +21,7 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem("History", Icons.Default.History, Screen.WorkoutHistory),
     BottomNavItem("Exercises", Icons.Default.FitnessCenter, Screen.ExerciseList),
-    BottomNavItem("Programs", Icons.Default.ListAlt, Screen.ProgramList)
+    BottomNavItem("Programs", Icons.AutoMirrored.Filled.ListAlt, Screen.ProgramList)
 )
 
 @Composable

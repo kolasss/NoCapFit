@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,7 +56,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProgramFormScreen(
     navController: NavController,
-    programId: Long = -1L,
     viewModel: ProgramFormViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -129,7 +127,6 @@ fun ProgramFormScreen(
                 itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
                     ExerciseCard(
                         exerciseEntry = exerciseEntry,
-                        exerciseIndex = exerciseIndex,
                         onRemoveExercise = { viewModel.removeExercise(exerciseIndex) },
                         onAddSet = { viewModel.addSet(exerciseIndex) },
                         onRemoveSet = { setIndex -> viewModel.removeSet(exerciseIndex, setIndex) },
@@ -170,7 +167,6 @@ fun ProgramFormScreen(
 @Composable
 private fun ExerciseCard(
     exerciseEntry: ExerciseEntry,
-    exerciseIndex: Int,
     onRemoveExercise: () -> Unit,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,

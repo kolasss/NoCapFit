@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -71,7 +70,7 @@ class RestTimerService : Service() {
                     return@launch
                 }
 
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager.notify(NOTIFICATION_ID, buildNotification(remaining))
 
                 delay(1000)
@@ -125,7 +124,7 @@ class RestTimerService : Service() {
         ).apply {
             description = "Shows rest timer countdown"
         }
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
     }
 

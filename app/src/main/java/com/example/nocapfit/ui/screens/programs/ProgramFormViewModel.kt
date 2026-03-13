@@ -202,7 +202,7 @@ class ProgramFormViewModel @Inject constructor(
                 }
             }
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             _uiState.value = _uiState.value.copy(isSaving = false)
             false
         }

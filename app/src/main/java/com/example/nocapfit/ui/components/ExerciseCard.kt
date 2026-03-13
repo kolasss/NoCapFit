@@ -28,6 +28,9 @@ fun ExerciseCard(
     onWeightChange: (WorkoutSet, Int) -> Unit,
     onRepsChange: (WorkoutSet, Int) -> Unit,
     onToggleComplete: (WorkoutSet) -> Unit,
+    onRestTimeChange: ((WorkoutSet, Int) -> Unit)? = null,
+    activeTimerSetId: Long? = null,
+    timerEndAtEpochMs: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -60,6 +63,14 @@ fun ExerciseCard(
                     onWeightChange = { newWeight -> onWeightChange(workoutSet, newWeight) },
                     onRepsChange = { newReps -> onRepsChange(workoutSet, newReps) },
                     onToggleComplete = { onToggleComplete(workoutSet) }
+                )
+                RestTimeRow(
+                    restTimeSeconds = workoutSet.restTimeSeconds,
+                    onRestTimeChange = if (onRestTimeChange != null) {
+                        { newSeconds -> onRestTimeChange(workoutSet, newSeconds) }
+                    } else null,
+                    isTimerActive = activeTimerSetId == workoutSet.id,
+                    timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L
                 )
             }
 

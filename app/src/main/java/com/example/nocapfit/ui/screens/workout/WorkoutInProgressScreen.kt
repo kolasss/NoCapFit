@@ -1,6 +1,7 @@
 package com.example.nocapfit.ui.screens.workout
 
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,7 +53,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun WorkoutInProgressScreen(
     navController: NavController,
-    viewModel: WorkoutInProgressViewModel = hiltViewModel()
+    viewModel: WorkoutInProgressViewModel = hiltViewModel(),
+    onMinimize: ((Long) -> Unit)? = null
 ) {
     val workout by viewModel.workout.collectAsState()
     val timerState by viewModel.timerState.collectAsState()
@@ -61,6 +63,15 @@ fun WorkoutInProgressScreen(
     var showCancelDialog by remember { mutableStateOf(false) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
+
+    // Back handler: minimize instead of popping
+    BackHandler {
+        if (onMinimize != null) {
+            onMinimize(viewModel.workoutId)
+        } else {
+            navController.popBackStack()
+        }
+    }
 
     // Keep screen on
     val view = LocalView.current
@@ -84,12 +95,24 @@ fun WorkoutInProgressScreen(
         }
     }
 
+    // Extract active timer set info
+    val activeTimerSetId: Long? = (timerState as? TimerCoordinator.TimerUiState.Running)
+        ?.workoutSetId
+    val timerEndAtEpochMs: Long = (timerState as? TimerCoordinator.TimerUiState.Running)
+        ?.endAtEpochMs ?: 0L
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(elapsedText) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        if (onMinimize != null) {
+                            onMinimize(viewModel.workoutId)
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -171,7 +194,12 @@ fun WorkoutInProgressScreen(
                             } else {
                                 viewModel.completeSet(workoutSet.id, workoutSet.restTimeSeconds)
                             }
-                        }
+                        },
+                        onRestTimeChange = { workoutSet, newSeconds ->
+                            viewModel.updateSet(workoutSet.copy(restTimeSeconds = newSeconds))
+                        },
+                        activeTimerSetId = activeTimerSetId,
+                        timerEndAtEpochMs = timerEndAtEpochMs
                     )
                 }
 

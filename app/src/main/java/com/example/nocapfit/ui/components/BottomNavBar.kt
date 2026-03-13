@@ -20,8 +20,8 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem("History", Icons.Default.History, Screen.WorkoutHistory),
-    BottomNavItem("Exercises", Icons.Default.FitnessCenter, Screen.ExerciseList),
-    BottomNavItem("Programs", Icons.AutoMirrored.Filled.ListAlt, Screen.ProgramList)
+    BottomNavItem("Programs", Icons.AutoMirrored.Filled.ListAlt, Screen.ProgramList),
+    BottomNavItem("Exercises", Icons.Default.FitnessCenter, Screen.ExerciseList)
 )
 
 @Composable

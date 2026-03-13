@@ -47,6 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.example.nocapfit.ui.components.MmSsVisualTransformation
+import com.example.nocapfit.ui.components.parseMmSsToSeconds
+import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.entity.Exercise
@@ -257,10 +260,14 @@ private fun SetRow(
             )
             OutlinedTextField(
                 value = setEntry.restTimeSeconds,
-                onValueChange = { onUpdate(setEntry.copy(restTimeSeconds = it)) },
-                label = { Text("Rest (s)") },
+                onValueChange = { newValue ->
+                    val filtered = newValue.filter { it.isDigit() }.take(4)
+                    onUpdate(setEntry.copy(restTimeSeconds = filtered))
+                },
+                label = { Text("Rest") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = MmSsVisualTransformation(),
                 modifier = Modifier.weight(1f)
             )
             if (showRemove) {

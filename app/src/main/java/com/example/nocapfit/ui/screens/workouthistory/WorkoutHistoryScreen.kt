@@ -13,14 +13,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,17 +37,29 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutHistoryScreen(
     navController: NavController,
     viewModel: WorkoutHistoryViewModel = hiltViewModel()
 ) {
     val completedWorkouts by viewModel.completedWorkouts.collectAsState()
-    val activeWorkout by viewModel.activeWorkout.collectAsState()
 
     val finished = completedWorkouts.filter { it.workout.endTime != null }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("History") },
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Settings.route)
+                    }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 navController.navigate(Screen.AddWorkout.route)
@@ -61,38 +75,6 @@ fun WorkoutHistoryScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (activeWorkout != null) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Workout in progress",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            TextButton(onClick = {
-                                navController.navigate(
-                                    Screen.WorkoutInProgress.createRoute(activeWorkout!!.id)
-                                )
-                            }) {
-                                Text("Resume Workout")
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-
             if (finished.isEmpty()) {
                 item {
                     Text(

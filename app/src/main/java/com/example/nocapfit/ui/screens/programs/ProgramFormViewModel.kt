@@ -20,13 +20,15 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import com.example.nocapfit.ui.components.parseMmSsToSeconds
+import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
 data class SetEntry(
     val weight: String = "0.0",
     val reps: String = "0",
-    val restTimeSeconds: String = "60"
+    val restTimeSeconds: String = "100"
 )
 
 data class ExerciseEntry(
@@ -82,7 +84,7 @@ class ProgramFormViewModel @Inject constructor(
                                         SetEntry(
                                             weight = formatWeight(set.weightThousandths),
                                             reps = set.reps.toString(),
-                                            restTimeSeconds = set.restTimeSeconds.toString()
+                                            restTimeSeconds = secondsToMmSsDigits(set.restTimeSeconds)
                                         )
                                     }
                                     .ifEmpty { listOf(SetEntry()) }
@@ -194,7 +196,7 @@ class ProgramFormViewModel @Inject constructor(
                             setIndex = setIndex,
                             weightThousandths = parseWeight(setEntry.weight),
                             reps = setEntry.reps.toIntOrNull() ?: 0,
-                            restTimeSeconds = setEntry.restTimeSeconds.toIntOrNull() ?: 60
+                            restTimeSeconds = parseMmSsToSeconds(setEntry.restTimeSeconds)
                         )
                     )
                 }

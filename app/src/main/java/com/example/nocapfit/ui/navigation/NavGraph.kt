@@ -11,12 +11,17 @@ import com.example.nocapfit.ui.screens.addworkout.AddWorkoutScreen
 import com.example.nocapfit.ui.screens.exercises.ExerciseListScreen
 import com.example.nocapfit.ui.screens.programs.ProgramFormScreen
 import com.example.nocapfit.ui.screens.programs.ProgramListScreen
+import com.example.nocapfit.ui.screens.settings.SettingsScreen
 import com.example.nocapfit.ui.screens.workout.WorkoutInProgressScreen
 import com.example.nocapfit.ui.screens.workoutdetail.WorkoutDetailScreen
 import com.example.nocapfit.ui.screens.workouthistory.WorkoutHistoryScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
+fun NavGraph(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    onMinimizeWorkout: ((Long) -> Unit)? = null
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.WorkoutHistory.route,
@@ -44,13 +49,19 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             route = Screen.WorkoutInProgress.route,
             arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
         ) {
-            WorkoutInProgressScreen(navController = navController)
+            WorkoutInProgressScreen(
+                navController = navController,
+                onMinimize = onMinimizeWorkout
+            )
         }
         composable(
             route = Screen.WorkoutDetail.route,
             arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
         ) {
             WorkoutDetailScreen(navController = navController)
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(navController = navController)
         }
     }
 }

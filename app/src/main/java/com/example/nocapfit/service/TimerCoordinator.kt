@@ -30,7 +30,8 @@ class TimerCoordinator @Inject constructor(
         data class Running(
             val timerId: Long,
             val endAtEpochMs: Long,
-            val workoutId: Long
+            val workoutId: Long,
+            val workoutSetId: Long = 0L
         ) : TimerUiState()
         data object Finished : TimerUiState()
     }
@@ -75,7 +76,8 @@ class TimerCoordinator @Inject constructor(
         _timerState.value = TimerUiState.Running(
             timerId = timerId,
             endAtEpochMs = endAtEpochMs,
-            workoutId = workoutId
+            workoutId = workoutId,
+            workoutSetId = workoutSetId
         )
     }
 
@@ -106,7 +108,8 @@ class TimerCoordinator @Inject constructor(
                 _timerState.value = TimerUiState.Running(
                     timerId = running.id,
                     endAtEpochMs = running.endAtEpochMs,
-                    workoutId = running.workoutId
+                    workoutId = running.workoutId,
+                    workoutSetId = running.workoutSetId
                 )
             } else {
                 // Timer should have completed already

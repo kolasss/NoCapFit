@@ -28,10 +28,10 @@ fun ExerciseCard(
     onWeightChange: (WorkoutSet, Int) -> Unit,
     onRepsChange: (WorkoutSet, Int) -> Unit,
     onToggleComplete: (WorkoutSet) -> Unit,
+    modifier: Modifier = Modifier,
     onRestTimeChange: ((WorkoutSet, Int) -> Unit)? = null,
     activeTimerSetId: Long? = null,
-    timerEndAtEpochMs: Long = 0L,
-    modifier: Modifier = Modifier
+    timerEndAtEpochMs: Long = 0L
 ) {
     Card(
         modifier = modifier.fillMaxWidth()

@@ -86,7 +86,7 @@ private fun MainContent(workoutRepository: WorkoutRepository) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (showBottomBar || showMiniPanel) {
+            if (showBottomBar) {
                 Column {
                     if (showMiniPanel) {
                         MiniWorkoutPanel(
@@ -104,18 +104,16 @@ private fun MainContent(workoutRepository: WorkoutRepository) {
                             }
                         )
                     }
-                    if (showBottomBar) {
-                        BottomNavBar(
-                            currentRoute = currentRoute,
-                            onNavigate = { screen ->
-                                navController.navigate(screen.route) {
-                                    popUpTo(Screen.WorkoutHistory.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                    BottomNavBar(
+                        currentRoute = currentRoute,
+                        onNavigate = { screen ->
+                            navController.navigate(screen.route) {
+                                popUpTo(Screen.WorkoutHistory.route) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }

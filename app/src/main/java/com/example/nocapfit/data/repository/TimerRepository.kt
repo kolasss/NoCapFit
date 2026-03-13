@@ -10,7 +10,6 @@ import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +20,6 @@ class TimerRepository @Inject constructor(
 ) {
     suspend fun insert(timer: ActiveTimer): Long = activeTimerDao.insert(timer)
     suspend fun update(timer: ActiveTimer) = activeTimerDao.update(timer)
-    fun getByWorkoutId(workoutId: Long): Flow<ActiveTimer?> = activeTimerDao.getByWorkoutId(workoutId)
     suspend fun getRunning(): ActiveTimer? = activeTimerDao.getRunning()
     suspend fun cancelAllRunning() = activeTimerDao.cancelAllRunning()
     suspend fun deleteByWorkoutId(workoutId: Long) = activeTimerDao.deleteByWorkoutId(workoutId)

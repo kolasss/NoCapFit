@@ -23,7 +23,6 @@ class WorkoutRepository @Inject constructor(
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(exercise)
     suspend fun insertWorkoutSet(set: WorkoutSet): Long = workoutDao.insertWorkoutSet(set)
     suspend fun updateWorkoutSet(set: WorkoutSet) = workoutDao.updateWorkoutSet(set)
-    suspend fun deleteWorkoutSet(setId: Long) = workoutDao.deleteWorkoutSet(setId)
     suspend fun deleteWorkoutExercise(exerciseId: Long) = workoutDao.deleteWorkoutExercise(exerciseId)
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet> = workoutDao.getSetsForExercise(exerciseId)
 }

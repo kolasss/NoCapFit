@@ -48,8 +48,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.ui.components.MmSsVisualTransformation
-import com.example.nocapfit.ui.components.parseMmSsToSeconds
-import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.entity.Exercise

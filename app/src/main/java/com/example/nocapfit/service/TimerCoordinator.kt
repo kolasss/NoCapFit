@@ -91,7 +91,7 @@ class TimerCoordinator @Inject constructor(
         _timerState.value = TimerUiState.Idle
     }
 
-    fun onTimerCompleted(timerId: Long) {
+    fun onTimerCompleted(_timerId: Long) {
         _timerState.value = TimerUiState.Finished
         scope.launch {
             delay(2000)

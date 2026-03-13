@@ -92,9 +92,9 @@ fun secondsToMmSsDigits(totalSeconds: Int): String {
 fun RestTimeRow(
     restTimeSeconds: Int,
     onRestTimeChange: ((Int) -> Unit)?,
+    modifier: Modifier = Modifier,
     isTimerActive: Boolean = false,
-    timerEndAtEpochMs: Long = 0L,
-    modifier: Modifier = Modifier
+    timerEndAtEpochMs: Long = 0L
 ) {
     var digits by remember(restTimeSeconds) {
         mutableStateOf(secondsToMmSsDigits(restTimeSeconds))

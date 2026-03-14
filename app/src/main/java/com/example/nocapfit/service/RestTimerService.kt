@@ -1,7 +1,6 @@
 package com.example.nocapfit.service
 
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -37,7 +36,6 @@ class RestTimerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -57,11 +55,10 @@ class RestTimerService : Service() {
 
             startForeground(NOTIFICATION_ID, buildNotification(endAtEpochMs - System.currentTimeMillis()))
 
-            // Update notification every second
+            val notificationManager = getSystemService(NotificationManager::class.java)
             while (true) {
                 val remaining = endAtEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) {
-                    // Timer completed
                     val completed = timerRepository.completeTimer(timerId)
                     if (completed) {
                         timerCoordinator.onTimerCompleted(timerId)
@@ -70,9 +67,7 @@ class RestTimerService : Service() {
                     return@launch
                 }
 
-                val notificationManager = getSystemService(NotificationManager::class.java)
                 notificationManager.notify(NOTIFICATION_ID, buildNotification(remaining))
-
                 delay(1000)
             }
         }
@@ -89,7 +84,7 @@ class RestTimerService : Service() {
         val totalSeconds = (remainingMs / 1000).coerceAtLeast(0)
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
-        val timeText = "Rest: %d:%02d".format(minutes, seconds)
+        val timeText = "%d:%02d".format(minutes, seconds)
 
         val cancelIntent = Intent(ACTION_CANCEL_TIMER).apply {
             setPackage(packageName)
@@ -103,10 +98,11 @@ class RestTimerService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(timeText)
-            .setContentText("Rest timer running")
+            .setContentTitle("Rest Timer")
+            .setContentText(timeText)
             .setOngoing(true)
             .setSilent(true)
+            .setShowWhen(false)
             .addAction(
                 R.drawable.ic_launcher_foreground,
                 "Cancel",
@@ -114,18 +110,6 @@ class RestTimerService : Service() {
             )
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
-    }
-
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Rest Timer",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Shows rest timer countdown"
-        }
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
     }
 
     companion object {

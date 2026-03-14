@@ -50,7 +50,7 @@ class TimerRepository @Inject constructor(
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .build()
-            NotificationManagerCompat.from(context).notify(COMPLETION_NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(context).notify(TIMER_NOTIFICATION_ID, notification)
         } catch (_: SecurityException) { }
 
         return true
@@ -58,6 +58,6 @@ class TimerRepository @Inject constructor(
 
     companion object {
         const val TIMER_CHANNEL_ID = "rest_timer_channel"
-        const val COMPLETION_NOTIFICATION_ID = 9999
+        const val TIMER_NOTIFICATION_ID = 1001
     }
 }

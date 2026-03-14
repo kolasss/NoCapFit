@@ -107,7 +107,7 @@ class TimerCoordinatorTest {
     }
 
     @Test
-    fun cancelTimer_setsIdle() = runTest(testDispatcher) {
+    fun cancelTimer_fromIdle_setsIdle() = runTest(testDispatcher) {
         coEvery { timerRepository.getRunning() } returns null
 
         val coordinator = createCoordinator()
@@ -117,5 +117,61 @@ class TimerCoordinatorTest {
         advanceUntilIdle()
 
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+    }
+
+    @Test
+    fun reconstructState_runningTimer_setsCorrectWorkoutSetId() = runTest(testDispatcher) {
+        val futureEnd = System.currentTimeMillis() + 30_000L
+        val timer = ActiveTimer(
+            id = 3L, workoutId = 10L, workoutSetId = 42L,
+            startedAtEpochMs = System.currentTimeMillis(),
+            endAtEpochMs = futureEnd,
+            status = TimerStatus.RUNNING, notificationId = 1001
+        )
+        coEvery { timerRepository.getRunning() } returns timer
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        val state = coordinator.timerState.value as TimerCoordinator.TimerUiState.Running
+        assertEquals(42L, state.workoutSetId)
+        assertEquals(3L, state.timerId)
+    }
+
+    @Test
+    fun onTimerCompleted_whileAlreadyIdle_staysIdle() = runTest(testDispatcher) {
+        coEvery { timerRepository.getRunning() } returns null
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+
+        // Complete transitions to Finished then back to Idle
+        coordinator.onTimerCompleted(99L)
+        assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
+
+        advanceTimeBy(2100)
+        assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+    }
+
+    @Test
+    fun reconstructState_expiredTimer_doesNotSetRunning() = runTest(testDispatcher) {
+        val pastEnd = System.currentTimeMillis() - 1000L
+        val timer = ActiveTimer(
+            id = 2L, workoutId = 10L, workoutSetId = 20L,
+            startedAtEpochMs = System.currentTimeMillis() - 60_000L,
+            endAtEpochMs = pastEnd,
+            status = TimerStatus.RUNNING, notificationId = 1001
+        )
+        coEvery { timerRepository.getRunning() } returns timer
+        coEvery { timerRepository.completeTimer(2L) } returns true
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        // Should be Idle, not Running — expired timers are completed immediately
+        assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+        coVerify { timerRepository.completeTimer(2L) }
     }
 }

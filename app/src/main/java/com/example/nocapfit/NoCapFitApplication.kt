@@ -17,7 +17,7 @@ class NoCapFitApplication : Application() {
         val channel = NotificationChannel(
             TimerRepository.TIMER_CHANNEL_ID,
             "Rest Timer",
-            NotificationManager.IMPORTANCE_HIGH
+            NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
             description = "Notifications for workout rest timer"
             setShowBadge(false)

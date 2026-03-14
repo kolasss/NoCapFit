@@ -190,7 +190,7 @@ fun WorkoutInProgressScreen(
                         },
                         onToggleComplete = { workoutSet ->
                             if (workoutSet.completed) {
-                                viewModel.uncompleteSet(workoutSet.id)
+                                viewModel.revertSet(workoutSet.id)
                             } else {
                                 viewModel.completeSet(workoutSet.id, workoutSet.restTimeSeconds)
                             }

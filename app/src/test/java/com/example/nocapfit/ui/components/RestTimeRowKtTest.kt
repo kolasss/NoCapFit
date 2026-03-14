@@ -61,15 +61,15 @@ class RestTimeRowKtTest {
         assertEquals("634", secondsToMmSsDigits(394))
     }
 
-    // --- Roundtrip ---
+    // --- Round-trip ---
 
     @Test
-    fun roundtrip_parseFormatParse_identity() {
+    fun roundTrip_parseFormatParse_identity() {
         val testValues = listOf(0, 5, 30, 60, 90, 120, 394, 600)
         for (seconds in testValues) {
             val digits = secondsToMmSsDigits(seconds)
             val parsed = parseMmSsToSeconds(digits)
-            assertEquals("Roundtrip failed for $seconds seconds (digits=$digits)", seconds, parsed)
+            assertEquals("Round-trip failed for $seconds seconds (digits=$digits)", seconds, parsed)
         }
     }
 }

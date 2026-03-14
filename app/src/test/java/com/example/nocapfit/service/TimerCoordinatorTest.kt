@@ -94,10 +94,19 @@ class TimerCoordinatorTest {
 
     @Test
     fun onTimerCompleted_transitionsToFinishedThenIdle() = runTest(testDispatcher) {
-        coEvery { timerRepository.getRunning() } returns null
+        val futureEnd = System.currentTimeMillis() + 30_000L
+        val timer = ActiveTimer(
+            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            startedAtEpochMs = System.currentTimeMillis(),
+            endAtEpochMs = futureEnd,
+            status = TimerStatus.RUNNING, notificationId = 1001
+        )
+        coEvery { timerRepository.getRunning() } returns timer
 
         val coordinator = createCoordinator()
         advanceUntilIdle()
+
+        assertTrue(coordinator.timerState.value is TimerCoordinator.TimerUiState.Running)
 
         coordinator.onTimerCompleted(1L)
         assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
@@ -147,12 +156,30 @@ class TimerCoordinatorTest {
 
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
 
-        // Complete transitions to Finished then back to Idle
+        // Completing a timer while Idle is ignored (no matching Running state)
         coordinator.onTimerCompleted(99L)
-        assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
-
-        advanceTimeBy(2100)
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+    }
+
+    @Test
+    fun onTimerCompleted_mismatchedTimerId_ignored() = runTest(testDispatcher) {
+        val futureEnd = System.currentTimeMillis() + 30_000L
+        val timer = ActiveTimer(
+            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            startedAtEpochMs = System.currentTimeMillis(),
+            endAtEpochMs = futureEnd,
+            status = TimerStatus.RUNNING, notificationId = 1001
+        )
+        coEvery { timerRepository.getRunning() } returns timer
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        assertTrue(coordinator.timerState.value is TimerCoordinator.TimerUiState.Running)
+
+        // Completing with wrong timerId is ignored
+        coordinator.onTimerCompleted(999L)
+        assertTrue(coordinator.timerState.value is TimerCoordinator.TimerUiState.Running)
     }
 
     @Test

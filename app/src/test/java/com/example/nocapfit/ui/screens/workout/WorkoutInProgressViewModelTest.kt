@@ -69,10 +69,10 @@ class WorkoutInProgressViewModelTest {
     }
 
     @Test
-    fun uncompleteSet_revertsCompletedFlag() = runTest {
+    fun revertSet_revertsCompletedFlag() = runTest {
         val viewModel = createViewModel()
 
-        viewModel.uncompleteSet(10L)
+        viewModel.revertSet(10L)
 
         coVerify {
             workoutRepository.updateWorkoutSet(match { it.id == 10L && !it.completed })

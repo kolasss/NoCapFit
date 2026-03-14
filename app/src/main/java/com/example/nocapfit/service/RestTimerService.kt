@@ -34,10 +34,6 @@ class RestTimerService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onCreate() {
-        super.onCreate()
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         timerId = intent?.getLongExtra(EXTRA_TIMER_ID, -1L) ?: -1L
         if (timerId == -1L) {

@@ -49,15 +49,15 @@ class ProgramFormViewModelCompanionTest {
         assertEquals(0, ProgramFormViewModel.parseWeight("abc"))
     }
 
-    // --- Roundtrip ---
+    // --- Round-trip ---
 
     @Test
-    fun roundtrip_formatParse_identity() {
+    fun roundTrip_formatParse_identity() {
         val testValues = listOf(0, 1000, 2250, 50000, 75500, 80000, 100000)
         for (thousandths in testValues) {
             val formatted = ProgramFormViewModel.formatWeight(thousandths)
             val parsed = ProgramFormViewModel.parseWeight(formatted)
-            assertEquals("Roundtrip failed for $thousandths (formatted=$formatted)", thousandths, parsed)
+            assertEquals("Round-trip failed for $thousandths (formatted=$formatted)", thousandths, parsed)
         }
     }
 }

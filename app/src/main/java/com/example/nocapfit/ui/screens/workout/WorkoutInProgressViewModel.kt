@@ -52,7 +52,7 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
-    fun uncompleteSet(workoutSetId: Long) {
+    fun revertSet(workoutSetId: Long) {
         viewModelScope.launch {
             val set = findSet(workoutSetId) ?: return@launch
             workoutRepository.updateWorkoutSet(set.copy(completed = false))

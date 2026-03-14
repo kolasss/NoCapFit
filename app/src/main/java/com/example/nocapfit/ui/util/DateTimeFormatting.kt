@@ -1,9 +1,9 @@
 package com.example.nocapfit.ui.util
 
-import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.util.Locale
+import kotlin.time.Instant
 
 fun formatDate(epochMs: Long): String {
     val ldt = Instant.fromEpochMilliseconds(epochMs)
@@ -12,7 +12,7 @@ fun formatDate(epochMs: Long): String {
         .replaceFirstChar { it.titlecase(Locale.getDefault()) }
     val month = ldt.month.name.lowercase()
         .replaceFirstChar { it.titlecase(Locale.getDefault()) }
-    return "$dayOfWeek, ${ldt.dayOfMonth} $month ${ldt.year}"
+    return "$dayOfWeek, ${ldt.day} $month ${ldt.year}"
 }
 
 fun formatTime(epochMs: Long): String {

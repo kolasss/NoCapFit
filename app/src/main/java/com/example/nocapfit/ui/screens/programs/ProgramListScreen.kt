@@ -195,7 +195,7 @@ private fun ProgramListItem(
                     .joinToString(", ") { it.exercise.name }
                 val exerciseCount = programWithExercises.exercises.size
                 Text(
-                    text = if (exerciseNames.isNotBlank()) exerciseNames else "$exerciseCount exercise${if (exerciseCount != 1) "s" else ""}",
+                    text = exerciseNames.ifBlank { "$exerciseCount exercise${if (exerciseCount != 1) "s" else ""}" },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

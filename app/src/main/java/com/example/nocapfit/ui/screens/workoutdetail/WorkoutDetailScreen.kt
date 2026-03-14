@@ -121,7 +121,7 @@ fun WorkoutDetailScreen(
                     )
                     StatCard(
                         label = "Volume",
-                        value = "${totalVolume} kg",
+                        value = "$totalVolume kg",
                         modifier = Modifier.weight(1f)
                     )
                 }

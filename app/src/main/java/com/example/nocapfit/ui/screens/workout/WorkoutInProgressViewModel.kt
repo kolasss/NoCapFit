@@ -105,31 +105,6 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
-    fun addExercise(name: String) {
-        viewModelScope.launch {
-            val workoutData = _workout.value ?: return@launch
-            val maxOrder = workoutData.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1
-            val exerciseId = workoutRepository.insertWorkoutExercise(
-                WorkoutExercise(
-                    workoutId = workoutId,
-                    exerciseName = name.trim(),
-                    orderIndex = maxOrder + 1
-                )
-            )
-            workoutRepository.insertWorkoutSet(
-                WorkoutSet(
-                    workoutExerciseId = exerciseId,
-                    setIndex = 0,
-                    weightThousandths = 0,
-                    reps = 0,
-                    restTimeSeconds = 60,
-                    completed = false
-                )
-            )
-            refreshWorkout()
-        }
-    }
-
     fun addExerciseFromDb(exerciseId: Long, exerciseName: String) {
         viewModelScope.launch {
             val workoutData = _workout.value ?: return@launch

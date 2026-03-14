@@ -64,7 +64,6 @@ fun ExerciseListScreen(
     val selectedExercise by viewModel.selectedExercise.collectAsState()
 
     var showDeleteConfirmation by remember { mutableStateOf<Exercise?>(null) }
-    var searchActive by remember { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
@@ -96,7 +95,7 @@ fun ExerciseListScreen(
                     SearchBarDefaults.InputField(
                         query = searchQuery,
                         onQueryChange = { viewModel.updateSearchQuery(it) },
-                        onSearch = { searchActive = false },
+                        onSearch = { },
                         expanded = false,
                         onExpandedChange = { },
                         placeholder = { Text("Search exercises") },

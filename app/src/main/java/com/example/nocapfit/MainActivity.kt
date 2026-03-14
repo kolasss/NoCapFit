@@ -6,6 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -95,7 +98,11 @@ private fun MainContent(workoutRepository: WorkoutRepository) {
         bottomBar = {
             if (showBottomBar) {
                 Column {
-                    if (showMiniPanel) {
+                    AnimatedVisibility(
+                        visible = showMiniPanel,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
                         MiniWorkoutPanel(
                             workoutName = minimizedWorkoutName ?: "Workout",
                             startTimeMs = minimizedWorkoutStartTime,
@@ -110,7 +117,7 @@ private fun MainContent(workoutRepository: WorkoutRepository) {
                                 }
                             }
                         )
-                    }
+                    }  // AnimatedVisibility
                     BottomNavBar(
                         currentRoute = currentRoute,
                         onNavigate = { screen ->

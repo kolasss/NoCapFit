@@ -1,6 +1,7 @@
 package com.example.nocapfit.ui.screens.workoutdetail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,25 +13,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
-import kotlin.time.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import com.example.nocapfit.ui.util.formatDateTime
+import com.example.nocapfit.ui.util.formatDuration
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,43 +46,49 @@ fun WorkoutDetailScreen(
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
     val workoutWithExercises by viewModel.workoutWithExercises.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    val data = workoutWithExercises
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Workout Details") },
+            LargeTopAppBar(
+                title = { Text(data?.workout?.programName ?: "Workout Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
     ) { padding ->
-        val data = workoutWithExercises
         if (data == null) {
-            Text(
-                text = "Loading...",
-                modifier = Modifier.padding(padding).padding(16.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
             return@Scaffold
         }
 
         val workout = data.workout
-        val localDateTime = Instant.fromEpochMilliseconds(workout.startTime)
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-        val dateText = "${localDateTime.year}-${
-            localDateTime.month.toString().padStart(2, '0')
-        }-${localDateTime.day.toString().padStart(2, '0')} ${
-            localDateTime.hour.toString().padStart(2, '0')
-        }:${localDateTime.minute.toString().padStart(2, '0')}"
-
+        val dateTimeText = formatDateTime(workout.startTime)
         val durationMs = (workout.endTime ?: workout.startTime) - workout.startTime
-        val durationSeconds = durationMs / 1000
-        val hours = durationSeconds / 3600
-        val minutes = (durationSeconds % 3600) / 60
-        val seconds = durationSeconds % 60
-        val durationText = "%02d:%02d:%02d".format(hours, minutes, seconds)
+        val durationText = formatDuration(durationMs)
+
+        val totalSets = data.exercises.sumOf { ex ->
+            ex.sets.count { it.completed }
+        }
+        val totalVolume = data.exercises.sumOf { ex ->
+            ex.sets.filter { it.completed }.sumOf { set ->
+                (set.weightThousandths.toLong() * set.reps) / 1000
+            }
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -87,33 +99,79 @@ fun WorkoutDetailScreen(
         ) {
             item {
                 Text(
-                    text = workout.programName ?: "Free Workout",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = dateText,
+                    text = dateTimeText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StatCard(
+                        label = "Duration",
+                        value = durationText,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        label = "Sets",
+                        value = totalSets.toString(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        label = "Volume",
+                        value = "${totalVolume} kg",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Duration: $durationText",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            items(data.exercises.sortedBy { it.workoutExercise.orderIndex }) { exerciseWithSets ->
+            items(
+                data.exercises.sortedBy { it.workoutExercise.orderIndex },
+                key = { it.workoutExercise.id }
+            ) { exerciseWithSets ->
                 ExerciseDetailCard(exerciseWithSets)
             }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    ElevatedCard(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
 
 @Composable
 private fun ExerciseDetailCard(exerciseWithSets: WorkoutExerciseWithSets) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = exerciseWithSets.workoutExercise.exerciseName,

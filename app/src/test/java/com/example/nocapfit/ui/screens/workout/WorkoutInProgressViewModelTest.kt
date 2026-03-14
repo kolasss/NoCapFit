@@ -7,6 +7,8 @@ import com.example.nocapfit.data.db.entity.WorkoutExercise
 import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
+import com.example.nocapfit.data.repository.ExerciseRepository
+import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.service.TimerCoordinator
@@ -14,6 +16,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -26,6 +29,12 @@ class WorkoutInProgressViewModelTest {
 
     private val workoutRepository = mockk<WorkoutRepository>(relaxUnitFun = true)
     private val timerRepository = mockk<TimerRepository>(relaxUnitFun = true)
+    private val exerciseRepository = mockk<ExerciseRepository>(relaxUnitFun = true) {
+        coEvery { getAllByProfile(any()) } returns flowOf(emptyList())
+    }
+    private val profileRepository = mockk<ProfileRepository>(relaxUnitFun = true) {
+        coEvery { getDefault() } returns null
+    }
     private val timerCoordinator = mockk<TimerCoordinator>(relaxUnitFun = true) {
         coEvery { timerState } returns MutableStateFlow(TimerCoordinator.TimerUiState.Idle)
         coEvery { reconstructState() } returns Unit
@@ -51,7 +60,10 @@ class WorkoutInProgressViewModelTest {
     private fun createViewModel(): WorkoutInProgressViewModel {
         coEvery { workoutRepository.getWithExercises(1L) } returns testWorkoutWithExercises
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
-        return WorkoutInProgressViewModel(workoutRepository, timerRepository, savedStateHandle, timerCoordinator)
+        return WorkoutInProgressViewModel(
+            workoutRepository, timerRepository, exerciseRepository,
+            profileRepository, savedStateHandle, timerCoordinator
+        )
     }
 
     @Test

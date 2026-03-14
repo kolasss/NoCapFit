@@ -2,33 +2,42 @@ package com.example.nocapfit.ui.screens.workout
 
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +52,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.RestTimerOverlay
@@ -58,10 +68,11 @@ fun WorkoutInProgressScreen(
 ) {
     val workout by viewModel.workout.collectAsState()
     val timerState by viewModel.timerState.collectAsState()
+    val availableExercises by viewModel.availableExercises.collectAsState()
 
     var showFinishDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
-    var showAddExerciseDialog by remember { mutableStateOf(false) }
+    var showExercisePicker by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     // Back handler: minimize instead of popping
@@ -155,6 +166,10 @@ fun WorkoutInProgressScreen(
             return@Scaffold
         }
 
+        val sortedExercises = workoutData.exercises.sortedBy { it.workoutExercise.orderIndex }
+        val completedSets = sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
+        val totalSets = sortedExercises.sumOf { it.sets.size }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -170,7 +185,50 @@ fun WorkoutInProgressScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val sortedExercises = workoutData.exercises.sortedBy { it.workoutExercise.orderIndex }
+                item {
+                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "${sortedExercises.size}",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "Exercises",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = "$completedSets/$totalSets",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "Sets",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = elapsedText,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "Elapsed",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
 
                 items(sortedExercises, key = { it.workoutExercise.id }) { exerciseWithSets ->
                     ExerciseCard(
@@ -199,7 +257,8 @@ fun WorkoutInProgressScreen(
                             viewModel.updateSet(workoutSet.copy(restTimeSeconds = newSeconds))
                         },
                         activeTimerSetId = activeTimerSetId,
-                        timerEndAtEpochMs = timerEndAtEpochMs
+                        timerEndAtEpochMs = timerEndAtEpochMs,
+                        modifier = Modifier.animateItem()
                     )
                 }
 
@@ -209,7 +268,7 @@ fun WorkoutInProgressScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TextButton(onClick = { showAddExerciseDialog = true }) {
+                        TextButton(onClick = { showExercisePicker = true }) {
                             Text("+ Add Exercise")
                         }
 
@@ -232,6 +291,7 @@ fun WorkoutInProgressScreen(
                 if (remainingMs > 0) {
                     RestTimerOverlay(
                         remainingMs = remainingMs,
+                        totalMs = currentTimerState.totalMs,
                         onCancel = { viewModel.cancelTimer() },
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
@@ -291,38 +351,82 @@ fun WorkoutInProgressScreen(
         )
     }
 
-    // Add exercise dialog
-    if (showAddExerciseDialog) {
-        var exerciseName by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showAddExerciseDialog = false },
-            title = { Text("Add Exercise") },
-            text = {
-                OutlinedTextField(
-                    value = exerciseName,
-                    onValueChange = { exerciseName = it },
-                    label = { Text("Exercise name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+    // Exercise picker bottom sheet
+    if (showExercisePicker) {
+        ExercisePickerSheet(
+            exercises = availableExercises,
+            onExerciseSelected = { exercise ->
+                viewModel.addExerciseFromDb(exercise.id, exercise.name)
+                showExercisePicker = false
+            },
+            onDismiss = { showExercisePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExercisePickerSheet(
+    exercises: List<Exercise>,
+    onExerciseSelected: (Exercise) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredExercises = remember(exercises, searchQuery) {
+        if (searchQuery.isBlank()) exercises
+        else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Text(
+                text = "Add Exercise",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search exercises") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            if (filteredExercises.isEmpty()) {
+                Text(
+                    text = if (exercises.isEmpty()) "No exercises available. Create exercises first."
+                    else "No matches found.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp)
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.addExercise(exerciseName)
-                        showAddExerciseDialog = false
-                    },
-                    enabled = exerciseName.isNotBlank()
-                ) {
-                    Text("Add")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddExerciseDialog = false }) {
-                    Text("Cancel")
+            } else {
+                LazyColumn {
+                    items(filteredExercises, key = { it.id }) { exercise ->
+                        ListItem(
+                            headlineContent = { Text(exercise.name) },
+                            supportingContent = if (exercise.description.isNotBlank()) {
+                                { Text(exercise.description) }
+                            } else null,
+                            modifier = Modifier.clickable { onExerciseSelected(exercise) }
+                        )
+                    }
                 }
             }
-        )
+        }
     }
 }
 

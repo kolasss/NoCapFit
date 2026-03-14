@@ -3,23 +3,34 @@ package com.example.nocapfit.ui.screens.workout
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.db.entity.WorkoutExercise
 import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
+import com.example.nocapfit.data.repository.ExerciseRepository
+import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.service.TimerCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WorkoutInProgressViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val timerRepository: TimerRepository,
+    private val exerciseRepository: ExerciseRepository,
+    private val profileRepository: ProfileRepository,
     savedStateHandle: SavedStateHandle,
     private val timerCoordinator: TimerCoordinator
 ) : ViewModel() {
@@ -31,8 +42,17 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     val timerState: StateFlow<TimerCoordinator.TimerUiState> = timerCoordinator.timerState
 
+    private val _profileId = MutableStateFlow<Long?>(null)
+
+    val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
+        if (profileId == null) flowOf(emptyList())
+        else exerciseRepository.getAllByProfile(profileId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
+            val profile = profileRepository.getDefault()
+            _profileId.value = profile?.id
             refreshWorkout()
             timerCoordinator.reconstructState()
         }
@@ -99,6 +119,32 @@ class WorkoutInProgressViewModel @Inject constructor(
             workoutRepository.insertWorkoutSet(
                 WorkoutSet(
                     workoutExerciseId = exerciseId,
+                    setIndex = 0,
+                    weightThousandths = 0,
+                    reps = 0,
+                    restTimeSeconds = 60,
+                    completed = false
+                )
+            )
+            refreshWorkout()
+        }
+    }
+
+    fun addExerciseFromDb(exerciseId: Long, exerciseName: String) {
+        viewModelScope.launch {
+            val workoutData = _workout.value ?: return@launch
+            val maxOrder = workoutData.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1
+            val weId = workoutRepository.insertWorkoutExercise(
+                WorkoutExercise(
+                    workoutId = workoutId,
+                    exerciseName = exerciseName,
+                    exerciseId = exerciseId,
+                    orderIndex = maxOrder + 1
+                )
+            )
+            workoutRepository.insertWorkoutSet(
+                WorkoutSet(
+                    workoutExerciseId = weId,
                     setIndex = 0,
                     weightThousandths = 0,
                     reps = 0,

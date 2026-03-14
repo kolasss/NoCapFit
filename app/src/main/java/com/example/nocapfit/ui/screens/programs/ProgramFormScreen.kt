@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -30,6 +31,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -126,6 +128,17 @@ fun ProgramFormScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
+                if (uiState.exercises.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Exercises",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                }
+
                 itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
                     ExerciseCard(
                         exerciseEntry = exerciseEntry,
@@ -174,7 +187,7 @@ private fun ExerciseCard(
     onRemoveSet: (Int) -> Unit,
     onUpdateSet: (Int, SetEntry) -> Unit
 ) {
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -301,6 +314,12 @@ private fun ExercisePickerBottomSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredExercises = remember(exercises, searchQuery) {
+        if (searchQuery.isBlank()) exercises
+        else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -317,17 +336,28 @@ private fun ExercisePickerBottomSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            if (exercises.isEmpty()) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search exercises") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            if (filteredExercises.isEmpty()) {
                 Text(
-                    text = "No exercises available. Create exercises first.",
+                    text = if (exercises.isEmpty()) "No exercises available. Create exercises first."
+                    else "No matches found.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
                 LazyColumn {
-                    items(exercises.size) { index ->
-                        val exercise = exercises[index]
+                    items(filteredExercises, key = { it.id }) { exercise ->
                         ListItem(
                             headlineContent = { Text(exercise.name) },
                             supportingContent = if (exercise.description.isNotBlank()) {

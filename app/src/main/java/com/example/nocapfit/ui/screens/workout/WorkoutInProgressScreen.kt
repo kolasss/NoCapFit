@@ -220,11 +220,10 @@ private fun WorkoutContent(
             onFinishClick = onFinishClick
         )
 
-        val currentTimerState = timerState
-        if (currentTimerState is TimerCoordinator.TimerUiState.Running) {
+        if (timerState is TimerCoordinator.TimerUiState.Running) {
             RestTimerOverlay(
-                endAtEpochMs = currentTimerState.endAtEpochMs,
-                totalMs = currentTimerState.totalMs,
+                endAtEpochMs = timerState.endAtEpochMs,
+                totalMs = timerState.totalMs,
                 onCancel = onCancelTimer,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

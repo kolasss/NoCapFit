@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
+import android.os.Build
 import android.os.IBinder
 import com.example.nocapfit.R
 import com.example.nocapfit.data.repository.TimerRepository
@@ -117,7 +118,11 @@ class RestTimerService : Service() {
             .setContentTitle("Rest Timer")
             .setStyle(progressStyle)
             .setOngoing(true)
-            .setRequestPromotedOngoing(true)
+            .apply {
+                if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) {
+                    setRequestPromotedOngoing(true)
+                }
+            }
             .setWhen(endAtEpochMs)
             .setUsesChronometer(remainingSeconds > 0)
             .setChronometerCountDown(true)

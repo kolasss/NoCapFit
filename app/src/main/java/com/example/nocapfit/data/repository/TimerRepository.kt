@@ -1,11 +1,11 @@
 package com.example.nocapfit.data.repository
 
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer
@@ -44,14 +44,14 @@ class TimerRepository @Inject constructor(
 
         // Update notification
         try {
-            val notification = NotificationCompat.Builder(context, TIMER_CHANNEL_ID)
+            val notification = Notification.Builder(context, TIMER_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Rest Complete!")
                 .setContentText("Time to start your next set")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .build()
-            NotificationManagerCompat.from(context).notify(TIMER_NOTIFICATION_ID, notification)
+            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            notificationManager.notify(TIMER_NOTIFICATION_ID, notification)
         } catch (_: SecurityException) { }
 
         return true

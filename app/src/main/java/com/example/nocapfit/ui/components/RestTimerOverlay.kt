@@ -29,23 +29,27 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun RestTimerOverlay(
-    remainingMs: Long,
+    endAtEpochMs: Long,
     totalMs: Long,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var currentRemainingMs by remember { mutableLongStateOf(remainingMs) }
-    var progress by remember { mutableFloatStateOf(if (totalMs > 0) remainingMs.toFloat() / totalMs else 0f) }
-
-    LaunchedEffect(remainingMs) {
-        currentRemainingMs = remainingMs
+    val totalSec = totalMs / 1000L
+    val initialRemaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+    var currentRemainingMs by remember { mutableLongStateOf(initialRemaining) }
+    var progress by remember {
+        val remainingSec = initialRemaining / 1000L
+        mutableFloatStateOf(if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f)
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(endAtEpochMs, totalMs) {
         while (true) {
+            val remaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+            currentRemainingMs = remaining
+            val remainingSec = remaining / 1000L
+            progress = if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
+            if (remaining <= 0) break
             delay(100)
-            currentRemainingMs = (currentRemainingMs - 100).coerceAtLeast(0)
-            progress = if (totalMs > 0) currentRemainingMs.toFloat() / totalMs else 0f
         }
     }
 

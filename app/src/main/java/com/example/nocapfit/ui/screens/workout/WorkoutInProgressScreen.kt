@@ -222,15 +222,12 @@ private fun WorkoutContent(
 
         val currentTimerState = timerState
         if (currentTimerState is TimerCoordinator.TimerUiState.Running) {
-            val remainingMs = currentTimerState.endAtEpochMs - System.currentTimeMillis()
-            if (remainingMs > 0) {
-                RestTimerOverlay(
-                    remainingMs = remainingMs,
-                    totalMs = currentTimerState.totalMs,
-                    onCancel = onCancelTimer,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
+            RestTimerOverlay(
+                endAtEpochMs = currentTimerState.endAtEpochMs,
+                totalMs = currentTimerState.totalMs,
+                onCancel = onCancelTimer,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

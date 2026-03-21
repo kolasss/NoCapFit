@@ -10,18 +10,18 @@ import com.example.nocapfit.data.db.entity.ProgramExerciseSet
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
+import com.example.nocapfit.ui.components.parseMmSsToSeconds
+import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import com.example.nocapfit.ui.components.parseMmSsToSeconds
-import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import javax.inject.Inject
 import kotlin.math.roundToInt
 

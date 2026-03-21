@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -48,12 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import com.example.nocapfit.ui.components.MmSsVisualTransformation
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.entity.Exercise
+import com.example.nocapfit.ui.components.MmSsVisualTransformation
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,7 +120,9 @@ fun ProgramFormScreen(
                         label = { Text("Program Name") },
                         isError = uiState.nameError != null,
                         supportingText = uiState.nameError?.let { error ->
-                            { Text(error) }
+                            {
+                                Text(error)
+                            }
                         },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -317,8 +319,11 @@ private fun ExercisePickerBottomSheet(
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredExercises = remember(exercises, searchQuery) {
-        if (searchQuery.isBlank()) exercises
-        else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        if (searchQuery.isBlank()) {
+            exercises
+        } else {
+            exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
     }
 
     ModalBottomSheet(
@@ -349,8 +354,11 @@ private fun ExercisePickerBottomSheet(
 
             if (filteredExercises.isEmpty()) {
                 Text(
-                    text = if (exercises.isEmpty()) "No exercises available. Create exercises first."
-                    else "No matches found.",
+                    text = if (exercises.isEmpty()) {
+                        "No exercises available. Create exercises first."
+                    } else {
+                        "No matches found."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
@@ -362,7 +370,9 @@ private fun ExercisePickerBottomSheet(
                             headlineContent = { Text(exercise.name) },
                             supportingContent = if (exercise.description.isNotBlank()) {
                                 { Text(exercise.description) }
-                            } else null,
+                            } else {
+                                null
+                            },
                             modifier = Modifier.clickable { onExerciseSelected(exercise) }
                         )
                     }

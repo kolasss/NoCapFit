@@ -120,9 +120,11 @@ class ExerciseListViewModelTest {
         viewModel.addExercise("Deadlift", "Compound lift", "back")
 
         coVerify {
-            exerciseRepository.insert(match {
-                it.name == "Deadlift" && it.description == "Compound lift" && it.tags == "back"
-            })
+            exerciseRepository.insert(
+                match {
+                    it.name == "Deadlift" && it.description == "Compound lift" && it.tags == "back"
+                }
+            )
         }
         viewModel.showAddDialog.test { assertFalse(awaitItem()) }
     }

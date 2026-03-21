@@ -17,9 +17,13 @@ class ProgramRepository @Inject constructor(
     suspend fun update(program: Program) = programDao.update(program)
     suspend fun delete(program: Program) = programDao.delete(program)
     suspend fun getById(id: Long): Program? = programDao.getById(id)
-    fun getAllWithExercises(profileId: Long): Flow<List<ProgramWithExercises>> = programDao.getAllWithExercises(profileId)
+    fun getAllWithExercises(profileId: Long): Flow<List<ProgramWithExercises>> = programDao.getAllWithExercises(
+        profileId
+    )
     suspend fun getProgramWithExercises(id: Long): ProgramWithExercises? = programDao.getProgramWithExercises(id)
-    suspend fun insertProgramExercise(programExercise: ProgramExercise): Long = programDao.insertProgramExercise(programExercise)
+    suspend fun insertProgramExercise(programExercise: ProgramExercise): Long = programDao.insertProgramExercise(
+        programExercise
+    )
     suspend fun insertProgramExerciseSet(set: ProgramExerciseSet): Long = programDao.insertProgramExerciseSet(set)
     suspend fun deleteExercisesForProgram(programId: Long) = programDao.deleteExercisesForProgram(programId)
 }

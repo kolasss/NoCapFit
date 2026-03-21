@@ -117,7 +117,7 @@ private fun MainContent(workoutRepository: WorkoutRepository) {
                                 }
                             }
                         )
-                    }  // AnimatedVisibility
+                    } // AnimatedVisibility
                     BottomNavBar(
                         currentRoute = currentRoute,
                         onNavigate = { screen ->

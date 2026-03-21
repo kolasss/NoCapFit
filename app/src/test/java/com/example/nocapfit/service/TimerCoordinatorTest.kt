@@ -56,10 +56,13 @@ class TimerCoordinatorTest {
     fun reconstructState_runningNotExpired_running() = runTest(testDispatcher) {
         val futureEnd = System.currentTimeMillis() + 30_000L
         val timer = ActiveTimer(
-            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            id = 1L,
+            workoutId = 10L,
+            workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
             endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -77,10 +80,13 @@ class TimerCoordinatorTest {
     fun reconstructState_expired_completesTimerAndIdle() = runTest(testDispatcher) {
         val pastEnd = System.currentTimeMillis() - 5000L
         val timer = ActiveTimer(
-            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            id = 1L,
+            workoutId = 10L,
+            workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis() - 60_000L,
             endAtEpochMs = pastEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
         coEvery { timerRepository.completeTimer(1L) } returns true
@@ -96,10 +102,13 @@ class TimerCoordinatorTest {
     fun onTimerCompleted_transitionsToFinishedThenIdle() = runTest(testDispatcher) {
         val futureEnd = System.currentTimeMillis() + 30_000L
         val timer = ActiveTimer(
-            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            id = 1L,
+            workoutId = 10L,
+            workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
             endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -132,10 +141,13 @@ class TimerCoordinatorTest {
     fun reconstructState_runningTimer_setsCorrectWorkoutSetId() = runTest(testDispatcher) {
         val futureEnd = System.currentTimeMillis() + 30_000L
         val timer = ActiveTimer(
-            id = 3L, workoutId = 10L, workoutSetId = 42L,
+            id = 3L,
+            workoutId = 10L,
+            workoutSetId = 42L,
             startedAtEpochMs = System.currentTimeMillis(),
             endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -165,10 +177,13 @@ class TimerCoordinatorTest {
     fun onTimerCompleted_mismatchedTimerId_ignored() = runTest(testDispatcher) {
         val futureEnd = System.currentTimeMillis() + 30_000L
         val timer = ActiveTimer(
-            id = 1L, workoutId = 10L, workoutSetId = 20L,
+            id = 1L,
+            workoutId = 10L,
+            workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
             endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -186,10 +201,13 @@ class TimerCoordinatorTest {
     fun reconstructState_expiredTimer_doesNotSetRunning() = runTest(testDispatcher) {
         val pastEnd = System.currentTimeMillis() - 1000L
         val timer = ActiveTimer(
-            id = 2L, workoutId = 10L, workoutSetId = 20L,
+            id = 2L,
+            workoutId = 10L,
+            workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis() - 60_000L,
             endAtEpochMs = pastEnd,
-            status = TimerStatus.RUNNING, notificationId = 1001
+            status = TimerStatus.RUNNING,
+            notificationId = 1001
         )
         coEvery { timerRepository.getRunning() } returns timer
         coEvery { timerRepository.completeTimer(2L) } returns true

@@ -18,7 +18,9 @@ class WorkoutRepository @Inject constructor(
     suspend fun delete(workout: Workout) = workoutDao.delete(workout)
     suspend fun getById(id: Long): Workout? = workoutDao.getById(id)
     suspend fun getWithExercises(id: Long): WorkoutWithExercises? = workoutDao.getWithExercises(id)
-    fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>> = workoutDao.getAllWithExercises(profileId)
+    fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>> = workoutDao.getAllWithExercises(
+        profileId
+    )
     suspend fun getActiveWorkout(): Workout? = workoutDao.getActiveWorkout()
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(exercise)
     suspend fun insertWorkoutSet(set: WorkoutSet): Long = workoutDao.insertWorkoutSet(set)

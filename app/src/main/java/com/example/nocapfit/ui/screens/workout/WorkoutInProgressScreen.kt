@@ -374,8 +374,11 @@ private fun ExercisePickerSheet(
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredExercises = remember(exercises, searchQuery) {
-        if (searchQuery.isBlank()) exercises
-        else exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        if (searchQuery.isBlank()) {
+            exercises
+        } else {
+            exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
     }
 
     ModalBottomSheet(
@@ -406,8 +409,11 @@ private fun ExercisePickerSheet(
 
             if (filteredExercises.isEmpty()) {
                 Text(
-                    text = if (exercises.isEmpty()) "No exercises available. Create exercises first."
-                    else "No matches found.",
+                    text = if (exercises.isEmpty()) {
+                        "No exercises available. Create exercises first."
+                    } else {
+                        "No matches found."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
@@ -419,7 +425,9 @@ private fun ExercisePickerSheet(
                             headlineContent = { Text(exercise.name) },
                             supportingContent = if (exercise.description.isNotBlank()) {
                                 { Text(exercise.description) }
-                            } else null,
+                            } else {
+                                null
+                            },
                             modifier = Modifier.clickable { onExerciseSelected(exercise) }
                         )
                     }

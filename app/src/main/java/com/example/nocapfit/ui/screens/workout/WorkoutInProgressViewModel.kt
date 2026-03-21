@@ -45,8 +45,11 @@ class WorkoutInProgressViewModel @Inject constructor(
     private val _profileId = MutableStateFlow<Long?>(null)
 
     val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
-        if (profileId == null) flowOf(emptyList())
-        else exerciseRepository.getAllByProfile(profileId)
+        if (profileId == null) {
+            flowOf(emptyList())
+        } else {
+            exerciseRepository.getAllByProfile(profileId)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

@@ -42,15 +42,22 @@ class WorkoutInProgressViewModelTest {
 
     private val testWorkout = Workout(id = 1L, profileId = 1L, startTime = 1000L)
     private val testSet = WorkoutSet(
-        id = 10L, workoutExerciseId = 100L, setIndex = 0,
-        weightThousandths = 50000, reps = 8, restTimeSeconds = 60
+        id = 10L,
+        workoutExerciseId = 100L,
+        setIndex = 0,
+        weightThousandths = 50000,
+        reps = 8,
+        restTimeSeconds = 60
     )
     private val testWorkoutWithExercises = WorkoutWithExercises(
         workout = testWorkout,
         exercises = listOf(
             WorkoutExerciseWithSets(
                 workoutExercise = WorkoutExercise(
-                    id = 100L, workoutId = 1L, exerciseName = "Bench Press", orderIndex = 0
+                    id = 100L,
+                    workoutId = 1L,
+                    exerciseName = "Bench Press",
+                    orderIndex = 0
                 ),
                 sets = listOf(testSet)
             )
@@ -61,8 +68,12 @@ class WorkoutInProgressViewModelTest {
         coEvery { workoutRepository.getWithExercises(1L) } returns testWorkoutWithExercises
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         return WorkoutInProgressViewModel(
-            workoutRepository, timerRepository, exerciseRepository,
-            profileRepository, savedStateHandle, timerCoordinator
+            workoutRepository,
+            timerRepository,
+            exerciseRepository,
+            profileRepository,
+            savedStateHandle,
+            timerCoordinator
         )
     }
 
@@ -100,9 +111,11 @@ class WorkoutInProgressViewModelTest {
         viewModel.addSet(100L)
 
         coVerify {
-            workoutRepository.insertWorkoutSet(match {
-                it.weightThousandths == 50000 && it.reps == 8 && it.restTimeSeconds == 60 && it.setIndex == 1
-            })
+            workoutRepository.insertWorkoutSet(
+                match {
+                    it.weightThousandths == 50000 && it.reps == 8 && it.restTimeSeconds == 60 && it.setIndex == 1
+                }
+            )
         }
     }
 
@@ -115,9 +128,11 @@ class WorkoutInProgressViewModelTest {
         viewModel.addSet(100L)
 
         coVerify {
-            workoutRepository.insertWorkoutSet(match {
-                it.weightThousandths == 0 && it.reps == 0 && it.restTimeSeconds == 60 && it.setIndex == 0
-            })
+            workoutRepository.insertWorkoutSet(
+                match {
+                    it.weightThousandths == 0 && it.reps == 0 && it.restTimeSeconds == 60 && it.setIndex == 0
+                }
+            )
         }
     }
 

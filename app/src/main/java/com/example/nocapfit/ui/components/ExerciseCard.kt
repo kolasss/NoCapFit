@@ -87,7 +87,9 @@ fun ExerciseCard(
                         restTimeSeconds = workoutSet.restTimeSeconds,
                         onRestTimeChange = if (onRestTimeChange != null) {
                             { newSeconds -> onRestTimeChange(workoutSet, newSeconds) }
-                        } else null,
+                        } else {
+                            null
+                        },
                         isTimerActive = activeTimerSetId == workoutSet.id,
                         timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L
                     )

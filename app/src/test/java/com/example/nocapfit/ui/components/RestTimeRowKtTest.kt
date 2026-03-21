@@ -37,8 +37,8 @@ class RestTimeRowKtTest {
     // --- secondsToMmSsDigits ---
 
     @Test
-    fun secondsToMmSsDigits_zero_returnsZeroString() {
-        assertEquals("0", secondsToMmSsDigits(0))
+    fun secondsToMmSsDigits_zero_returnsEmptyString() {
+        assertEquals("", secondsToMmSsDigits(0))
     }
 
     @Test

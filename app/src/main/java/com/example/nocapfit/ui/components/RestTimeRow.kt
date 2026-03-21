@@ -47,6 +47,7 @@ fun parseMmSsToSeconds(digits: String): Int {
  * 90 → "130", 394 → "634", 60 → "100"
  */
 fun secondsToMmSsDigits(totalSeconds: Int): String {
+    if (totalSeconds <= 0) return ""
     val minutes = totalSeconds / SECONDS_PER_MINUTE
     val seconds = totalSeconds % SECONDS_PER_MINUTE
     return if (minutes == 0) {
@@ -64,9 +65,7 @@ fun RestTimeRow(
     isTimerActive: Boolean = false,
     timerEndAtEpochMs: Long = 0L
 ) {
-    var digits by remember(restTimeSeconds) {
-        mutableStateOf(secondsToMmSsDigits(restTimeSeconds))
-    }
+    var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
 
     Row(
         modifier = modifier

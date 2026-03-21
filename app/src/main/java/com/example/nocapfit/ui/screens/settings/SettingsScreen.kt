@@ -31,11 +31,13 @@ import com.example.nocapfit.data.preferences.ThemeMode
 @Composable
 fun SettingsScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             LargeTopAppBar(
                 title = { Text("Settings") },

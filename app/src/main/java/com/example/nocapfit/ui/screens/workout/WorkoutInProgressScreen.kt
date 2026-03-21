@@ -56,12 +56,16 @@ import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.RestTimerOverlay
 import com.example.nocapfit.ui.navigation.Screen
+import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.SECONDS_PER_HOUR
+import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutInProgressScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: WorkoutInProgressViewModel = hiltViewModel(),
     onMinimize: ((Long) -> Unit)? = null
 ) {
@@ -73,288 +77,71 @@ fun WorkoutInProgressScreen(
     var showCancelDialog by remember { mutableStateOf(false) }
     var showExercisePicker by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
-
-    // Back handler: minimize instead of popping
-    BackHandler {
-        if (onMinimize != null) {
-            onMinimize(viewModel.workoutId)
-        } else {
-            navController.popBackStack()
+    val onBack: () -> Unit = {
+        if (onMinimize != null) onMinimize(viewModel.workoutId) else navController.popBackStack()
+    }
+    val navigateToHistory: () -> Unit = {
+        navController.navigate(Screen.WorkoutHistory.route) {
+            popUpTo(Screen.WorkoutHistory.route) { inclusive = true }
         }
     }
-
-    // Keep screen on
-    val view = LocalView.current
-    DisposableEffect(Unit) {
-        val window = (view.context as? android.app.Activity)?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        onDispose {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
-
-    // Elapsed time
-    var elapsedText by remember { mutableStateOf("00:00:00") }
-    val startTime = workout?.workout?.startTime
-    LaunchedEffect(startTime) {
-        if (startTime == null) return@LaunchedEffect
-        while (true) {
-            val elapsed = System.currentTimeMillis() - startTime
-            elapsedText = formatElapsedTime(elapsed)
-            delay(1000)
-        }
-    }
-
-    // Extract active timer set info
-    val activeTimerSetId: Long? = (timerState as? TimerCoordinator.TimerUiState.Running)
-        ?.workoutSetId
-    val timerEndAtEpochMs: Long = (timerState as? TimerCoordinator.TimerUiState.Running)
-        ?.endAtEpochMs ?: 0L
+    BackHandler(onBack = onBack)
+    KeepScreenOn()
+    val elapsedText = rememberElapsedTime(startTime = workout?.workout?.startTime)
 
     Scaffold(
+        modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(elapsedText) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (onMinimize != null) {
-                            onMinimize(viewModel.workoutId)
-                        } else {
-                            navController.popBackStack()
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showFinishDialog = true }) {
-                        Icon(Icons.Default.Check, contentDescription = "Finish")
-                    }
-                    Box {
-                        IconButton(onClick = { showOverflowMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More")
-                        }
-                        DropdownMenu(
-                            expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Cancel Workout") },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    showCancelDialog = true
-                                }
-                            )
-                        }
-                    }
+            WorkoutTopAppBar(
+                elapsedText = elapsedText,
+                showOverflowMenu = showOverflowMenu,
+                onBackClick = onBack,
+                onFinishClick = { showFinishDialog = true },
+                onOverflowClick = { showOverflowMenu = true },
+                onOverflowDismiss = { showOverflowMenu = false },
+                onCancelWorkoutClick = {
+                    showOverflowMenu = false
+                    showCancelDialog = true
                 }
             )
         }
     ) { padding ->
-        val workoutData = workout
-
-        if (workoutData == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Loading workout...")
-            }
-            return@Scaffold
-        }
-
-        val sortedExercises = workoutData.exercises.sortedBy { it.workoutExercise.orderIndex }
-        val completedSets = sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
-        val totalSets = sortedExercises.sumOf { it.sets.size }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    bottom = if (timerState is TimerCoordinator.TimerUiState.Running) 120.dp else 80.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "${sortedExercises.size}",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Exercises",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = "$completedSets/$totalSets",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Sets",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = elapsedText,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "Elapsed",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                items(sortedExercises, key = { it.workoutExercise.id }) { exerciseWithSets ->
-                    ExerciseCard(
-                        exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-                        sets = exerciseWithSets.sets,
-                        onRemoveExercise = {
-                            viewModel.removeExercise(exerciseWithSets.workoutExercise.id)
-                        },
-                        onAddSet = {
-                            viewModel.addSet(exerciseWithSets.workoutExercise.id)
-                        },
-                        onWeightChange = { workoutSet, newWeight ->
-                            viewModel.updateSet(workoutSet.copy(weightThousandths = newWeight))
-                        },
-                        onRepsChange = { workoutSet, newReps ->
-                            viewModel.updateSet(workoutSet.copy(reps = newReps))
-                        },
-                        onToggleComplete = { workoutSet ->
-                            if (workoutSet.completed) {
-                                viewModel.revertSet(workoutSet.id)
-                            } else {
-                                viewModel.completeSet(workoutSet.id, workoutSet.restTimeSeconds)
-                            }
-                        },
-                        onRestTimeChange = { workoutSet, newSeconds ->
-                            viewModel.updateSet(workoutSet.copy(restTimeSeconds = newSeconds))
-                        },
-                        activeTimerSetId = activeTimerSetId,
-                        timerEndAtEpochMs = timerEndAtEpochMs,
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextButton(onClick = { showExercisePicker = true }) {
-                            Text("+ Add Exercise")
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = { showFinishDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Finish Workout")
-                        }
-                    }
-                }
-            }
-
-            // Timer overlay at bottom
-            val currentTimerState = timerState
-            if (currentTimerState is TimerCoordinator.TimerUiState.Running) {
-                val remainingMs = currentTimerState.endAtEpochMs - System.currentTimeMillis()
-                if (remainingMs > 0) {
-                    RestTimerOverlay(
-                        remainingMs = remainingMs,
-                        totalMs = currentTimerState.totalMs,
-                        onCancel = { viewModel.cancelTimer() },
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-                }
-            }
-        }
-    }
-
-    // Finish workout dialog
-    if (showFinishDialog) {
-        AlertDialog(
-            onDismissRequest = { showFinishDialog = false },
-            title = { Text("Finish Workout") },
-            text = { Text("Are you sure you want to finish this workout?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showFinishDialog = false
-                    if (viewModel.finishWorkout()) {
-                        navController.navigate(Screen.WorkoutHistory.route) {
-                            popUpTo(Screen.WorkoutHistory.route) { inclusive = true }
-                        }
-                    }
-                }) {
-                    Text("Finish")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showFinishDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+        WorkoutContent(
+            padding = padding,
+            workout = workout,
+            timerState = timerState,
+            elapsedText = elapsedText,
+            onRemoveExercise = viewModel::removeExercise,
+            onAddSet = viewModel::addSet,
+            onUpdateSet = viewModel::updateSet,
+            onCompleteSet = viewModel::completeSet,
+            onRevertSet = viewModel::revertSet,
+            onCancelTimer = viewModel::cancelTimer,
+            onAddExerciseClick = { showExercisePicker = true },
+            onFinishClick = { showFinishDialog = true }
         )
     }
 
-    // Cancel workout dialog
-    if (showCancelDialog) {
-        AlertDialog(
-            onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel Workout") },
-            text = { Text("Are you sure you want to cancel this workout? All data will be lost.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showCancelDialog = false
-                    viewModel.cancelWorkout()
-                    navController.navigate(Screen.WorkoutHistory.route) {
-                        popUpTo(Screen.WorkoutHistory.route) { inclusive = true }
-                    }
-                }) {
-                    Text("Cancel Workout")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) {
-                    Text("Keep Working Out")
-                }
-            }
-        )
-    }
+    WorkoutDialogs(
+        showFinishDialog = showFinishDialog,
+        showCancelDialog = showCancelDialog,
+        onFinishDismiss = { showFinishDialog = false },
+        onCancelDismiss = { showCancelDialog = false },
+        onFinishConfirm = {
+            showFinishDialog = false
+            if (viewModel.finishWorkout()) navigateToHistory()
+        },
+        onCancelConfirm = {
+            showCancelDialog = false
+            viewModel.cancelWorkout()
+            navigateToHistory()
+        }
+    )
 
-    // Exercise picker bottom sheet
     if (showExercisePicker) {
         ExercisePickerSheet(
             exercises = availableExercises,
-            onExerciseSelected = { exercise ->
+            onSelectExercise = { exercise ->
                 viewModel.addExerciseFromDb(exercise.id, exercise.name)
                 showExercisePicker = false
             },
@@ -363,11 +150,308 @@ fun WorkoutInProgressScreen(
     }
 }
 
+@Composable
+private fun KeepScreenOn() {
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        val window = (view.context as? android.app.Activity)?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+}
+
+@Composable
+private fun rememberElapsedTime(startTime: Long?): String {
+    var elapsedText by remember { mutableStateOf("00:00:00") }
+    LaunchedEffect(startTime) {
+        if (startTime == null) return@LaunchedEffect
+        while (true) {
+            val elapsed = System.currentTimeMillis() - startTime
+            elapsedText = formatElapsedTime(elapsed)
+            delay(MILLIS_PER_SECOND)
+        }
+    }
+    return elapsedText
+}
+
+@Composable
+private fun WorkoutContent(
+    padding: PaddingValues,
+    workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
+    timerState: TimerCoordinator.TimerUiState,
+    elapsedText: String,
+    onRemoveExercise: (Long) -> Unit,
+    onAddSet: (Long) -> Unit,
+    onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onCompleteSet: (Long, Int) -> Unit,
+    onRevertSet: (Long) -> Unit,
+    onCancelTimer: () -> Unit,
+    onAddExerciseClick: () -> Unit,
+    onFinishClick: () -> Unit
+) {
+    if (workout == null) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.Center
+        ) { Text("Loading workout...") }
+        return
+    }
+
+    val sortedExercises = workout.exercises.sortedBy { it.workoutExercise.orderIndex }
+    val activeTimerSetId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
+    val timerEndAtEpochMs = (timerState as? TimerCoordinator.TimerUiState.Running)
+        ?.endAtEpochMs ?: 0L
+
+    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        WorkoutExerciseList(
+            sortedExercises = sortedExercises,
+            timerState = timerState,
+            elapsedText = elapsedText,
+            activeTimerSetId = activeTimerSetId,
+            timerEndAtEpochMs = timerEndAtEpochMs,
+            onRemoveExercise = onRemoveExercise,
+            onAddSet = onAddSet,
+            onUpdateSet = onUpdateSet,
+            onCompleteSet = onCompleteSet,
+            onRevertSet = onRevertSet,
+            onAddExerciseClick = onAddExerciseClick,
+            onFinishClick = onFinishClick
+        )
+
+        val currentTimerState = timerState
+        if (currentTimerState is TimerCoordinator.TimerUiState.Running) {
+            val remainingMs = currentTimerState.endAtEpochMs - System.currentTimeMillis()
+            if (remainingMs > 0) {
+                RestTimerOverlay(
+                    remainingMs = remainingMs,
+                    totalMs = currentTimerState.totalMs,
+                    onCancel = onCancelTimer,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkoutExerciseList(
+    sortedExercises: List<com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
+    timerState: TimerCoordinator.TimerUiState,
+    elapsedText: String,
+    activeTimerSetId: Long?,
+    timerEndAtEpochMs: Long,
+    onRemoveExercise: (Long) -> Unit,
+    onAddSet: (Long) -> Unit,
+    onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onCompleteSet: (Long, Int) -> Unit,
+    onRevertSet: (Long) -> Unit,
+    onAddExerciseClick: () -> Unit,
+    onFinishClick: () -> Unit
+) {
+    val completedSets = sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
+    val totalSets = sortedExercises.sumOf { it.sets.size }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = 8.dp,
+            bottom = if (timerState is TimerCoordinator.TimerUiState.Running) 120.dp else 80.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            WorkoutSummaryCard(
+                exerciseCount = sortedExercises.size,
+                completedSets = completedSets,
+                totalSets = totalSets,
+                elapsedText = elapsedText
+            )
+        }
+
+        items(sortedExercises, key = { it.workoutExercise.id }) { exerciseWithSets ->
+            ExerciseCard(
+                exerciseName = exerciseWithSets.workoutExercise.exerciseName,
+                sets = exerciseWithSets.sets,
+                onRemoveExercise = { onRemoveExercise(exerciseWithSets.workoutExercise.id) },
+                onAddSet = { onAddSet(exerciseWithSets.workoutExercise.id) },
+                onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
+                onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
+                onToggleComplete = { ws ->
+                    if (ws.completed) {
+                        onRevertSet(ws.id)
+                    } else {
+                        onCompleteSet(ws.id, ws.restTimeSeconds)
+                    }
+                },
+                onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
+                activeTimerSetId = activeTimerSetId,
+                timerEndAtEpochMs = timerEndAtEpochMs,
+                modifier = Modifier.animateItem()
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(onClick = onAddExerciseClick) { Text("+ Add Exercise") }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onFinishClick, modifier = Modifier.fillMaxWidth()) {
+                    Text("Finish Workout")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorkoutTopAppBar(
+    elapsedText: String,
+    showOverflowMenu: Boolean,
+    onBackClick: () -> Unit,
+    onFinishClick: () -> Unit,
+    onOverflowClick: () -> Unit,
+    onOverflowDismiss: () -> Unit,
+    onCancelWorkoutClick: () -> Unit
+) {
+    TopAppBar(
+        title = { Text(elapsedText) },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+        },
+        actions = {
+            IconButton(onClick = onFinishClick) {
+                Icon(Icons.Default.Check, contentDescription = "Finish")
+            }
+            Box {
+                IconButton(onClick = onOverflowClick) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+                }
+                DropdownMenu(
+                    expanded = showOverflowMenu,
+                    onDismissRequest = onOverflowDismiss
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Cancel Workout") },
+                        onClick = onCancelWorkoutClick
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun WorkoutSummaryCard(
+    exerciseCount: Int,
+    completedSets: Int,
+    totalSets: Int,
+    elapsedText: String
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "$exerciseCount",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Exercises",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "$completedSets/$totalSets",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Sets",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = elapsedText,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "Elapsed",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkoutDialogs(
+    showFinishDialog: Boolean,
+    showCancelDialog: Boolean,
+    onFinishDismiss: () -> Unit,
+    onCancelDismiss: () -> Unit,
+    onFinishConfirm: () -> Unit,
+    onCancelConfirm: () -> Unit
+) {
+    if (showFinishDialog) {
+        AlertDialog(
+            onDismissRequest = onFinishDismiss,
+            title = { Text("Finish Workout") },
+            text = { Text("Are you sure you want to finish this workout?") },
+            confirmButton = {
+                TextButton(onClick = onFinishConfirm) {
+                    Text("Finish")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onFinishDismiss) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showCancelDialog) {
+        AlertDialog(
+            onDismissRequest = onCancelDismiss,
+            title = { Text("Cancel Workout") },
+            text = { Text("Are you sure you want to cancel this workout? All data will be lost.") },
+            confirmButton = {
+                TextButton(onClick = onCancelConfirm) {
+                    Text("Cancel Workout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancelDismiss) {
+                    Text("Keep Working Out")
+                }
+            }
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExercisePickerSheet(
     exercises: List<Exercise>,
-    onExerciseSelected: (Exercise) -> Unit,
+    onSelectExercise: (Exercise) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -428,7 +512,7 @@ private fun ExercisePickerSheet(
                             } else {
                                 null
                             },
-                            modifier = Modifier.clickable { onExerciseSelected(exercise) }
+                            modifier = Modifier.clickable { onSelectExercise(exercise) }
                         )
                     }
                 }
@@ -438,9 +522,9 @@ private fun ExercisePickerSheet(
 }
 
 private fun formatElapsedTime(millis: Long): String {
-    val totalSeconds = millis / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
+    val totalSeconds = millis / MILLIS_PER_SECOND
+    val hours = totalSeconds / SECONDS_PER_HOUR
+    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
     return "%02d:%02d:%02d".format(hours, minutes, seconds)
 }

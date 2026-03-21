@@ -55,6 +55,7 @@ import com.example.nocapfit.ui.components.EmptyState
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseListScreen(
+    modifier: Modifier = Modifier,
     viewModel: ExerciseListViewModel = hiltViewModel()
 ) {
     val exercises by viewModel.exercises.collectAsState()
@@ -69,7 +70,7 @@ fun ExerciseListScreen(
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = { Text("Exercises") },
@@ -85,85 +86,134 @@ fun ExerciseListScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            SearchBar(
-                inputField = {
-                    SearchBarDefaults.InputField(
-                        query = searchQuery,
-                        onQueryChange = { viewModel.updateSearchQuery(it) },
-                        onSearch = { },
-                        expanded = false,
-                        onExpandedChange = { },
-                        placeholder = { Text("Search exercises") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                    )
-                },
-                expanded = false,
-                onExpandedChange = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {}
+        ExerciseListContent(
+            exercises = exercises,
+            searchQuery = searchQuery,
+            onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+            onShowAddDialog = { viewModel.showAddDialog() },
+            onEditExercise = { viewModel.showEditDialog(it) },
+            onDeleteExercise = { showDeleteConfirmation = it },
+            modifier = Modifier.padding(padding)
+        )
+    }
 
-            if (exercises.isEmpty() && searchQuery.isBlank()) {
-                EmptyState(
-                    icon = Icons.Default.FitnessCenter,
-                    title = "No exercises yet",
-                    subtitle = "Add exercises to use in your workouts",
-                    actionLabel = "New Exercise",
-                    onAction = { viewModel.showAddDialog() }
+    ExerciseDialogs(
+        showAddDialog = showAddDialog,
+        showEditDialog = showEditDialog,
+        selectedExercise = selectedExercise,
+        showDeleteConfirmation = showDeleteConfirmation,
+        onDismissAdd = { viewModel.dismissAddDialog() },
+        onAddExercise = { name, description, tags ->
+            viewModel.addExercise(name, description, tags)
+        },
+        onDismissEdit = { viewModel.dismissEditDialog() },
+        onUpdateExercise = { viewModel.updateExercise(it) },
+        onDeleteExercise = { exercise ->
+            viewModel.deleteExercise(exercise)
+            showDeleteConfirmation = null
+        },
+        onDismissDelete = { showDeleteConfirmation = null }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExerciseListContent(
+    exercises: List<Exercise>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onShowAddDialog: () -> Unit,
+    onEditExercise: (Exercise) -> Unit,
+    onDeleteExercise: (Exercise) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        SearchBar(
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = searchQuery,
+                    onQueryChange = onSearchQueryChange,
+                    onSearch = { },
+                    expanded = false,
+                    onExpandedChange = { },
+                    placeholder = { Text("Search exercises") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
                 )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 16.dp,
-                        vertical = 8.dp
+            },
+            expanded = false,
+            onExpandedChange = { },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {}
+
+        if (exercises.isEmpty() && searchQuery.isBlank()) {
+            EmptyState(
+                icon = Icons.Default.FitnessCenter,
+                title = "No exercises yet",
+                subtitle = "Add exercises to use in your workouts",
+                actionLabel = "New Exercise",
+                onAction = onShowAddDialog
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                )
+            ) {
+                items(exercises, key = { it.id }) { exercise ->
+                    ExerciseItem(
+                        exercise = exercise,
+                        onEdit = { onEditExercise(exercise) },
+                        onDelete = { onDeleteExercise(exercise) },
+                        modifier = Modifier.animateItem()
                     )
-                ) {
-                    items(exercises, key = { it.id }) { exercise ->
-                        ExerciseItem(
-                            exercise = exercise,
-                            onEdit = { viewModel.showEditDialog(exercise) },
-                            onDelete = { showDeleteConfirmation = exercise },
-                            modifier = Modifier.animateItem()
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
+}
 
+@Composable
+private fun ExerciseDialogs(
+    showAddDialog: Boolean,
+    showEditDialog: Boolean,
+    selectedExercise: Exercise?,
+    showDeleteConfirmation: Exercise?,
+    onDismissAdd: () -> Unit,
+    onAddExercise: (String, String, String) -> Unit,
+    onDismissEdit: () -> Unit,
+    onUpdateExercise: (Exercise) -> Unit,
+    onDeleteExercise: (Exercise) -> Unit,
+    onDismissDelete: () -> Unit
+) {
     if (showAddDialog) {
         ExerciseFormSheet(
             title = "Add Exercise",
             initialName = "",
             initialDescription = "",
             initialTags = "",
-            onDismiss = { viewModel.dismissAddDialog() },
-            onConfirm = { name, description, tags ->
-                viewModel.addExercise(name, description, tags)
-            }
+            onDismiss = onDismissAdd,
+            onConfirm = onAddExercise
         )
     }
 
     if (showEditDialog && selectedExercise != null) {
-        val exercise = selectedExercise!!
         ExerciseFormSheet(
             title = "Edit Exercise",
-            initialName = exercise.name,
-            initialDescription = exercise.description,
-            initialTags = exercise.tags,
-            onDismiss = { viewModel.dismissEditDialog() },
+            initialName = selectedExercise.name,
+            initialDescription = selectedExercise.description,
+            initialTags = selectedExercise.tags,
+            onDismiss = onDismissEdit,
             onConfirm = { name, description, tags ->
-                viewModel.updateExercise(
-                    exercise.copy(
+                onUpdateExercise(
+                    selectedExercise.copy(
                         name = name.trim(),
                         description = description.trim(),
                         tags = tags.trim()
@@ -175,19 +225,16 @@ fun ExerciseListScreen(
 
     showDeleteConfirmation?.let { exercise ->
         AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = null },
+            onDismissRequest = onDismissDelete,
             title = { Text("Delete Exercise") },
             text = { Text("Are you sure you want to delete \"${exercise.name}\"? This action cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteExercise(exercise)
-                    showDeleteConfirmation = null
-                }) {
+                TextButton(onClick = { onDeleteExercise(exercise) }) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = null }) {
+                TextButton(onClick = onDismissDelete) {
                     Text("Cancel")
                 }
             }

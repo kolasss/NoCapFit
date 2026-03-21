@@ -9,27 +9,17 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.nocapfit.ui.navigation.Screen
-
-data class BottomNavItem(
-    val label: String,
-    val icon: ImageVector,
-    val screen: Screen
-)
-
-val bottomNavItems = listOf(
-    BottomNavItem("History", Icons.Default.History, Screen.WorkoutHistory),
-    BottomNavItem("Programs", Icons.AutoMirrored.Filled.ListAlt, Screen.ProgramList),
-    BottomNavItem("Exercises", Icons.Default.FitnessCenter, Screen.ExerciseList)
-)
 
 @Composable
 fun BottomNavBar(
     currentRoute: String?,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    NavigationBar {
+    NavigationBar(modifier = modifier) {
         bottomNavItems.forEach { item ->
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
@@ -40,3 +30,15 @@ fun BottomNavBar(
         }
     }
 }
+
+private data class BottomNavItem(
+    val label: String,
+    val icon: ImageVector,
+    val screen: Screen
+)
+
+private val bottomNavItems = listOf(
+    BottomNavItem("History", Icons.Default.History, Screen.WorkoutHistory),
+    BottomNavItem("Programs", Icons.AutoMirrored.Filled.ListAlt, Screen.ProgramList),
+    BottomNavItem("Exercises", Icons.Default.FitnessCenter, Screen.ExerciseList)
+)

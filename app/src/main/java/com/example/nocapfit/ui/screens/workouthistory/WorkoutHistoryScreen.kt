@@ -53,6 +53,7 @@ import com.example.nocapfit.ui.util.formatDuration
 @Composable
 fun WorkoutHistoryScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: WorkoutHistoryViewModel = hiltViewModel()
 ) {
     val completedWorkouts by viewModel.completedWorkouts.collectAsState()
@@ -69,7 +70,7 @@ fun WorkoutHistoryScreen(
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = { Text("History") },
@@ -92,58 +93,72 @@ fun WorkoutHistoryScreen(
             )
         }
     ) { padding ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+        WorkoutHistoryContent(
+            isLoading = isLoading,
+            finished = finished,
+            grouped = grouped,
+            onStartWorkout = { navController.navigate(Screen.AddWorkout.route) },
+            onWorkoutClick = { workoutId ->
+                navController.navigate(Screen.WorkoutDetail.createRoute(workoutId))
+            },
+            modifier = Modifier.padding(padding)
+        )
+    }
+}
+
+@Composable
+private fun WorkoutHistoryContent(
+    isLoading: Boolean,
+    finished: List<WorkoutWithExercises>,
+    grouped: Map<String, List<WorkoutWithExercises>>,
+    onStartWorkout: () -> Unit,
+    onWorkoutClick: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when {
+        isLoading -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-            finished.isEmpty() -> {
-                EmptyState(
-                    icon = Icons.Default.History,
-                    title = "No workouts yet",
-                    subtitle = "Start your first workout to see it here",
-                    actionLabel = "Start Workout",
-                    onAction = { navController.navigate(Screen.AddWorkout.route) },
-                    modifier = Modifier.padding(padding)
-                )
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    grouped.forEach { (dateHeader, workouts) ->
-                        item(key = "header-$dateHeader") {
-                            Text(
-                                text = dateHeader,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
-                            )
-                        }
-                        items(workouts, key = { it.workout.id }) { workoutWithExercises ->
-                            WorkoutHistoryItem(
-                                workoutWithExercises = workoutWithExercises,
-                                onClick = {
-                                    navController.navigate(
-                                        Screen.WorkoutDetail.createRoute(workoutWithExercises.workout.id)
-                                    )
-                                },
-                                modifier = Modifier.animateItem()
-                            )
-                        }
+        }
+        finished.isEmpty() -> {
+            EmptyState(
+                icon = Icons.Default.History,
+                title = "No workouts yet",
+                subtitle = "Start your first workout to see it here",
+                actionLabel = "Start Workout",
+                onAction = onStartWorkout,
+                modifier = modifier
+            )
+        }
+        else -> {
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                grouped.forEach { (dateHeader, workouts) ->
+                    item(key = "header-$dateHeader") {
+                        Text(
+                            text = dateHeader,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                        )
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                    items(workouts, key = { it.workout.id }) { workoutWithExercises ->
+                        WorkoutHistoryItem(
+                            workoutWithExercises = workoutWithExercises,
+                            onClick = { onWorkoutClick(workoutWithExercises.workout.id) },
+                            modifier = Modifier.animateItem()
+                        )
+                    }
                 }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }

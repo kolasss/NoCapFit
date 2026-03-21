@@ -9,6 +9,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.nocapfit.R
 import com.example.nocapfit.data.repository.TimerRepository
+import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +66,7 @@ class RestTimerService : Service() {
                 }
 
                 notificationManager.notify(NOTIFICATION_ID, buildNotification(remaining))
-                delay(1000)
+                delay(MILLIS_PER_SECOND)
             }
         }
 
@@ -77,9 +79,9 @@ class RestTimerService : Service() {
     }
 
     private fun buildNotification(remainingMs: Long): Notification {
-        val totalSeconds = (remainingMs / 1000).coerceAtLeast(0)
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
+        val totalSeconds = (remainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
+        val minutes = totalSeconds / SECONDS_PER_MINUTE
+        val seconds = totalSeconds % SECONDS_PER_MINUTE
         val timeText = "%d:%02d".format(minutes, seconds)
 
         val cancelIntent = Intent(ACTION_CANCEL_TIMER).apply {

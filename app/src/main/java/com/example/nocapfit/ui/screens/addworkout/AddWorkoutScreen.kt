@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.nocapfit.data.db.relation.ProgramWithExercises
 import com.example.nocapfit.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
@@ -41,12 +42,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddWorkoutScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: AddWorkoutViewModel = hiltViewModel()
 ) {
     val programs by viewModel.programs.collectAsState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text("Start Workout") },
@@ -75,43 +78,14 @@ fun AddWorkoutScreen(
             }
 
             item {
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            scope.launch {
-                                val workoutId = viewModel.createEmptyWorkout()
-                                navController.navigate(
-                                    Screen.WorkoutInProgress.createRoute(workoutId)
-                                )
-                            }
-                        }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                QuickStartCard(onClick = {
+                    scope.launch {
+                        val workoutId = viewModel.createEmptyWorkout()
+                        navController.navigate(
+                            Screen.WorkoutInProgress.createRoute(workoutId)
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "Empty Workout",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Start from scratch",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
-                }
+                })
             }
 
             if (programs.isNotEmpty()) {
@@ -126,57 +100,102 @@ fun AddWorkoutScreen(
                 }
 
                 items(programs) { programWithExercises ->
-                    val exerciseNames = programWithExercises.exercises
-                        .sortedBy { it.programExercise.orderIndex }
-                        .take(3)
-                        .joinToString(", ") { it.exercise.name }
-                    val moreCount = (programWithExercises.exercises.size - 3).coerceAtLeast(0)
-
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                scope.launch {
-                                    val workoutId = viewModel.createWorkoutFromProgram(
-                                        programWithExercises.program.id
-                                    )
-                                    navController.navigate(
-                                        Screen.WorkoutInProgress.createRoute(workoutId)
-                                    )
-                                }
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.FitnessCenter,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = programWithExercises.program.name,
-                                    style = MaterialTheme.typography.titleMedium
+                    ProgramCard(
+                        programWithExercises = programWithExercises,
+                        onClick = {
+                            scope.launch {
+                                val workoutId = viewModel.createWorkoutFromProgram(
+                                    programWithExercises.program.id
                                 )
-                                if (exerciseNames.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = exerciseNames + if (moreCount > 0) " +$moreCount more" else "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                navController.navigate(
+                                    Screen.WorkoutInProgress.createRoute(workoutId)
+                                )
                             }
                         }
-                    }
+                    )
                 }
             }
 
             item { Spacer(modifier = Modifier.height(16.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun QuickStartCard(onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "Empty Workout",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Start from scratch",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgramCard(
+    programWithExercises: ProgramWithExercises,
+    onClick: () -> Unit
+) {
+    val exerciseNames = programWithExercises.exercises
+        .sortedBy { it.programExercise.orderIndex }
+        .take(3)
+        .joinToString(", ") { it.exercise.name }
+    val moreCount = (programWithExercises.exercises.size - 3).coerceAtLeast(0)
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = programWithExercises.program.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (exerciseNames.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = exerciseNames + if (moreCount > 0) " +$moreCount more" else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

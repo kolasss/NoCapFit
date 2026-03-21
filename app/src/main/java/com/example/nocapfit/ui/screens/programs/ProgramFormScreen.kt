@@ -60,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProgramFormScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: ProgramFormViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -68,110 +69,38 @@ fun ProgramFormScreen(
     var showExercisePicker by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(if (viewModel.isEditing) "Edit Program" else "New Program")
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            scope.launch {
-                                val success = viewModel.save()
-                                if (success) {
-                                    navController.popBackStack()
-                                }
-                            }
-                        },
-                        enabled = !uiState.isSaving
-                    ) {
-                        Text("Save")
+            ProgramFormTopBar(
+                isEditing = viewModel.isEditing,
+                isSaving = uiState.isSaving,
+                onBack = { navController.popBackStack() },
+                onSave = {
+                    scope.launch {
+                        val success = viewModel.save()
+                        if (success) {
+                            navController.popBackStack()
+                        }
                     }
                 }
             )
         }
     ) { padding ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    OutlinedTextField(
-                        value = uiState.name,
-                        onValueChange = viewModel::updateName,
-                        label = { Text("Program Name") },
-                        isError = uiState.nameError != null,
-                        supportingText = uiState.nameError?.let { error ->
-                            {
-                                Text(error)
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                if (uiState.exercises.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Exercises",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
-                    }
-                }
-
-                itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
-                    ExerciseCard(
-                        exerciseEntry = exerciseEntry,
-                        onRemoveExercise = { viewModel.removeExercise(exerciseIndex) },
-                        onAddSet = { viewModel.addSet(exerciseIndex) },
-                        onRemoveSet = { setIndex -> viewModel.removeSet(exerciseIndex, setIndex) },
-                        onUpdateSet = { setIndex, setEntry ->
-                            viewModel.updateSet(exerciseIndex, setIndex, setEntry)
-                        }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    FilledTonalButton(
-                        onClick = { showExercisePicker = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add Exercise")
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-        }
+        ProgramFormContent(
+            uiState = uiState,
+            onNameChange = viewModel::updateName,
+            onRemoveExercise = viewModel::removeExercise,
+            onAddSet = viewModel::addSet,
+            onRemoveSet = viewModel::removeSet,
+            onUpdateSet = viewModel::updateSet,
+            onShowExercisePicker = { showExercisePicker = true },
+            modifier = Modifier.padding(padding)
+        )
 
         if (showExercisePicker) {
             ExercisePickerBottomSheet(
                 exercises = availableExercises,
-                onExerciseSelected = { exercise ->
+                onSelectExercise = { exercise ->
                     viewModel.addExercise(exercise)
                     showExercisePicker = false
                 },
@@ -179,6 +108,115 @@ fun ProgramFormScreen(
             )
         }
     }
+}
+
+@Composable
+private fun ProgramFormContent(
+    uiState: ProgramFormUiState,
+    onNameChange: (String) -> Unit,
+    onRemoveExercise: (Int) -> Unit,
+    onAddSet: (Int) -> Unit,
+    onRemoveSet: (Int, Int) -> Unit,
+    onUpdateSet: (Int, Int, SetEntry) -> Unit,
+    onShowExercisePicker: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (uiState.isLoading) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = onNameChange,
+                    label = { Text("Program Name") },
+                    isError = uiState.nameError != null,
+                    supportingText = uiState.nameError?.let { error ->
+                        {
+                            Text(error)
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (uiState.exercises.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Exercises",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                    )
+                }
+            }
+
+            itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
+                ExerciseCard(
+                    exerciseEntry = exerciseEntry,
+                    onRemoveExercise = { onRemoveExercise(exerciseIndex) },
+                    onAddSet = { onAddSet(exerciseIndex) },
+                    onRemoveSet = { setIndex -> onRemoveSet(exerciseIndex, setIndex) },
+                    onUpdateSet = { setIndex, setEntry ->
+                        onUpdateSet(exerciseIndex, setIndex, setEntry)
+                    }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                FilledTonalButton(
+                    onClick = onShowExercisePicker,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Exercise")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProgramFormTopBar(
+    isEditing: Boolean,
+    isSaving: Boolean,
+    onBack: () -> Unit,
+    onSave: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(if (isEditing) "Edit Program" else "New Program")
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+        },
+        actions = {
+            TextButton(
+                onClick = onSave,
+                enabled = !isSaving
+            ) {
+                Text("Save")
+            }
+        }
+    )
 }
 
 @Composable
@@ -312,7 +350,7 @@ private fun SetRow(
 @Composable
 private fun ExercisePickerBottomSheet(
     exercises: List<Exercise>,
-    onExerciseSelected: (Exercise) -> Unit,
+    onSelectExercise: (Exercise) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -373,7 +411,7 @@ private fun ExercisePickerBottomSheet(
                             } else {
                                 null
                             },
-                            modifier = Modifier.clickable { onExerciseSelected(exercise) }
+                            modifier = Modifier.clickable { onSelectExercise(exercise) }
                         )
                     }
                 }

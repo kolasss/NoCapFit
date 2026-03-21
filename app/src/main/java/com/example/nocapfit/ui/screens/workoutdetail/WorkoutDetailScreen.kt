@@ -37,12 +37,14 @@ import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
+import com.example.nocapfit.util.MILLIS_PER_SECOND
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutDetailScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
     val workoutWithExercises by viewModel.workoutWithExercises.collectAsState()
@@ -51,7 +53,7 @@ fun WorkoutDetailScreen(
     val data = workoutWithExercises
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = { Text(data?.workout?.programName ?: "Workout Details") },
@@ -64,79 +66,100 @@ fun WorkoutDetailScreen(
             )
         }
     ) { padding ->
-        if (data == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
+        WorkoutDetailContent(
+            data = data,
+            modifier = Modifier.padding(padding)
+        )
+    }
+}
 
-        val workout = data.workout
-        val dateTimeText = formatDateTime(workout.startTime)
-        val durationMs = (workout.endTime ?: workout.startTime) - workout.startTime
-        val durationText = formatDuration(durationMs)
-
-        val totalSets = data.exercises.sumOf { ex ->
-            ex.sets.count { it.completed }
-        }
-        val totalVolume = data.exercises.sumOf { ex ->
-            ex.sets.filter { it.completed }.sumOf { set ->
-                (set.weightThousandths.toLong() * set.reps) / 1000
-            }
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+@Composable
+private fun WorkoutDetailContent(
+    data: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
+    modifier: Modifier = Modifier
+) {
+    if (data == null) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            item {
-                Text(
-                    text = dateTimeText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    StatCard(
-                        label = "Duration",
-                        value = durationText,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Sets",
-                        value = totalSets.toString(),
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Volume",
-                        value = "$totalVolume kg",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            items(
-                data.exercises.sortedBy { it.workoutExercise.orderIndex },
-                key = { it.workoutExercise.id }
-            ) { exerciseWithSets ->
-                ExerciseDetailCard(exerciseWithSets)
-            }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            CircularProgressIndicator()
         }
+        return
+    }
+
+    val workout = data.workout
+    val dateTimeText = formatDateTime(workout.startTime)
+    val durationMs = (workout.endTime ?: workout.startTime) - workout.startTime
+    val durationText = formatDuration(durationMs)
+
+    val totalSets = data.exercises.sumOf { ex ->
+        ex.sets.count { it.completed }
+    }
+    val totalVolume = data.exercises.sumOf { ex ->
+        ex.sets.filter { it.completed }.sumOf { set ->
+            (set.weightThousandths.toLong() * set.reps) / MILLIS_PER_SECOND
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text(
+                text = dateTimeText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            WorkoutSummaryRow(
+                durationText = durationText,
+                totalSets = totalSets,
+                totalVolume = totalVolume
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        items(
+            data.exercises.sortedBy { it.workoutExercise.orderIndex },
+            key = { it.workoutExercise.id }
+        ) { exerciseWithSets ->
+            ExerciseDetailCard(exerciseWithSets)
+        }
+
+        item { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+}
+
+@Composable
+private fun WorkoutSummaryRow(
+    durationText: String,
+    totalSets: Int,
+    totalVolume: Long,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        StatCard(
+            label = "Duration",
+            value = durationText,
+            modifier = Modifier.weight(1f)
+        )
+        StatCard(
+            label = "Sets",
+            value = totalSets.toString(),
+            modifier = Modifier.weight(1f)
+        )
+        StatCard(
+            label = "Volume",
+            value = "$totalVolume kg",
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -211,6 +234,6 @@ private fun ExerciseDetailCard(exerciseWithSets: WorkoutExerciseWithSets) {
 }
 
 private fun formatWeight(weightThousandths: Int): String {
-    val value = BigDecimal(weightThousandths).divide(BigDecimal(1000))
+    val value = BigDecimal(weightThousandths).divide(BigDecimal(MILLIS_PER_SECOND))
     return value.stripTrailingZeros().toPlainString()
 }

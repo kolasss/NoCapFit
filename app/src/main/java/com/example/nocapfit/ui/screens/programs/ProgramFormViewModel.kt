@@ -12,6 +12,8 @@ import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.ui.components.parseMmSsToSeconds
 import com.example.nocapfit.ui.components.secondsToMmSsDigits
+import com.example.nocapfit.util.WEIGHT_DIVISOR
+import com.example.nocapfit.util.WEIGHT_MULTIPLIER
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -156,12 +158,13 @@ class ProgramFormViewModel @Inject constructor(
         val state = _uiState.value
         val profileId = _profileId.value ?: return false
 
-        if (state.name.isBlank()) {
-            _uiState.value = state.copy(nameError = "Program name is required")
-            return false
+        val validationError = when {
+            state.name.isBlank() -> "Program name is required"
+            state.exercises.isEmpty() -> "Add at least one exercise"
+            else -> null
         }
-        if (state.exercises.isEmpty()) {
-            _uiState.value = state.copy(nameError = "Add at least one exercise")
+        if (validationError != null) {
+            _uiState.value = state.copy(nameError = validationError)
             return false
         }
 
@@ -210,7 +213,7 @@ class ProgramFormViewModel @Inject constructor(
 
     companion object {
         fun formatWeight(thousandths: Int): String {
-            val value = thousandths / 1000.0
+            val value = thousandths / WEIGHT_DIVISOR
             val formatted = if (value == value.toLong().toDouble()) {
                 "${value.toLong()}.0"
             } else {
@@ -223,7 +226,7 @@ class ProgramFormViewModel @Inject constructor(
 
         fun parseWeight(input: String): Int {
             val value = input.toDoubleOrNull() ?: 0.0
-            return (value * 1000).roundToInt()
+            return (value * WEIGHT_MULTIPLIER).roundToInt()
         }
     }
 }

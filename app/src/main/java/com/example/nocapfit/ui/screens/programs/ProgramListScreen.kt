@@ -37,6 +37,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import com.example.nocapfit.ui.navigation.Screen
 @Composable
 fun ProgramListScreen(
     navController: NavController,
+    modifier: Modifier = Modifier,
     viewModel: ProgramListViewModel = hiltViewModel()
 ) {
     val programs by viewModel.programs.collectAsState()
@@ -61,7 +63,7 @@ fun ProgramListScreen(
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = { Text("Programs") },
@@ -143,9 +145,11 @@ private fun ProgramListItem(
 ) {
     val dismissState = rememberSwipeToDismissBoxState()
 
+    val currentOnDeleteRequest by rememberUpdatedState(onDeleteRequest)
+
     LaunchedEffect(dismissState.currentValue) {
         if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-            onDeleteRequest()
+            currentOnDeleteRequest()
             dismissState.snapTo(SwipeToDismissBoxValue.Settled)
         }
     }

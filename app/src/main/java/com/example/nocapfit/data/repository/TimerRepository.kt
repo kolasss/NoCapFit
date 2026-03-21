@@ -9,6 +9,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer
+import com.example.nocapfit.util.VIBRATION_DURATION_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,7 +39,7 @@ class TimerRepository @Inject constructor(
         // Vibrate
         try {
             val vibrator = context.getSystemService(Vibrator::class.java)
-            vibrator?.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator?.vibrate(VibrationEffect.createOneShot(VIBRATION_DURATION_MS, VibrationEffect.DEFAULT_AMPLITUDE))
         } catch (_: Exception) { }
 
         // Update notification

@@ -7,6 +7,8 @@ import android.content.Intent
 import com.example.nocapfit.data.db.entity.ActiveTimer
 import com.example.nocapfit.data.db.entity.TimerStatus
 import com.example.nocapfit.data.repository.TimerRepository
+import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.TIMER_FINISHED_DISPLAY_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +55,7 @@ class TimerCoordinator @Inject constructor(
         cancelTimer()
 
         val now = System.currentTimeMillis()
-        val endAtEpochMs = now + (durationSeconds * 1000L)
+        val endAtEpochMs = now + (durationSeconds * MILLIS_PER_SECOND)
 
         val timer = ActiveTimer(
             workoutId = workoutId,
@@ -79,7 +81,7 @@ class TimerCoordinator @Inject constructor(
             endAtEpochMs = endAtEpochMs,
             workoutId = workoutId,
             workoutSetId = workoutSetId,
-            totalMs = durationSeconds * 1000L
+            totalMs = durationSeconds * MILLIS_PER_SECOND
         )
     }
 
@@ -98,7 +100,7 @@ class TimerCoordinator @Inject constructor(
         if (current !is TimerUiState.Running || current.timerId != timerId) return
         _timerState.value = TimerUiState.Finished
         scope.launch {
-            delay(2000)
+            delay(TIMER_FINISHED_DISPLAY_MS)
             if (_timerState.value is TimerUiState.Finished) {
                 _timerState.value = TimerUiState.Idle
             }

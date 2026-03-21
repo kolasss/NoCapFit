@@ -21,43 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.coroutines.delay
-
-/**
- * Converts raw digit string to mm:ss display.
- * "130" → "1:30", "634" → "6:34", "60" → "0:60" (= 60 seconds)
- */
-class MmSsVisualTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val digits = text.text
-        val display = when {
-            digits.length <= 2 -> "0:${digits.padStart(2, '0')}"
-            else -> {
-                val seconds = digits.takeLast(2)
-                val minutes = digits.dropLast(2)
-                "$minutes:$seconds"
-            }
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                return display.length
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                return digits.length
-            }
-        }
-
-        return TransformedText(AnnotatedString(display), offsetMapping)
-    }
-}
 
 /**
  * Parse mm:ss digit string to total seconds.
@@ -70,7 +38,7 @@ fun parseMmSsToSeconds(digits: String): Int {
     } else {
         val seconds = digits.takeLast(2).toIntOrNull() ?: 0
         val minutes = digits.dropLast(2).toIntOrNull() ?: 0
-        minutes * 60 + seconds
+        minutes * SECONDS_PER_MINUTE + seconds
     }
 }
 
@@ -79,8 +47,8 @@ fun parseMmSsToSeconds(digits: String): Int {
  * 90 → "130", 394 → "634", 60 → "100"
  */
 fun secondsToMmSsDigits(totalSeconds: Int): String {
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
+    val minutes = totalSeconds / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
     return if (minutes == 0) {
         seconds.toString()
     } else {
@@ -129,9 +97,9 @@ fun RestTimeRow(
                 }
             }
 
-            val totalSecs = (remainingMs / 1000).coerceAtLeast(0)
-            val mins = totalSecs / 60
-            val secs = totalSecs % 60
+            val totalSecs = (remainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
+            val mins = totalSecs / SECONDS_PER_MINUTE
+            val secs = totalSecs % SECONDS_PER_MINUTE
             Text(
                 text = "%d:%02d".format(mins, secs),
                 style = MaterialTheme.typography.bodyLarge,
@@ -154,8 +122,8 @@ fun RestTimeRow(
             )
         } else {
             // Read-only display
-            val mins = restTimeSeconds / 60
-            val secs = restTimeSeconds % 60
+            val mins = restTimeSeconds / SECONDS_PER_MINUTE
+            val secs = restTimeSeconds % SECONDS_PER_MINUTE
             Text(
                 text = "%d:%02d".format(mins, secs),
                 style = MaterialTheme.typography.bodyMedium,

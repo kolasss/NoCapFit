@@ -1,5 +1,8 @@
 package com.example.nocapfit.ui.util
 
+import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.SECONDS_PER_HOUR
+import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.util.Locale
@@ -26,10 +29,10 @@ fun formatDateTime(epochMs: Long): String {
 }
 
 fun formatDuration(durationMs: Long): String {
-    val totalSeconds = durationMs / 1000
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    val seconds = totalSeconds % 60
+    val totalSeconds = durationMs / MILLIS_PER_SECOND
+    val hours = totalSeconds / SECONDS_PER_HOUR
+    val minutes = (totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
     return when {
         hours > 0 -> "${hours}h ${minutes}m"
         minutes > 0 -> "${minutes}m ${seconds}s"

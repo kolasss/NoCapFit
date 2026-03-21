@@ -36,6 +36,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
 ./gradlew build           # Build debug APK
 ./gradlew test            # Run unit tests
+./gradlew detekt          # Run Detekt linting (auto-fixes formatting)
 ```
 
 Or open the project in Android Studio and run directly on an emulator or device.

@@ -48,7 +48,7 @@ class AddWorkoutViewModel @Inject constructor(
     }
 
     suspend fun createWorkoutFromProgram(programId: Long): Long {
-        val profileId = _profileId.value ?: throw IllegalStateException("Profile not loaded")
+        val profileId = checkNotNull(_profileId.value) { "Profile not loaded" }
         val programWithExercises = programRepository.getProgramWithExercises(programId)
             ?: throw IllegalArgumentException("Program not found: $programId")
 
@@ -86,7 +86,7 @@ class AddWorkoutViewModel @Inject constructor(
     }
 
     suspend fun createEmptyWorkout(): Long {
-        val profileId = _profileId.value ?: throw IllegalStateException("Profile not loaded")
+        val profileId = checkNotNull(_profileId.value) { "Profile not loaded" }
         val workout = Workout(
             profileId = profileId,
             programName = null,

@@ -114,7 +114,7 @@ class RestTimerService : Service() {
             .setProgress(elapsedSeconds)
 
         return Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.logo_foreground)
             .setContentTitle("Rest Timer")
             .setStyle(progressStyle)
             .setOngoing(true)
@@ -128,7 +128,7 @@ class RestTimerService : Service() {
             .setChronometerCountDown(true)
             .addAction(
                 Notification.Action.Builder(
-                    Icon.createWithResource(this, R.drawable.ic_launcher_foreground),
+                    Icon.createWithResource(this, R.drawable.logo_foreground),
                     "Skip",
                     cancelPendingIntent
                 ).build()

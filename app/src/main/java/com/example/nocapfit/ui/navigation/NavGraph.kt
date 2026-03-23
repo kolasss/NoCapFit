@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.nocapfit.ui.screens.addworkout.AddWorkoutScreen
+import com.example.nocapfit.ui.screens.exercises.ExerciseDetailScreen
 import com.example.nocapfit.ui.screens.exercises.ExerciseListScreen
 import com.example.nocapfit.ui.screens.programs.ProgramFormScreen
 import com.example.nocapfit.ui.screens.programs.ProgramListScreen
@@ -31,7 +32,13 @@ fun NavGraph(
             WorkoutHistoryScreen(navController = navController)
         }
         composable(Screen.ExerciseList.route) {
-            ExerciseListScreen()
+            ExerciseListScreen(navController = navController)
+        }
+        composable(
+            route = Screen.ExerciseDetail.route,
+            arguments = listOf(navArgument("exerciseId") { type = NavType.LongType })
+        ) {
+            ExerciseDetailScreen(navController = navController)
         }
         composable(Screen.ProgramList.route) {
             ProgramListScreen(navController = navController)

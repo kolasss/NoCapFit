@@ -78,6 +78,9 @@ dependencies {
     // KotlinX
     implementation(libs.kotlinx.datetime)
 
+    // Markdown
+    implementation(libs.markdown.renderer.m3)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

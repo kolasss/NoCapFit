@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -54,11 +53,9 @@ class ExerciseListViewModelTest {
         val searchResults = listOf(testExercises[0])
 
         val viewModel = createViewModel()
-        // Override the catch-all mock after createViewModel sets it up
         every { exerciseRepository.searchByName(1L, "bench") } returns flowOf(searchResults)
 
         viewModel.exercises.test {
-            // Initial emission (all exercises)
             awaitItem()
 
             viewModel.updateSearchQuery("bench")
@@ -90,28 +87,6 @@ class ExerciseListViewModelTest {
     }
 
     @Test
-    fun showEditDialog_setsExerciseAndFlag() = runTest {
-        val viewModel = createViewModel()
-        val exercise = testExercises[0]
-
-        viewModel.showEditDialog(exercise)
-
-        viewModel.showEditDialog.test { assertTrue(awaitItem()) }
-        viewModel.selectedExercise.test { assertEquals(exercise, awaitItem()) }
-    }
-
-    @Test
-    fun dismissEditDialog_clearsState() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.showEditDialog(testExercises[0])
-        viewModel.dismissEditDialog()
-
-        viewModel.showEditDialog.test { assertFalse(awaitItem()) }
-        viewModel.selectedExercise.test { assertNull(awaitItem()) }
-    }
-
-    @Test
     fun addExercise_callsRepositoryAndDismisses() = runTest {
         coEvery { exerciseRepository.insert(any()) } returns 3L
         val viewModel = createViewModel()
@@ -127,14 +102,5 @@ class ExerciseListViewModelTest {
             )
         }
         viewModel.showAddDialog.test { assertFalse(awaitItem()) }
-    }
-
-    @Test
-    fun deleteExercise_callsRepository() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.deleteExercise(testExercises[0])
-
-        coVerify { exerciseRepository.delete(testExercises[0]) }
     }
 }

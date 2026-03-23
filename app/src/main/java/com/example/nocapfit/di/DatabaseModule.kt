@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.nocapfit.data.db.DEFAULT_EXERCISES
 import com.example.nocapfit.data.db.NoCapFitDatabase
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.dao.ExerciseDao
@@ -33,6 +34,12 @@ object DatabaseModule {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
                     db.execSQL("INSERT INTO profiles (name) VALUES ('Default')")
+                    DEFAULT_EXERCISES.forEach { exercise ->
+                        db.execSQL(
+                            "INSERT INTO exercises (profileId, name, description, tags) VALUES (?, ?, ?, ?)",
+                            arrayOf<Any>(1L, exercise.name, exercise.description, exercise.tags)
+                        )
+                    }
                 }
             })
             .build()

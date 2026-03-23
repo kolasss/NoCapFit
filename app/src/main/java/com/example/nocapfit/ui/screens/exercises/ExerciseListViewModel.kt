@@ -33,12 +33,6 @@ class ExerciseListViewModel @Inject constructor(
     private val _showAddDialog = MutableStateFlow(false)
     val showAddDialog: StateFlow<Boolean> = _showAddDialog.asStateFlow()
 
-    private val _showEditDialog = MutableStateFlow(false)
-    val showEditDialog: StateFlow<Boolean> = _showEditDialog.asStateFlow()
-
-    private val _selectedExercise = MutableStateFlow<Exercise?>(null)
-    val selectedExercise: StateFlow<Exercise?> = _selectedExercise.asStateFlow()
-
     val exercises: StateFlow<List<Exercise>> = combine(_profileId, _searchQuery) { profileId, query ->
         profileId to query
     }.flatMapLatest { (profileId, query) ->
@@ -70,16 +64,6 @@ class ExerciseListViewModel @Inject constructor(
         _showAddDialog.value = false
     }
 
-    fun showEditDialog(exercise: Exercise) {
-        _selectedExercise.value = exercise
-        _showEditDialog.value = true
-    }
-
-    fun dismissEditDialog() {
-        _showEditDialog.value = false
-        _selectedExercise.value = null
-    }
-
     fun addExercise(name: String, description: String, tags: String) {
         val profileId = _profileId.value ?: return
         viewModelScope.launch {
@@ -92,20 +76,6 @@ class ExerciseListViewModel @Inject constructor(
                 )
             )
             _showAddDialog.value = false
-        }
-    }
-
-    fun updateExercise(exercise: Exercise) {
-        viewModelScope.launch {
-            exerciseRepository.update(exercise)
-            _showEditDialog.value = false
-            _selectedExercise.value = null
-        }
-    }
-
-    fun deleteExercise(exercise: Exercise) {
-        viewModelScope.launch {
-            exerciseRepository.delete(exercise)
         }
     }
 }

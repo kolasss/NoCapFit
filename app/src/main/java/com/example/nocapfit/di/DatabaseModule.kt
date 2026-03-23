@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.nocapfit.data.db.DEFAULT_EXERCISES
+import com.example.nocapfit.data.db.DEFAULT_PROGRAMS
 import com.example.nocapfit.data.db.NoCapFitDatabase
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.dao.ExerciseDao
@@ -40,9 +41,50 @@ object DatabaseModule {
                             arrayOf<Any>(1L, exercise.name, exercise.description, exercise.tags)
                         )
                     }
+                    seedDefaultPrograms(db)
                 }
             })
             .build()
+    }
+
+    private fun seedDefaultPrograms(db: SupportSQLiteDatabase) {
+        DEFAULT_PROGRAMS.forEach { program ->
+            db.execSQL(
+                "INSERT INTO programs (profileId, name) VALUES (?, ?)",
+                arrayOf<Any>(1L, program.name)
+            )
+            val programId = db.query("SELECT last_insert_rowid()").use { cursor ->
+                cursor.moveToFirst()
+                cursor.getLong(0)
+            }
+
+            program.exercises.forEachIndexed { exerciseIndex, exercise ->
+                db.execSQL(
+                    "INSERT INTO program_exercises (programId, exerciseId, orderIndex) " +
+                        "VALUES (?, (SELECT id FROM exercises WHERE name = ? AND profileId = 1), ?)",
+                    arrayOf<Any>(programId, exercise.exerciseName, exerciseIndex)
+                )
+                val programExerciseId = db.query("SELECT last_insert_rowid()").use { cursor ->
+                    cursor.moveToFirst()
+                    cursor.getLong(0)
+                }
+
+                for (setIndex in 0 until exercise.sets) {
+                    db.execSQL(
+                        "INSERT INTO program_exercise_sets " +
+                            "(programExerciseId, setIndex, weightThousandths, reps, restTimeSeconds) " +
+                            "VALUES (?, ?, ?, ?, ?)",
+                        arrayOf<Any>(
+                            programExerciseId,
+                            setIndex,
+                            0,
+                            exercise.reps,
+                            exercise.restTimeSeconds
+                        )
+                    )
+                }
+            }
+        }
     }
 
     @Provides

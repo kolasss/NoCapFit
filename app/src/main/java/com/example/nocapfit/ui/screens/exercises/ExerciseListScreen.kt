@@ -97,7 +97,7 @@ fun ExerciseListScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExerciseListContent(
+internal fun ExerciseListContent(
     exercises: List<Exercise>,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -158,7 +158,7 @@ private fun ExerciseListContent(
 }
 
 @Composable
-private fun ExerciseItem(
+internal fun ExerciseItem(
     exercise: Exercise,
     onClick: () -> Unit,
     modifier: Modifier = Modifier

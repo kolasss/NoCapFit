@@ -111,7 +111,7 @@ fun ProgramFormScreen(
 }
 
 @Composable
-private fun ProgramFormContent(
+internal fun ProgramFormContent(
     uiState: ProgramFormUiState,
     onNameChange: (String) -> Unit,
     onRemoveExercise: (Int) -> Unit,
@@ -193,7 +193,7 @@ private fun ProgramFormContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProgramFormTopBar(
+internal fun ProgramFormTopBar(
     isEditing: Boolean,
     isSaving: Boolean,
     onBack: () -> Unit,

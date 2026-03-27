@@ -49,61 +49,73 @@ fun SettingsScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Text(
-                text = "Appearance",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        SettingsContent(
+            themeMode = themeMode,
+            onThemeModeChange = { viewModel.setThemeMode(it) },
+            modifier = Modifier.padding(padding)
+        )
+    }
+}
 
-            ListItem(
-                headlineContent = { Text("Theme") },
-                supportingContent = {
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    ) {
-                        ThemeMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = ThemeMode.entries.size
-                                ),
-                                onClick = { viewModel.setThemeMode(mode) },
-                                selected = themeMode == mode
-                            ) {
-                                Text(
-                                    when (mode) {
-                                        ThemeMode.LIGHT -> "Light"
-                                        ThemeMode.DARK -> "Dark"
-                                        ThemeMode.SYSTEM -> "System"
-                                    }
-                                )
-                            }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SettingsContent(
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Text(
+            text = "Appearance",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        ListItem(
+            headlineContent = { Text("Theme") },
+            supportingContent = {
+                SingleChoiceSegmentedButtonRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    ThemeMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = ThemeMode.entries.size
+                            ),
+                            onClick = { onThemeModeChange(mode) },
+                            selected = themeMode == mode
+                        ) {
+                            Text(
+                                when (mode) {
+                                    ThemeMode.LIGHT -> "Light"
+                                    ThemeMode.DARK -> "Dark"
+                                    ThemeMode.SYSTEM -> "System"
+                                }
+                            )
                         }
                     }
                 }
-            )
+            }
+        )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text(
-                text = "About",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        Text(
+            text = "About",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
-            ListItem(
-                headlineContent = { Text("NoCapFit") },
-                supportingContent = { Text("Fitness tracking app") }
-            )
-        }
+        ListItem(
+            headlineContent = { Text("NoCapFit") },
+            supportingContent = { Text("Fitness tracking app") }
+        )
     }
 }

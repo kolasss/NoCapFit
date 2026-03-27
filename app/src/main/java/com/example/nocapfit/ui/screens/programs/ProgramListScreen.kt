@@ -137,7 +137,7 @@ fun ProgramListScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProgramListItem(
+internal fun ProgramListItem(
     programWithExercises: ProgramWithExercises,
     onClick: () -> Unit,
     onDeleteRequest: () -> Unit,

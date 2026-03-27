@@ -107,7 +107,7 @@ fun WorkoutHistoryScreen(
 }
 
 @Composable
-private fun WorkoutHistoryContent(
+internal fun WorkoutHistoryContent(
     isLoading: Boolean,
     finished: List<WorkoutWithExercises>,
     grouped: Map<String, List<WorkoutWithExercises>>,
@@ -165,7 +165,7 @@ private fun WorkoutHistoryContent(
 }
 
 @Composable
-private fun WorkoutHistoryItem(
+internal fun WorkoutHistoryItem(
     workoutWithExercises: WorkoutWithExercises,
     onClick: () -> Unit,
     modifier: Modifier = Modifier

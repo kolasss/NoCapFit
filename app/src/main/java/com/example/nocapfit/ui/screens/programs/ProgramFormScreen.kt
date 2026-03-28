@@ -360,7 +360,10 @@ private fun ExercisePickerBottomSheet(
         if (searchQuery.isBlank()) {
             exercises
         } else {
-            exercises.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            exercises.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                    it.tags.contains(searchQuery, ignoreCase = true)
+            }
         }
     }
 
@@ -406,8 +409,8 @@ private fun ExercisePickerBottomSheet(
                     items(filteredExercises, key = { it.id }) { exercise ->
                         ListItem(
                             headlineContent = { Text(exercise.name) },
-                            supportingContent = if (exercise.description.isNotBlank()) {
-                                { Text(exercise.description) }
+                            supportingContent = if (exercise.tags.isNotBlank()) {
+                                { Text(exercise.tags) }
                             } else {
                                 null
                             },

@@ -25,6 +25,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE profileId = :profileId ORDER BY name ASC")
     fun getAllByProfile(profileId: Long): Flow<List<Exercise>>
 
-    @Query("SELECT * FROM exercises WHERE profileId = :profileId AND name LIKE '%' || :query || '%' ORDER BY name ASC")
+    @Query(
+        "SELECT * FROM exercises WHERE profileId = :profileId AND " +
+            "(name LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%') ORDER BY name ASC"
+    )
     fun searchByName(profileId: Long, query: String): Flow<List<Exercise>>
 }

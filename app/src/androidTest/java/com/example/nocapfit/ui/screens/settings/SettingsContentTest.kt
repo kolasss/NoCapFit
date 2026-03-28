@@ -21,7 +21,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -33,7 +36,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -45,7 +51,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -59,7 +68,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -71,7 +83,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -83,7 +98,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.DARK,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -96,7 +114,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
-                onThemeModeChange = { selectedMode = it }
+                onThemeModeChange = { selectedMode = it },
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 
@@ -109,7 +130,10 @@ class SettingsContentTest {
         composeTestRule.setThemedContent {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
-                onThemeModeChange = {}
+                onThemeModeChange = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {}
             )
         }
 

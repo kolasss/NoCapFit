@@ -2,7 +2,6 @@ package com.example.nocapfit.data.backup
 
 import android.content.ContentResolver
 import android.content.Context
-import android.database.Cursor
 import android.net.Uri
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.nocapfit.data.db.NoCapFitDatabase
@@ -12,6 +11,7 @@ import com.example.nocapfit.di.DatabaseModule
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
@@ -31,8 +31,7 @@ class BackupManagerTest {
     private val database = mockk<NoCapFitDatabase>(relaxUnitFun = true)
     private val context = mockk<Context>(relaxed = true)
     private val contentResolver = mockk<ContentResolver>()
-    private val sqliteDb = mockk<SupportSQLiteDatabase>()
-    private val cursor = mockk<Cursor>(relaxUnitFun = true)
+    private val sqliteDb = mockk<SupportSQLiteDatabase>(relaxUnitFun = true)
     private val workoutDao = mockk<WorkoutDao>()
 
     private lateinit var dbFile: File
@@ -45,25 +44,30 @@ class BackupManagerTest {
 
         every { context.contentResolver } returns contentResolver
         every { context.getDatabasePath(DatabaseModule.DATABASE_NAME) } returns dbFile
+        every { context.cacheDir } returns tempFolder.root
         every { database.openHelper.writableDatabase } returns sqliteDb
-        every { sqliteDb.query("PRAGMA wal_checkpoint(TRUNCATE)") } returns cursor
         every { database.workoutDao() } returns workoutDao
 
         backupManager = BackupManager(database, context)
     }
 
     @Test
-    fun exportDatabase_checkpointsWalBeforeCopying() = runTest {
+    fun exportDatabase_usesVacuumInto() = runTest {
         val outputStream = ByteArrayOutputStream()
         val uri = mockk<Uri>()
         every { contentResolver.openOutputStream(uri) } returns outputStream
 
+        // VACUUM INTO creates the temp file; simulate by writing content when execSQL is called
+        val tempFile = File(tempFolder.root, "backup_export.db")
+        val sqlSlot = slot<String>()
+        every { sqliteDb.execSQL(capture(sqlSlot)) } answers {
+            tempFile.writeText("backup data")
+        }
+
         val result = backupManager.exportDatabase(uri)
 
         assertTrue(result.isSuccess)
-        verify { sqliteDb.query("PRAGMA wal_checkpoint(TRUNCATE)") }
-        verify { cursor.close() }
-        verify { database.close() }
+        assertTrue(sqlSlot.captured.startsWith("VACUUM INTO"))
         assertTrue(outputStream.size() > 0)
     }
 
@@ -71,6 +75,11 @@ class BackupManagerTest {
     fun exportDatabase_returnsFailureOnNullOutputStream() = runTest {
         val uri = mockk<Uri>()
         every { contentResolver.openOutputStream(uri) } returns null
+
+        val tempFile = File(tempFolder.root, "backup_export.db")
+        every { sqliteDb.execSQL(any()) } answers {
+            tempFile.writeText("backup data")
+        }
 
         val result = backupManager.exportDatabase(uri)
 

@@ -22,22 +22,26 @@ class BackupManager @Inject constructor(
 
     suspend fun exportDatabase(destinationUri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            // Checkpoint WAL then close so all data is flushed to the main .db file
-            database.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
-                .close()
-            database.close()
+            // VACUUM INTO creates a complete standalone copy including all WAL data
+            // without closing the database, so Flow-based queries keep working
+            val tempFile = File(context.cacheDir, "backup_export.db")
+            try {
+                tempFile.delete()
+                database.openHelper.writableDatabase
+                    .execSQL("VACUUM INTO '${tempFile.absolutePath}'")
 
-            val dbFile = context.getDatabasePath(DatabaseModule.DATABASE_NAME)
-            val outputStream = context.contentResolver.openOutputStream(destinationUri)
-                ?: throw IOException("Cannot open output stream")
+                val outputStream = context.contentResolver.openOutputStream(destinationUri)
+                    ?: throw IOException("Cannot open output stream")
 
-            outputStream.use { out ->
-                dbFile.inputStream().use { input ->
-                    input.copyTo(out)
+                outputStream.use { out ->
+                    tempFile.inputStream().use { input ->
+                        input.copyTo(out)
+                    }
                 }
+                Unit
+            } finally {
+                tempFile.delete()
             }
-            Unit
         }
     }
 

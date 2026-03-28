@@ -1,27 +1,70 @@
 package com.example.nocapfit.ui.screens.settings
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nocapfit.data.backup.BackupManager
 import com.example.nocapfit.data.preferences.ThemeMode
 import com.example.nocapfit.data.preferences.ThemePreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface BackupEvent {
+    data object Idle : BackupEvent
+    data object Exporting : BackupEvent
+    data object Importing : BackupEvent
+    data class Success(val message: String) : BackupEvent
+    data class Error(val message: String) : BackupEvent
+    data object RestartRequired : BackupEvent
+}
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val themePreferences: ThemePreferences
+    private val themePreferences: ThemePreferences,
+    private val backupManager: BackupManager
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = themePreferences.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
 
+    private val _backupEvent = MutableStateFlow<BackupEvent>(BackupEvent.Idle)
+    val backupEvent: StateFlow<BackupEvent> = _backupEvent.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             themePreferences.setThemeMode(mode)
         }
+    }
+
+    fun exportDatabase(uri: Uri) {
+        viewModelScope.launch {
+            _backupEvent.value = BackupEvent.Exporting
+            backupManager.exportDatabase(uri).fold(
+                onSuccess = { _backupEvent.value = BackupEvent.Success("Backup exported") },
+                onFailure = { _backupEvent.value = BackupEvent.Error(it.message ?: "Export failed") }
+            )
+        }
+    }
+
+    fun importDatabase(uri: Uri) {
+        viewModelScope.launch {
+            _backupEvent.value = BackupEvent.Importing
+            backupManager.importDatabase(uri).fold(
+                onSuccess = { _backupEvent.value = BackupEvent.RestartRequired },
+                onFailure = { _backupEvent.value = BackupEvent.Error(it.message ?: "Import failed") }
+            )
+        }
+    }
+
+    suspend fun hasActiveWorkout(): Boolean = backupManager.hasActiveWorkout()
+
+    fun clearBackupEvent() {
+        _backupEvent.value = BackupEvent.Idle
     }
 }

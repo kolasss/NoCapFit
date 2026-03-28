@@ -1,17 +1,22 @@
 package com.example.nocapfit.ui.screens.settings
 
+import android.net.Uri
 import app.cash.turbine.test
 import com.example.nocapfit.MainDispatcherRule
+import com.example.nocapfit.data.backup.BackupManager
 import com.example.nocapfit.data.preferences.ThemeMode
 import com.example.nocapfit.data.preferences.ThemePreferences
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 class SettingsViewModelTest {
 
@@ -19,12 +24,18 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val themePreferences = mockk<ThemePreferences>(relaxUnitFun = true)
+    private val backupManager = mockk<BackupManager>(relaxUnitFun = true)
+
+    private fun createViewModel(): SettingsViewModel {
+        every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
+        return SettingsViewModel(themePreferences, backupManager)
+    }
 
     @Test
     fun themeMode_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.DARK)
 
-        val viewModel = SettingsViewModel(themePreferences)
+        val viewModel = SettingsViewModel(themePreferences, backupManager)
 
         viewModel.themeMode.test {
             assertEquals(ThemeMode.DARK, awaitItem())
@@ -33,11 +44,86 @@ class SettingsViewModelTest {
 
     @Test
     fun setThemeMode_callsPreferences() = runTest {
-        every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
-
-        val viewModel = SettingsViewModel(themePreferences)
+        val viewModel = createViewModel()
         viewModel.setThemeMode(ThemeMode.LIGHT)
 
         coVerify { themePreferences.setThemeMode(ThemeMode.LIGHT) }
+    }
+
+    @Test
+    fun exportDatabase_emitsSuccessOnCompletion() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { backupManager.exportDatabase(uri) } returns Result.success(Unit)
+
+        val viewModel = createViewModel()
+        viewModel.exportDatabase(uri)
+
+        val event = viewModel.backupEvent.value
+        assertTrue(
+            "Expected Success but got $event",
+            event is BackupEvent.Success
+        )
+    }
+
+    @Test
+    fun exportDatabase_emitsErrorOnFailure() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { backupManager.exportDatabase(uri) } returns Result.failure(IOException("Disk full"))
+
+        val viewModel = createViewModel()
+        viewModel.exportDatabase(uri)
+
+        val event = viewModel.backupEvent.value
+        assertTrue("Expected Error but got $event", event is BackupEvent.Error)
+        assertEquals("Disk full", (event as BackupEvent.Error).message)
+    }
+
+    @Test
+    fun importDatabase_emitsRestartRequiredOnSuccess() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { backupManager.importDatabase(uri) } returns Result.success(Unit)
+
+        val viewModel = createViewModel()
+        viewModel.importDatabase(uri)
+
+        assertEquals(BackupEvent.RestartRequired, viewModel.backupEvent.value)
+    }
+
+    @Test
+    fun importDatabase_emitsErrorOnInvalidFile() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { backupManager.importDatabase(uri) } returns
+            Result.failure(IllegalArgumentException("Not a valid database file"))
+
+        val viewModel = createViewModel()
+        viewModel.importDatabase(uri)
+
+        val event = viewModel.backupEvent.value
+        assertTrue("Expected Error but got $event", event is BackupEvent.Error)
+        assertEquals("Not a valid database file", (event as BackupEvent.Error).message)
+    }
+
+    @Test
+    fun clearBackupEvent_resetsToIdle() = runTest {
+        val uri = mockk<Uri>()
+        coEvery { backupManager.exportDatabase(uri) } returns Result.success(Unit)
+
+        val viewModel = createViewModel()
+        viewModel.exportDatabase(uri)
+        assertTrue(viewModel.backupEvent.value is BackupEvent.Success)
+
+        viewModel.clearBackupEvent()
+        assertEquals(BackupEvent.Idle, viewModel.backupEvent.value)
+    }
+
+    @Test
+    fun hasActiveWorkout_delegatesToBackupManager() = runTest {
+        coEvery { backupManager.hasActiveWorkout() } returns true
+
+        val viewModel = createViewModel()
+        val result = viewModel.hasActiveWorkout()
+
+        assertEquals(true, result)
+        coVerify { backupManager.hasActiveWorkout() }
     }
 }

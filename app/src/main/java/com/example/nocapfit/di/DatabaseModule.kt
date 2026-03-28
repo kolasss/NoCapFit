@@ -23,13 +23,15 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    const val DATABASE_NAME = "nocapfit.db"
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): NoCapFitDatabase {
         return Room.databaseBuilder(
             context,
             NoCapFitDatabase::class.java,
-            "nocapfit.db"
+            DATABASE_NAME
         )
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {

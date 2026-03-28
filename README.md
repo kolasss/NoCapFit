@@ -2,6 +2,8 @@
 
 A fitness tracking Android app for managing exercises, workout programs, and logging workouts with built-in rest timers.
 
+Vibe coded with Claude code.
+
 ## Features
 
 - **Exercise Library** — Create and manage custom exercises with descriptions and tags
@@ -34,9 +36,10 @@ A fitness tracking Android app for managing exercises, workout programs, and log
 ```bash
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 
-./gradlew build           # Build debug APK
-./gradlew test            # Run unit tests
-./gradlew detekt          # Run Detekt linting (auto-fixes formatting)
+./gradlew build                    # Build debug APK
+./gradlew test                     # Run unit tests
+./gradlew connectedAndroidTest     # Run Compose UI tests (requires device/emulator)
+./gradlew detekt                   # Run Detekt linting (auto-fixes formatting)
 ```
 
 Or open the project in Android Studio and run directly on an emulator or device.
@@ -56,4 +59,7 @@ app/src/main/java/com/example/nocapfit/
     ├── navigation/   # Screen routes and NavGraph
     ├── screens/      # Feature screens with ViewModels
     └── theme/        # Material 3 theming
+
+app/src/test/         # Unit tests (JUnit 4 + MockK + Turbine)
+app/src/androidTest/  # Compose UI tests (instrumented)
 ```

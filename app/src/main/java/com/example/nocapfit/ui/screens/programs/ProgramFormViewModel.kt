@@ -171,39 +171,29 @@ class ProgramFormViewModel @Inject constructor(
         _uiState.value = state.copy(isSaving = true)
 
         return try {
-            val savedProgramId: Long
-            if (isEditing) {
-                programRepository.update(
-                    Program(id = programId, profileId = profileId, name = state.name.trim())
+            val program = Program(
+                id = if (isEditing) programId else 0L,
+                profileId = profileId,
+                name = state.name.trim()
+            )
+            val exercises = state.exercises.mapIndexed { exerciseIndex, exerciseEntry ->
+                val pe = ProgramExercise(
+                    programId = 0L,
+                    exerciseId = exerciseEntry.exercise.id,
+                    orderIndex = exerciseIndex
                 )
-                programRepository.deleteExercisesForProgram(programId)
-                savedProgramId = programId
-            } else {
-                savedProgramId = programRepository.insert(
-                    Program(profileId = profileId, name = state.name.trim())
-                )
-            }
-
-            state.exercises.forEachIndexed { exerciseIndex, exerciseEntry ->
-                val programExerciseId = programRepository.insertProgramExercise(
-                    ProgramExercise(
-                        programId = savedProgramId,
-                        exerciseId = exerciseEntry.exercise.id,
-                        orderIndex = exerciseIndex
-                    )
-                )
-                exerciseEntry.sets.forEachIndexed { setIndex, setEntry ->
-                    programRepository.insertProgramExerciseSet(
-                        ProgramExerciseSet(
-                            programExerciseId = programExerciseId,
-                            setIndex = setIndex,
-                            weightThousandths = parseWeight(setEntry.weight),
-                            reps = setEntry.reps.toIntOrNull() ?: 0,
-                            restTimeSeconds = parseMmSsToSeconds(setEntry.restTimeSeconds)
-                        )
+                val sets = exerciseEntry.sets.mapIndexed { setIndex, setEntry ->
+                    ProgramExerciseSet(
+                        programExerciseId = 0L,
+                        setIndex = setIndex,
+                        weightThousandths = parseWeight(setEntry.weight),
+                        reps = setEntry.reps.toIntOrNull() ?: 0,
+                        restTimeSeconds = parseMmSsToSeconds(setEntry.restTimeSeconds)
                     )
                 }
+                pe to sets
             }
+            programRepository.saveProgramWithExercises(program, isEditing, exercises)
             true
         } catch (_: Exception) {
             _uiState.value = _uiState.value.copy(isSaving = false)

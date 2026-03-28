@@ -17,7 +17,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -37,8 +36,9 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     val workoutId: Long = savedStateHandle.get<Long>("workoutId") ?: -1L
 
-    private val _workout = MutableStateFlow<WorkoutWithExercises?>(null)
-    val workout: StateFlow<WorkoutWithExercises?> = _workout.asStateFlow()
+    val workout: StateFlow<WorkoutWithExercises?> = workoutRepository
+        .getWithExercisesFlow(workoutId)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val timerState: StateFlow<TimerCoordinator.TimerUiState> = timerCoordinator.timerState
 
@@ -56,17 +56,15 @@ class WorkoutInProgressViewModel @Inject constructor(
         viewModelScope.launch {
             val profile = profileRepository.getDefault()
             _profileId.value = profile?.id
-            refreshWorkout()
             timerCoordinator.reconstructState()
         }
     }
 
     fun completeSet(workoutSetId: Long, restTimeSeconds: Int) {
         viewModelScope.launch {
-            val workoutData = _workout.value ?: return@launch
+            val workoutData = workout.value ?: return@launch
             val set = findSet(workoutSetId) ?: return@launch
             workoutRepository.updateWorkoutSet(set.copy(completed = true))
-            refreshWorkout()
             timerCoordinator.startTimer(
                 workoutId = workoutData.workout.id,
                 workoutSetId = workoutSetId,
@@ -79,14 +77,19 @@ class WorkoutInProgressViewModel @Inject constructor(
         viewModelScope.launch {
             val set = findSet(workoutSetId) ?: return@launch
             workoutRepository.updateWorkoutSet(set.copy(completed = false))
-            refreshWorkout()
+
+            val currentTimer = timerCoordinator.timerState.value
+            if (currentTimer is TimerCoordinator.TimerUiState.Running &&
+                currentTimer.workoutSetId == workoutSetId
+            ) {
+                timerCoordinator.cancelTimer()
+            }
         }
     }
 
     fun updateSet(workoutSet: WorkoutSet) {
         viewModelScope.launch {
             workoutRepository.updateWorkoutSet(workoutSet)
-            refreshWorkout()
         }
     }
 
@@ -104,13 +107,12 @@ class WorkoutInProgressViewModel @Inject constructor(
                 completed = false
             )
             workoutRepository.insertWorkoutSet(newSet)
-            refreshWorkout()
         }
     }
 
     fun addExerciseFromDb(exerciseId: Long, exerciseName: String) {
         viewModelScope.launch {
-            val workoutData = _workout.value ?: return@launch
+            val workoutData = workout.value ?: return@launch
             val maxOrder = workoutData.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1
             val weId = workoutRepository.insertWorkoutExercise(
                 WorkoutExercise(
@@ -130,19 +132,17 @@ class WorkoutInProgressViewModel @Inject constructor(
                     completed = false
                 )
             )
-            refreshWorkout()
         }
     }
 
     fun removeExercise(workoutExerciseId: Long) {
         viewModelScope.launch {
             workoutRepository.deleteWorkoutExercise(workoutExerciseId)
-            refreshWorkout()
         }
     }
 
     fun finishWorkout(): Boolean {
-        val workoutData = _workout.value ?: return false
+        val workoutData = workout.value ?: return false
         viewModelScope.launch {
             workoutRepository.update(
                 workoutData.workout.copy(endTime = System.currentTimeMillis())
@@ -154,7 +154,7 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     fun cancelWorkout() {
         viewModelScope.launch {
-            val workoutData = _workout.value ?: return@launch
+            val workoutData = workout.value ?: return@launch
             timerCoordinator.cancelTimer()
             timerRepository.deleteByWorkoutId(workoutId)
             workoutRepository.delete(workoutData.workout)
@@ -167,12 +167,8 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
-    suspend fun refreshWorkout() {
-        _workout.value = workoutRepository.getWithExercises(workoutId)
-    }
-
     private fun findSet(workoutSetId: Long): WorkoutSet? {
-        return _workout.value?.exercises
+        return workout.value?.exercises
             ?.flatMap { it.sets }
             ?.find { it.id == workoutSetId }
     }

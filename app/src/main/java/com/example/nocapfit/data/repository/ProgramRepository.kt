@@ -21,9 +21,9 @@ class ProgramRepository @Inject constructor(
         profileId
     )
     suspend fun getProgramWithExercises(id: Long): ProgramWithExercises? = programDao.getProgramWithExercises(id)
-    suspend fun insertProgramExercise(programExercise: ProgramExercise): Long = programDao.insertProgramExercise(
-        programExercise
-    )
-    suspend fun insertProgramExerciseSet(set: ProgramExerciseSet): Long = programDao.insertProgramExerciseSet(set)
-    suspend fun deleteExercisesForProgram(programId: Long) = programDao.deleteExercisesForProgram(programId)
+    suspend fun saveProgramWithExercises(
+        program: Program,
+        isUpdate: Boolean,
+        exercises: List<Pair<ProgramExercise, List<ProgramExerciseSet>>>
+    ): Long = programDao.saveProgramWithExercises(program, isUpdate, exercises)
 }

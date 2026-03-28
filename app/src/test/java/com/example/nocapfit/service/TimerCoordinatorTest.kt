@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -218,5 +219,18 @@ class TimerCoordinatorTest {
         // Should be Idle, not Running — expired timers are completed immediately
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
         coVerify { timerRepository.completeTimer(2L) }
+    }
+
+    @Test
+    fun stableRequestCode_differentForIdsWithSameLower32Bits() {
+        val id1 = 1L
+        val id2 = 1L + Int.MAX_VALUE.toLong() + 1L
+        assertNotEquals(stableRequestCode(id1), stableRequestCode(id2))
+    }
+
+    @Test
+    fun stableRequestCode_consistentForSameId() {
+        val id = 123456789L
+        assertEquals(stableRequestCode(id), stableRequestCode(id))
     }
 }

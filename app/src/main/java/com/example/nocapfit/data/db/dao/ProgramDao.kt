@@ -42,4 +42,27 @@ interface ProgramDao {
 
     @Query("DELETE FROM program_exercises WHERE programId = :programId")
     suspend fun deleteExercisesForProgram(programId: Long)
+
+    @Transaction
+    suspend fun saveProgramWithExercises(
+        program: Program,
+        isUpdate: Boolean,
+        exercises: List<Pair<ProgramExercise, List<ProgramExerciseSet>>>
+    ): Long {
+        val programId: Long
+        if (isUpdate) {
+            update(program)
+            deleteExercisesForProgram(program.id)
+            programId = program.id
+        } else {
+            programId = insert(program)
+        }
+        for ((exercise, sets) in exercises) {
+            val peId = insertProgramExercise(exercise.copy(programId = programId))
+            for (set in sets) {
+                insertProgramExerciseSet(set.copy(programExerciseId = peId))
+            }
+        }
+        return programId
+    }
 }

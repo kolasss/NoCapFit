@@ -139,10 +139,8 @@ class ProgramFormViewModelTest {
     // --- Save success (create) ---
 
     @Test
-    fun save_createMode_callsInsertAndReturnsTrue() = runTest {
-        coEvery { programRepository.insert(any()) } returns 10L
-        coEvery { programRepository.insertProgramExercise(any()) } returns 20L
-        coEvery { programRepository.insertProgramExerciseSet(any()) } returns 30L
+    fun save_createMode_callsSaveProgramWithExercises() = runTest {
+        coEvery { programRepository.saveProgramWithExercises(any(), any(), any()) } returns 10L
 
         val viewModel = createViewModel()
         viewModel.updateName("Push Day")
@@ -151,19 +149,21 @@ class ProgramFormViewModelTest {
         val result = viewModel.save()
 
         assertTrue(result)
-        coVerify { programRepository.insert(match { it.name == "Push Day" }) }
-        coVerify { programRepository.insertProgramExercise(any()) }
-        coVerify { programRepository.insertProgramExerciseSet(any()) }
+        coVerify {
+            programRepository.saveProgramWithExercises(
+                match { it.name == "Push Day" && it.id == 0L },
+                eq(false),
+                match { it.size == 1 }
+            )
+        }
     }
 
     // --- Save success (edit) ---
 
     @Test
-    fun save_editMode_callsUpdateAndDeleteExercises() = runTest {
+    fun save_editMode_callsSaveProgramWithExercisesAsUpdate() = runTest {
         coEvery { programRepository.getProgramWithExercises(5L) } returns null
-        coEvery { programRepository.insert(any()) } returns 5L
-        coEvery { programRepository.insertProgramExercise(any()) } returns 20L
-        coEvery { programRepository.insertProgramExerciseSet(any()) } returns 30L
+        coEvery { programRepository.saveProgramWithExercises(any(), any(), any()) } returns 5L
 
         val viewModel = createViewModel(programId = 5L)
         viewModel.updateName("Updated Program")
@@ -172,7 +172,12 @@ class ProgramFormViewModelTest {
         val result = viewModel.save()
 
         assertTrue(result)
-        coVerify { programRepository.update(match { it.id == 5L && it.name == "Updated Program" }) }
-        coVerify { programRepository.deleteExercisesForProgram(5L) }
+        coVerify {
+            programRepository.saveProgramWithExercises(
+                match { it.id == 5L && it.name == "Updated Program" },
+                eq(true),
+                match { it.size == 1 }
+            )
+        }
     }
 }

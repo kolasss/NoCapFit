@@ -21,6 +21,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val LONG_HIGH_BITS_SHIFT = 32
+
+internal fun stableRequestCode(timerId: Long): Int =
+    (timerId xor (timerId ushr LONG_HIGH_BITS_SHIFT)).toInt()
+
 @Singleton
 class TimerCoordinator @Inject constructor(
     private val timerRepository: TimerRepository,
@@ -169,7 +174,7 @@ class TimerCoordinator @Inject constructor(
         }
         return PendingIntent.getBroadcast(
             context,
-            timerId.toInt(),
+            stableRequestCode(timerId),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

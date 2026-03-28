@@ -100,10 +100,28 @@ class AddWorkoutViewModelTest {
     }
 
     @Test
-    fun createWorkoutFromProgram_insertsWorkoutExercisesAndSets() = runTest {
-        coEvery { workoutRepository.insert(any()) } returns 42L
-        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 200L
-        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 300L
+    fun profileLoaded_isFalseWhenProfileIsNull() = runTest {
+        coEvery { profileRepository.getDefault() } returns null
+        every { programRepository.getAllWithExercises(any()) } returns flowOf(emptyList())
+        val viewModel = AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
+
+        viewModel.profileLoaded.test {
+            assertEquals(false, awaitItem())
+        }
+    }
+
+    @Test
+    fun profileLoaded_isTrueAfterProfileLoads() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.profileLoaded.test {
+            assertEquals(true, awaitItem())
+        }
+    }
+
+    @Test
+    fun createWorkoutFromProgram_insertsWorkoutWithExercisesTransactionally() = runTest {
+        coEvery { workoutRepository.insertWorkoutWithExercises(any(), any()) } returns 42L
         coEvery { programRepository.getProgramWithExercises(10L) } returns testProgram
         val viewModel = createViewModel()
 
@@ -111,27 +129,13 @@ class AddWorkoutViewModelTest {
 
         assertEquals(42L, workoutId)
         coVerify {
-            workoutRepository.insert(match { it.programName == "Push Day" && it.profileId == 1L })
-        }
-        coVerify {
-            workoutRepository.insertWorkoutExercise(
-                match {
-                    it.workoutId == 42L &&
-                        it.exerciseName == "Bench Press" &&
-                        it.exerciseId == 1L &&
-                        it.orderIndex == 0
-                }
-            )
-        }
-        coVerify {
-            workoutRepository.insertWorkoutSet(
-                match {
-                    it.workoutExerciseId == 200L &&
-                        it.setIndex == 0 &&
-                        it.weightThousandths == 60000 &&
-                        it.reps == 10 &&
-                        it.restTimeSeconds == 90 &&
-                        !it.completed
+            workoutRepository.insertWorkoutWithExercises(
+                match { it.programName == "Push Day" && it.profileId == 1L },
+                match { exercises ->
+                    exercises.size == 1 &&
+                        exercises[0].first.exerciseName == "Bench Press" &&
+                        exercises[0].second.size == 1 &&
+                        exercises[0].second[0].weightThousandths == 60000
                 }
             )
         }

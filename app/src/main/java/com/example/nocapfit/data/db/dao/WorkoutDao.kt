@@ -12,6 +12,7 @@ import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import kotlinx.coroutines.flow.Flow
 
+@Suppress("TooManyFunctions")
 @Dao
 interface WorkoutDao {
     @Insert
@@ -29,6 +30,10 @@ interface WorkoutDao {
     @Transaction
     @Query("SELECT * FROM workouts WHERE id = :id")
     suspend fun getWithExercises(id: Long): WorkoutWithExercises?
+
+    @Transaction
+    @Query("SELECT * FROM workouts WHERE id = :id")
+    fun getWithExercisesFlow(id: Long): Flow<WorkoutWithExercises?>
 
     @Transaction
     @Query("SELECT * FROM workouts WHERE profileId = :profileId ORDER BY startTime DESC")
@@ -54,4 +59,19 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :exerciseId ORDER BY setIndex ASC")
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet>
+
+    @Transaction
+    suspend fun insertWorkoutWithExercises(
+        workout: Workout,
+        exercisesWithSets: List<Pair<WorkoutExercise, List<WorkoutSet>>>
+    ): Long {
+        val workoutId = insert(workout)
+        for ((exercise, sets) in exercisesWithSets) {
+            val weId = insertWorkoutExercise(exercise.copy(workoutId = workoutId))
+            for (set in sets) {
+                insertWorkoutSet(set.copy(workoutExerciseId = weId))
+            }
+        }
+        return workoutId
+    }
 }

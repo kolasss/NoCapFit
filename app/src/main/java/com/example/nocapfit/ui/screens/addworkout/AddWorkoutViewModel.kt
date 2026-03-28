@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +30,10 @@ class AddWorkoutViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _profileId = MutableStateFlow<Long?>(null)
+
+    val profileLoaded: StateFlow<Boolean> = _profileId
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val programs: StateFlow<List<ProgramWithExercises>> = _profileId
         .flatMapLatest { profileId ->
@@ -58,31 +63,26 @@ class AddWorkoutViewModel @Inject constructor(
             startTime = System.currentTimeMillis(),
             endTime = null
         )
-        val workoutId = workoutRepository.insert(workout)
-
-        for (programExerciseWithSets in programWithExercises.exercises) {
-            val workoutExercise = WorkoutExercise(
-                workoutId = workoutId,
-                exerciseName = programExerciseWithSets.exercise.name,
-                exerciseId = programExerciseWithSets.exercise.id,
-                orderIndex = programExerciseWithSets.programExercise.orderIndex
+        val exercisesWithSets = programWithExercises.exercises.map { peWithSets ->
+            val we = WorkoutExercise(
+                workoutId = 0L,
+                exerciseName = peWithSets.exercise.name,
+                exerciseId = peWithSets.exercise.id,
+                orderIndex = peWithSets.programExercise.orderIndex
             )
-            val workoutExerciseId = workoutRepository.insertWorkoutExercise(workoutExercise)
-
-            for (programSet in programExerciseWithSets.sets) {
-                val workoutSet = WorkoutSet(
-                    workoutExerciseId = workoutExerciseId,
+            val sets = peWithSets.sets.map { programSet ->
+                WorkoutSet(
+                    workoutExerciseId = 0L,
                     setIndex = programSet.setIndex,
                     weightThousandths = programSet.weightThousandths,
                     reps = programSet.reps,
                     restTimeSeconds = programSet.restTimeSeconds,
                     completed = false
                 )
-                workoutRepository.insertWorkoutSet(workoutSet)
             }
+            we to sets
         }
-
-        return workoutId
+        return workoutRepository.insertWorkoutWithExercises(workout, exercisesWithSets)
     }
 
     suspend fun createEmptyWorkout(): Long {

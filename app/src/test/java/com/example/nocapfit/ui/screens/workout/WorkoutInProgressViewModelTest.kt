@@ -65,7 +65,7 @@ class WorkoutInProgressViewModelTest {
     )
 
     private fun createViewModel(): WorkoutInProgressViewModel {
-        coEvery { workoutRepository.getWithExercises(1L) } returns testWorkoutWithExercises
+        coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(testWorkoutWithExercises)
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         return WorkoutInProgressViewModel(
             workoutRepository,
@@ -92,7 +92,16 @@ class WorkoutInProgressViewModelTest {
     }
 
     @Test
-    fun revertSet_revertsCompletedFlag() = runTest {
+    fun revertSet_revertsCompletedFlagAndCancelsMatchingTimer() = runTest {
+        val runningState = TimerCoordinator.TimerUiState.Running(
+            timerId = 1L,
+            endAtEpochMs = System.currentTimeMillis() + 30_000L,
+            workoutId = 1L,
+            workoutSetId = 10L,
+            totalMs = 60_000L
+        )
+        coEvery { timerCoordinator.timerState } returns MutableStateFlow(runningState)
+
         val viewModel = createViewModel()
 
         viewModel.revertSet(10L)
@@ -100,6 +109,28 @@ class WorkoutInProgressViewModelTest {
         coVerify {
             workoutRepository.updateWorkoutSet(match { it.id == 10L && !it.completed })
         }
+        coVerify { timerCoordinator.cancelTimer() }
+    }
+
+    @Test
+    fun revertSet_doesNotCancelTimerForDifferentSet() = runTest {
+        val runningState = TimerCoordinator.TimerUiState.Running(
+            timerId = 1L,
+            endAtEpochMs = System.currentTimeMillis() + 30_000L,
+            workoutId = 1L,
+            workoutSetId = 99L,
+            totalMs = 60_000L
+        )
+        coEvery { timerCoordinator.timerState } returns MutableStateFlow(runningState)
+
+        val viewModel = createViewModel()
+
+        viewModel.revertSet(10L)
+
+        coVerify {
+            workoutRepository.updateWorkoutSet(match { it.id == 10L && !it.completed })
+        }
+        coVerify(exactly = 0) { timerCoordinator.cancelTimer() }
     }
 
     @Test

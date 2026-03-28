@@ -46,6 +46,7 @@ fun AddWorkoutScreen(
     viewModel: AddWorkoutViewModel = hiltViewModel()
 ) {
     val programs by viewModel.programs.collectAsState()
+    val profileLoaded by viewModel.profileLoaded.collectAsState()
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -79,6 +80,7 @@ fun AddWorkoutScreen(
 
             item {
                 QuickStartCard(onClick = {
+                    if (!profileLoaded) return@QuickStartCard
                     scope.launch {
                         val workoutId = viewModel.createEmptyWorkout()
                         navController.navigate(
@@ -103,6 +105,7 @@ fun AddWorkoutScreen(
                     ProgramCard(
                         programWithExercises = programWithExercises,
                         onClick = {
+                            if (!profileLoaded) return@ProgramCard
                             scope.launch {
                                 val workoutId = viewModel.createWorkoutFromProgram(
                                     programWithExercises.program.id

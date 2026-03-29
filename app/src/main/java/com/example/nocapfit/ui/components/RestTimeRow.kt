@@ -92,7 +92,7 @@ fun RestTimeRow(
                 while (true) {
                     remainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
                     if (remainingMs <= 0) break
-                    delay(100)
+                    delay(MILLIS_PER_SECOND)
                 }
             }
 
@@ -116,7 +116,7 @@ fun RestTimeRow(
                 label = { Text("Rest") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = MmSsVisualTransformation(),
+                visualTransformation = mmSsTransformation,
                 modifier = Modifier.width(100.dp)
             )
         } else {
@@ -131,3 +131,5 @@ fun RestTimeRow(
         }
     }
 }
+
+private val mmSsTransformation = MmSsVisualTransformation()

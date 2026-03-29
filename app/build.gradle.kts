@@ -15,7 +15,7 @@ android {
         minSdk = 36
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -27,6 +27,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
         }
     }
     compileOptions {
@@ -35,6 +36,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     compileSdkMinor = 1
     buildToolsVersion = "36.1.0"

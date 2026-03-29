@@ -87,13 +87,12 @@ fun WorkoutInProgressScreen(
     }
     BackHandler(onBack = onBack)
     KeepScreenOn()
-    val elapsedText = rememberElapsedTime(startTime = workout?.workout?.startTime)
 
     Scaffold(
         modifier = modifier,
         topBar = {
             WorkoutTopAppBar(
-                elapsedText = elapsedText,
+                startTime = workout?.workout?.startTime,
                 showOverflowMenu = showOverflowMenu,
                 onBackClick = onBack,
                 onFinishClick = { showFinishDialog = true },
@@ -110,7 +109,6 @@ fun WorkoutInProgressScreen(
             padding = padding,
             workout = workout,
             timerState = timerState,
-            elapsedText = elapsedText,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onUpdateSet = viewModel::updateSet,
@@ -181,7 +179,6 @@ private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
     timerState: TimerCoordinator.TimerUiState,
-    elapsedText: String,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
@@ -199,7 +196,9 @@ private fun WorkoutContent(
         return
     }
 
-    val sortedExercises = workout.exercises.sortedBy { it.workoutExercise.orderIndex }
+    val sortedExercises = remember(workout.exercises) {
+        workout.exercises.sortedBy { it.workoutExercise.orderIndex }
+    }
     val activeTimerSetId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
     val timerEndAtEpochMs = (timerState as? TimerCoordinator.TimerUiState.Running)
         ?.endAtEpochMs ?: 0L
@@ -208,7 +207,6 @@ private fun WorkoutContent(
         WorkoutExerciseList(
             sortedExercises = sortedExercises,
             timerState = timerState,
-            elapsedText = elapsedText,
             activeTimerSetId = activeTimerSetId,
             timerEndAtEpochMs = timerEndAtEpochMs,
             onRemoveExercise = onRemoveExercise,
@@ -235,7 +233,6 @@ private fun WorkoutContent(
 private fun WorkoutExerciseList(
     sortedExercises: List<com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
     timerState: TimerCoordinator.TimerUiState,
-    elapsedText: String,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
     onRemoveExercise: (Long) -> Unit,
@@ -263,8 +260,7 @@ private fun WorkoutExerciseList(
             WorkoutSummaryCard(
                 exerciseCount = sortedExercises.size,
                 completedSets = completedSets,
-                totalSets = totalSets,
-                elapsedText = elapsedText
+                totalSets = totalSets
             )
         }
 
@@ -272,8 +268,9 @@ private fun WorkoutExerciseList(
             ExerciseCard(
                 exerciseName = exerciseWithSets.workoutExercise.exerciseName,
                 sets = exerciseWithSets.sets,
-                onRemoveExercise = { onRemoveExercise(exerciseWithSets.workoutExercise.id) },
-                onAddSet = { onAddSet(exerciseWithSets.workoutExercise.id) },
+                workoutExerciseId = exerciseWithSets.workoutExercise.id,
+                onRemoveExercise = onRemoveExercise,
+                onAddSet = onAddSet,
                 onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
                 onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
                 onToggleComplete = { ws ->
@@ -285,8 +282,7 @@ private fun WorkoutExerciseList(
                 },
                 onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
                 activeTimerSetId = activeTimerSetId,
-                timerEndAtEpochMs = timerEndAtEpochMs,
-                modifier = Modifier.animateItem()
+                timerEndAtEpochMs = timerEndAtEpochMs
             )
         }
 
@@ -309,7 +305,7 @@ private fun WorkoutExerciseList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkoutTopAppBar(
-    elapsedText: String,
+    startTime: Long?,
     showOverflowMenu: Boolean,
     onBackClick: () -> Unit,
     onFinishClick: () -> Unit,
@@ -317,6 +313,7 @@ private fun WorkoutTopAppBar(
     onOverflowDismiss: () -> Unit,
     onCancelWorkoutClick: () -> Unit
 ) {
+    val elapsedText = rememberElapsedTime(startTime = startTime)
     TopAppBar(
         title = { Text(elapsedText) },
         navigationIcon = {
@@ -350,8 +347,7 @@ private fun WorkoutTopAppBar(
 private fun WorkoutSummaryCard(
     exerciseCount: Int,
     completedSets: Int,
-    totalSets: Int,
-    elapsedText: String
+    totalSets: Int
 ) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -378,17 +374,6 @@ private fun WorkoutSummaryCard(
                 )
                 Text(
                     text = "Sets",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = elapsedText,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Elapsed",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

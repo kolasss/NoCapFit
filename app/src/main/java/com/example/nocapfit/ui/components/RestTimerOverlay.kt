@@ -17,14 +17,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.nocapfit.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.delay
 
 @Composable
@@ -34,26 +35,26 @@ fun RestTimerOverlay(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalSec = totalMs / 1000L
-    val initialRemaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-    var currentRemainingMs by remember { mutableLongStateOf(initialRemaining) }
-    var progress by remember {
-        val remainingSec = initialRemaining / 1000L
-        mutableFloatStateOf(if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f)
+    val totalSec = totalMs / MILLIS_PER_SECOND
+    var currentRemainingMs by remember(endAtEpochMs) {
+        mutableLongStateOf((endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0))
+    }
+    val progress by remember {
+        derivedStateOf {
+            val remainingSec = currentRemainingMs / MILLIS_PER_SECOND
+            if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
+        }
     }
 
     LaunchedEffect(endAtEpochMs, totalMs) {
         while (true) {
-            val remaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-            currentRemainingMs = remaining
-            val remainingSec = remaining / 1000L
-            progress = if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
-            if (remaining <= 0) break
-            delay(100)
+            currentRemainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+            if (currentRemainingMs <= 0) break
+            delay(MILLIS_PER_SECOND)
         }
     }
 
-    val totalSeconds = (currentRemainingMs / 1000).coerceAtLeast(0)
+    val totalSeconds = (currentRemainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     val timeText = "%d:%02d".format(minutes, seconds)

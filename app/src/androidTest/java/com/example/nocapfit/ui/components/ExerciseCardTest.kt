@@ -32,6 +32,7 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
+                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -49,6 +50,7 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0), testSet(1), testSet(2)),
+                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -69,6 +71,7 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
+                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = { addSetClicked = true },
                 onWeightChange = { _, _ -> },
@@ -88,6 +91,7 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
+                workoutExerciseId = 1L,
                 onRemoveExercise = { removeClicked = true },
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -106,6 +110,7 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
+                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },

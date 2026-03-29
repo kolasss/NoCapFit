@@ -24,7 +24,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -39,7 +40,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -54,7 +56,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -71,7 +74,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -86,7 +90,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -101,7 +106,8 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -117,7 +123,8 @@ class SettingsContentTest {
                 onThemeModeChange = { selectedMode = it },
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
@@ -133,12 +140,13 @@ class SettingsContentTest {
                 onThemeModeChange = {},
                 isBackupInProgress = false,
                 onExportClick = {},
-                onImportClick = {}
+                onImportClick = {},
+                versionName = "1.0"
             )
         }
 
         composeTestRule.onNodeWithText("About").assertIsDisplayed()
         composeTestRule.onNodeWithText("NoCapFit").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Fitness tracking app").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Version 1.0").assertIsDisplayed()
     }
 }

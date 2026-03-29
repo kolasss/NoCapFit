@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.nocapfit.BuildConfig
 import com.example.nocapfit.data.preferences.ThemeMode
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -131,6 +132,7 @@ fun SettingsScreen(
             onImportClick = {
                 importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
             },
+            versionName = BuildConfig.VERSION_NAME,
             modifier = Modifier.padding(padding)
         )
     }
@@ -210,6 +212,7 @@ internal fun SettingsContent(
     isBackupInProgress: Boolean,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
+    versionName: String,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -292,7 +295,7 @@ internal fun SettingsContent(
 
         ListItem(
             headlineContent = { Text("NoCapFit") },
-            supportingContent = { Text("Fitness tracking app") }
+            supportingContent = { Text("Version $versionName") }
         )
     }
 }

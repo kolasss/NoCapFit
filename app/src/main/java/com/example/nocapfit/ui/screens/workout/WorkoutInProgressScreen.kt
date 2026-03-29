@@ -87,13 +87,12 @@ fun WorkoutInProgressScreen(
     }
     BackHandler(onBack = onBack)
     KeepScreenOn()
-    val elapsedText = rememberElapsedTime(startTime = workout?.workout?.startTime)
 
     Scaffold(
         modifier = modifier,
         topBar = {
             WorkoutTopAppBar(
-                elapsedText = elapsedText,
+                startTime = workout?.workout?.startTime,
                 showOverflowMenu = showOverflowMenu,
                 onBackClick = onBack,
                 onFinishClick = { showFinishDialog = true },
@@ -306,7 +305,7 @@ private fun WorkoutExerciseList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkoutTopAppBar(
-    elapsedText: String,
+    startTime: Long?,
     showOverflowMenu: Boolean,
     onBackClick: () -> Unit,
     onFinishClick: () -> Unit,
@@ -314,6 +313,7 @@ private fun WorkoutTopAppBar(
     onOverflowDismiss: () -> Unit,
     onCancelWorkoutClick: () -> Unit
 ) {
+    val elapsedText = rememberElapsedTime(startTime = startTime)
     TopAppBar(
         title = { Text(elapsedText) },
         navigationIcon = {

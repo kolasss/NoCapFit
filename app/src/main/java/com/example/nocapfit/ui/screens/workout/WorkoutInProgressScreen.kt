@@ -268,8 +268,9 @@ private fun WorkoutExerciseList(
             ExerciseCard(
                 exerciseName = exerciseWithSets.workoutExercise.exerciseName,
                 sets = exerciseWithSets.sets,
-                onRemoveExercise = { onRemoveExercise(exerciseWithSets.workoutExercise.id) },
-                onAddSet = { onAddSet(exerciseWithSets.workoutExercise.id) },
+                workoutExerciseId = exerciseWithSets.workoutExercise.id,
+                onRemoveExercise = onRemoveExercise,
+                onAddSet = onAddSet,
                 onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
                 onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
                 onToggleComplete = { ws ->
@@ -281,8 +282,7 @@ private fun WorkoutExerciseList(
                 },
                 onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
                 activeTimerSetId = activeTimerSetId,
-                timerEndAtEpochMs = timerEndAtEpochMs,
-                modifier = Modifier.animateItem()
+                timerEndAtEpochMs = timerEndAtEpochMs
             )
         }
 

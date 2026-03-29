@@ -116,7 +116,7 @@ fun RestTimeRow(
                 label = { Text("Rest") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = MmSsVisualTransformation(),
+                visualTransformation = MmSsTransformation,
                 modifier = Modifier.width(100.dp)
             )
         } else {
@@ -131,3 +131,5 @@ fun RestTimeRow(
         }
     }
 }
+
+private val MmSsTransformation = MmSsVisualTransformation()

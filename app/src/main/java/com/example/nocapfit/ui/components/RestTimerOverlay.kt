@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.nocapfit.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.delay
 
 @Composable
@@ -34,12 +35,13 @@ fun RestTimerOverlay(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalSec = totalMs / 1000L
-    val initialRemaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-    var currentRemainingMs by remember { mutableLongStateOf(initialRemaining) }
+    val totalSec = totalMs / MILLIS_PER_SECOND
+    var currentRemainingMs by remember(endAtEpochMs) {
+        mutableLongStateOf((endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0))
+    }
     val progress by remember {
         derivedStateOf {
-            val remainingSec = currentRemainingMs / 1000L
+            val remainingSec = currentRemainingMs / MILLIS_PER_SECOND
             if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
         }
     }
@@ -48,11 +50,11 @@ fun RestTimerOverlay(
         while (true) {
             currentRemainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
             if (currentRemainingMs <= 0) break
-            delay(1000)
+            delay(MILLIS_PER_SECOND)
         }
     }
 
-    val totalSeconds = (currentRemainingMs / 1000).coerceAtLeast(0)
+    val totalSeconds = (currentRemainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     val timeText = "%d:%02d".format(minutes, seconds)

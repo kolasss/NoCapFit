@@ -92,7 +92,7 @@ fun RestTimeRow(
                 while (true) {
                     remainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
                     if (remainingMs <= 0) break
-                    delay(100)
+                    delay(MILLIS_PER_SECOND)
                 }
             }
 

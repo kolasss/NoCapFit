@@ -110,7 +110,6 @@ fun WorkoutInProgressScreen(
             padding = padding,
             workout = workout,
             timerState = timerState,
-            elapsedText = elapsedText,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onUpdateSet = viewModel::updateSet,
@@ -181,7 +180,6 @@ private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
     timerState: TimerCoordinator.TimerUiState,
-    elapsedText: String,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
@@ -199,7 +197,9 @@ private fun WorkoutContent(
         return
     }
 
-    val sortedExercises = workout.exercises.sortedBy { it.workoutExercise.orderIndex }
+    val sortedExercises = remember(workout.exercises) {
+        workout.exercises.sortedBy { it.workoutExercise.orderIndex }
+    }
     val activeTimerSetId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
     val timerEndAtEpochMs = (timerState as? TimerCoordinator.TimerUiState.Running)
         ?.endAtEpochMs ?: 0L
@@ -208,7 +208,6 @@ private fun WorkoutContent(
         WorkoutExerciseList(
             sortedExercises = sortedExercises,
             timerState = timerState,
-            elapsedText = elapsedText,
             activeTimerSetId = activeTimerSetId,
             timerEndAtEpochMs = timerEndAtEpochMs,
             onRemoveExercise = onRemoveExercise,
@@ -235,7 +234,6 @@ private fun WorkoutContent(
 private fun WorkoutExerciseList(
     sortedExercises: List<com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
     timerState: TimerCoordinator.TimerUiState,
-    elapsedText: String,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
     onRemoveExercise: (Long) -> Unit,
@@ -263,8 +261,7 @@ private fun WorkoutExerciseList(
             WorkoutSummaryCard(
                 exerciseCount = sortedExercises.size,
                 completedSets = completedSets,
-                totalSets = totalSets,
-                elapsedText = elapsedText
+                totalSets = totalSets
             )
         }
 
@@ -350,8 +347,7 @@ private fun WorkoutTopAppBar(
 private fun WorkoutSummaryCard(
     exerciseCount: Int,
     completedSets: Int,
-    totalSets: Int,
-    elapsedText: String
+    totalSets: Int
 ) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -378,17 +374,6 @@ private fun WorkoutSummaryCard(
                 )
                 Text(
                     text = "Sets",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = elapsedText,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Elapsed",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

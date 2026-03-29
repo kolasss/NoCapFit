@@ -17,8 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,19 +37,18 @@ fun RestTimerOverlay(
     val totalSec = totalMs / 1000L
     val initialRemaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
     var currentRemainingMs by remember { mutableLongStateOf(initialRemaining) }
-    var progress by remember {
-        val remainingSec = initialRemaining / 1000L
-        mutableFloatStateOf(if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f)
+    val progress by remember {
+        derivedStateOf {
+            val remainingSec = currentRemainingMs / 1000L
+            if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
+        }
     }
 
     LaunchedEffect(endAtEpochMs, totalMs) {
         while (true) {
-            val remaining = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-            currentRemainingMs = remaining
-            val remainingSec = remaining / 1000L
-            progress = if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
-            if (remaining <= 0) break
-            delay(100)
+            currentRemainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+            if (currentRemainingMs <= 0) break
+            delay(1000)
         }
     }
 

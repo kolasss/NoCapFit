@@ -65,11 +65,13 @@ class WorkoutInProgressViewModel @Inject constructor(
             val workoutData = workout.value ?: return@launch
             val set = findSet(workoutSetId) ?: return@launch
             workoutRepository.updateWorkoutSet(set.copy(completed = true))
-            timerCoordinator.startTimer(
-                workoutId = workoutData.workout.id,
-                workoutSetId = workoutSetId,
-                durationSeconds = restTimeSeconds
-            )
+            if (restTimeSeconds > 0) {
+                timerCoordinator.startTimer(
+                    workoutId = workoutData.workout.id,
+                    workoutSetId = workoutSetId,
+                    durationSeconds = restTimeSeconds
+                )
+            }
         }
     }
 

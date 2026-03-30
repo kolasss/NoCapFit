@@ -65,7 +65,7 @@ class ExerciseCardTest {
     }
 
     @Test
-    fun addSetButton_triggersCallback() {
+    fun addSetMenuItem_triggersCallback() {
         var addSetClicked = false
         composeTestRule.setThemedContent {
             ExerciseCard(
@@ -80,12 +80,13 @@ class ExerciseCardTest {
             )
         }
 
-        composeTestRule.onNodeWithText("+ Add Set").performClick()
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Add Set").performClick()
         assertTrue(addSetClicked)
     }
 
     @Test
-    fun removeExerciseButton_triggersCallback() {
+    fun removeExerciseMenu_triggersCallbackAfterConfirmation() {
         var removeClicked = false
         composeTestRule.setThemedContent {
             ExerciseCard(
@@ -100,12 +101,14 @@ class ExerciseCardTest {
             )
         }
 
-        composeTestRule.onNodeWithContentDescription("Remove exercise").performClick()
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Remove Exercise").performClick()
+        composeTestRule.onNodeWithText("Remove").performClick()
         assertTrue(removeClicked)
     }
 
     @Test
-    fun rendersAddSetButton() {
+    fun rendersOverflowMenu() {
         composeTestRule.setThemedContent {
             ExerciseCard(
                 exerciseName = "Bench Press",
@@ -119,6 +122,6 @@ class ExerciseCardTest {
             )
         }
 
-        composeTestRule.onNodeWithText("+ Add Set").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("More").assertIsDisplayed()
     }
 }

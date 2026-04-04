@@ -7,14 +7,11 @@ import com.example.nocapfit.data.db.entity.Profile
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -63,44 +60,4 @@ class ExerciseListViewModelTest {
         }
     }
 
-    @Test
-    fun showAddDialog_setsStateTrue() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.showAddDialog()
-
-        viewModel.showAddDialog.test {
-            assertTrue(awaitItem())
-        }
-    }
-
-    @Test
-    fun dismissAddDialog_setsStateFalse() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.showAddDialog()
-        viewModel.dismissAddDialog()
-
-        viewModel.showAddDialog.test {
-            assertFalse(awaitItem())
-        }
-    }
-
-    @Test
-    fun addExercise_callsRepositoryAndDismisses() = runTest {
-        coEvery { exerciseRepository.insert(any()) } returns 3L
-        val viewModel = createViewModel()
-
-        viewModel.showAddDialog()
-        viewModel.addExercise("Deadlift", "Compound lift", "back")
-
-        coVerify {
-            exerciseRepository.insert(
-                match {
-                    it.name == "Deadlift" && it.description == "Compound lift" && it.tags == "back"
-                }
-            )
-        }
-        viewModel.showAddDialog.test { assertFalse(awaitItem()) }
-    }
 }

@@ -3,7 +3,6 @@ package com.example.nocapfit.ui.screens.settings
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
-import androidx.core.net.toUri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -40,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.BuildConfig
@@ -319,9 +319,9 @@ private fun createRingtonePickerIntent(currentUri: String?): Intent {
         putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
-        val existingUri = when {
-            currentUri == null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            currentUri == NOTIFICATION_SOUND_SILENT -> null
+        val existingUri = when (currentUri) {
+            null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            NOTIFICATION_SOUND_SILENT -> null
             else -> currentUri.toUri()
         }
         putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existingUri)
@@ -373,9 +373,9 @@ private fun ThemeSection(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) ->
 private fun TimerSoundItem(soundUri: String?, onClick: () -> Unit) {
     val context = LocalContext.current
     val soundName = remember(soundUri) {
-        when {
-            soundUri == null -> "Default"
-            soundUri == NOTIFICATION_SOUND_SILENT -> "Silent"
+        when (soundUri) {
+            null -> "Default"
+            NOTIFICATION_SOUND_SILENT -> "Silent"
             else -> try {
                 val uri = soundUri.toUri()
                 RingtoneManager.getRingtone(context, uri)?.getTitle(context) ?: "Unknown"

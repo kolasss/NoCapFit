@@ -47,7 +47,6 @@ fun ExerciseListScreen(
 ) {
     val exercises by viewModel.exercises.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val showAddDialog by viewModel.showAddDialog.collectAsState()
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
@@ -62,7 +61,7 @@ fun ExerciseListScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
+                onClick = { navController.navigate(Screen.ExerciseForm.createRoute()) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("New Exercise") },
                 expanded = !isScrolled
@@ -73,24 +72,11 @@ fun ExerciseListScreen(
             exercises = exercises,
             searchQuery = searchQuery,
             onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-            onShowAddDialog = { viewModel.showAddDialog() },
+            onShowAddDialog = { navController.navigate(Screen.ExerciseForm.createRoute()) },
             onExerciseClick = { exercise ->
                 navController.navigate(Screen.ExerciseDetail.createRoute(exercise.id))
             },
             modifier = Modifier.padding(padding)
-        )
-    }
-
-    if (showAddDialog) {
-        ExerciseFormSheet(
-            title = "Add Exercise",
-            initialName = "",
-            initialDescription = "",
-            initialTags = "",
-            onDismiss = { viewModel.dismissAddDialog() },
-            onConfirm = { name, description, tags ->
-                viewModel.addExercise(name, description, tags)
-            }
         )
     }
 }

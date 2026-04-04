@@ -22,6 +22,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE id = :id")
     suspend fun getById(id: Long): Exercise?
 
+    @Query("SELECT * FROM exercises WHERE id = :id")
+    fun getByIdFlow(id: Long): Flow<Exercise?>
+
     @Query("SELECT * FROM exercises WHERE profileId = :profileId ORDER BY name ASC")
     fun getAllByProfile(profileId: Long): Flow<List<Exercise>>
 

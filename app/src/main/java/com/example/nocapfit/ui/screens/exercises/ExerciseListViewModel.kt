@@ -30,9 +30,6 @@ class ExerciseListViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _showAddDialog = MutableStateFlow(false)
-    val showAddDialog: StateFlow<Boolean> = _showAddDialog.asStateFlow()
-
     val exercises: StateFlow<List<Exercise>> = combine(_profileId, _searchQuery) { profileId, query ->
         profileId to query
     }.flatMapLatest { (profileId, query) ->
@@ -54,28 +51,5 @@ class ExerciseListViewModel @Inject constructor(
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
-    }
-
-    fun showAddDialog() {
-        _showAddDialog.value = true
-    }
-
-    fun dismissAddDialog() {
-        _showAddDialog.value = false
-    }
-
-    fun addExercise(name: String, description: String, tags: String) {
-        val profileId = _profileId.value ?: return
-        viewModelScope.launch {
-            exerciseRepository.insert(
-                Exercise(
-                    profileId = profileId,
-                    name = name.trim(),
-                    description = description.trim(),
-                    tags = tags.trim()
-                )
-            )
-            _showAddDialog.value = false
-        }
     }
 }

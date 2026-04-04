@@ -5,9 +5,10 @@ import app.cash.turbine.test
 import com.example.nocapfit.MainDispatcherRule
 import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.repository.ExerciseRepository
-import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +33,7 @@ class ExerciseDetailViewModelTest {
     )
 
     private fun createViewModel(): ExerciseDetailViewModel {
-        coEvery { exerciseRepository.getById(1L) } returns testExercise
+        every { exerciseRepository.getByIdFlow(1L) } returns flowOf(testExercise)
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 1L))
         return ExerciseDetailViewModel(exerciseRepository, savedStateHandle)
     }
@@ -44,25 +45,6 @@ class ExerciseDetailViewModelTest {
         viewModel.exercise.test {
             assertEquals(testExercise, awaitItem())
         }
-    }
-
-    @Test
-    fun showEditDialog_setsStateTrue() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.showEditDialog()
-
-        viewModel.showEditDialog.test { assertTrue(awaitItem()) }
-    }
-
-    @Test
-    fun dismissEditDialog_setsStateFalse() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.showEditDialog()
-        viewModel.dismissEditDialog()
-
-        viewModel.showEditDialog.test { assertFalse(awaitItem()) }
     }
 
     @Test
@@ -85,22 +67,14 @@ class ExerciseDetailViewModelTest {
     }
 
     @Test
-    fun updateExercise_callsRepositoryAndUpdatesState() = runTest {
-        val viewModel = createViewModel()
-        val updated = testExercise.copy(name = "Incline Bench Press")
-
-        viewModel.showEditDialog()
-        viewModel.updateExercise(updated)
-
-        coVerify { exerciseRepository.update(updated) }
-        viewModel.exercise.test { assertEquals(updated, awaitItem()) }
-        viewModel.showEditDialog.test { assertFalse(awaitItem()) }
-    }
-
-    @Test
     fun deleteExercise_callsRepositoryAndInvokesCallback() = runTest {
         val viewModel = createViewModel()
         var callbackInvoked = false
+
+        // Wait for exercise to load before deleting
+        viewModel.exercise.test {
+            assertEquals(testExercise, awaitItem())
+        }
 
         viewModel.deleteExercise { callbackInvoked = true }
 
@@ -110,7 +84,7 @@ class ExerciseDetailViewModelTest {
 
     @Test
     fun exercise_returnsNullWhenNotFound() = runTest {
-        coEvery { exerciseRepository.getById(99L) } returns null
+        every { exerciseRepository.getByIdFlow(99L) } returns flowOf(null)
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 99L))
         val viewModel = ExerciseDetailViewModel(exerciseRepository, savedStateHandle)
 

@@ -14,6 +14,7 @@ class ExerciseRepository @Inject constructor(
     suspend fun update(exercise: Exercise) = exerciseDao.update(exercise)
     suspend fun delete(exercise: Exercise) = exerciseDao.delete(exercise)
     suspend fun getById(id: Long): Exercise? = exerciseDao.getById(id)
+    fun getByIdFlow(id: Long): Flow<Exercise?> = exerciseDao.getByIdFlow(id)
     fun getAllByProfile(profileId: Long): Flow<List<Exercise>> = exerciseDao.getAllByProfile(profileId)
     fun searchByName(profileId: Long, query: String): Flow<List<Exercise>> = exerciseDao.searchByName(profileId, query)
 }

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.entity.Exercise
+import com.example.nocapfit.ui.navigation.Screen
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.model.markdownPadding
 
@@ -45,7 +46,6 @@ fun ExerciseDetailScreen(
     viewModel: ExerciseDetailViewModel = hiltViewModel()
 ) {
     val exercise by viewModel.exercise.collectAsState()
-    val showEditDialog by viewModel.showEditDialog.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -60,8 +60,12 @@ fun ExerciseDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.showEditDialog() }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    exercise?.let { ex ->
+                        IconButton(onClick = {
+                            navController.navigate(Screen.ExerciseForm.createRoute(ex.id))
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
                     }
                     IconButton(onClick = { viewModel.showDeleteConfirmation() }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")
@@ -77,15 +81,29 @@ fun ExerciseDetailScreen(
         )
     }
 
-    ExerciseDetailDialogs(
-        exercise = exercise,
-        showEditDialog = showEditDialog,
-        showDeleteConfirmation = showDeleteConfirmation,
-        onDismissEdit = { viewModel.dismissEditDialog() },
-        onUpdateExercise = { viewModel.updateExercise(it) },
-        onDismissDelete = { viewModel.dismissDeleteConfirmation() },
-        onConfirmDelete = { viewModel.deleteExercise { navController.popBackStack() } }
-    )
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
+            title = { Text("Delete Exercise") },
+            text = {
+                Text(
+                    "Are you sure you want to delete \"${exercise?.name}\"? This action cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.deleteExercise { navController.popBackStack() } }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -127,57 +145,5 @@ private fun ExerciseDetailContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun ExerciseDetailDialogs(
-    exercise: Exercise?,
-    showEditDialog: Boolean,
-    showDeleteConfirmation: Boolean,
-    onDismissEdit: () -> Unit,
-    onUpdateExercise: (Exercise) -> Unit,
-    onDismissDelete: () -> Unit,
-    onConfirmDelete: () -> Unit
-) {
-    if (showEditDialog && exercise != null) {
-        ExerciseFormSheet(
-            title = "Edit Exercise",
-            initialName = exercise.name,
-            initialDescription = exercise.description,
-            initialTags = exercise.tags,
-            onDismiss = onDismissEdit,
-            onConfirm = { name, description, tags ->
-                onUpdateExercise(
-                    exercise.copy(
-                        name = name.trim(),
-                        description = description.trim(),
-                        tags = tags.trim()
-                    )
-                )
-            }
-        )
-    }
-
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = onDismissDelete,
-            title = { Text("Delete Exercise") },
-            text = {
-                Text(
-                    "Are you sure you want to delete \"${exercise?.name}\"? This action cannot be undone."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = onConfirmDelete) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissDelete) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }

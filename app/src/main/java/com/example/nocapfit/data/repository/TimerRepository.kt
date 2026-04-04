@@ -4,9 +4,9 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
-import androidx.core.net.toUri
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.core.net.toUri
 import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer

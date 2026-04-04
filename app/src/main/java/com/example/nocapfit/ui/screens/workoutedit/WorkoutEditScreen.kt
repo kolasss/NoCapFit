@@ -141,7 +141,8 @@ internal fun WorkoutEditContent(
                 onAddSet = onAddSet,
                 onWeightChange = { ws, w -> onUpdateSet(ws, w) },
                 onRepsChange = { ws, r -> onUpdateReps(ws, r) },
-                onToggleComplete = { ws -> onToggleComplete(ws) }
+                onToggleComplete = { ws -> onToggleComplete(ws) },
+                showRestTime = false
             )
         }
 

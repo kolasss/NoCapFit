@@ -43,7 +43,8 @@ fun ExerciseCard(
     modifier: Modifier = Modifier,
     onRestTimeChange: ((WorkoutSet, Int) -> Unit)? = null,
     activeTimerSetId: Long? = null,
-    timerEndAtEpochMs: Long = 0L
+    timerEndAtEpochMs: Long = 0L,
+    showRestTime: Boolean = true
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
     val accentColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -86,16 +87,18 @@ fun ExerciseCard(
                     onRepsChange = { newReps -> onRepsChange(workoutSet, newReps) },
                     onToggleComplete = { onToggleComplete(workoutSet) }
                 )
-                RestTimeRow(
-                    restTimeSeconds = workoutSet.restTimeSeconds,
-                    onRestTimeChange = if (onRestTimeChange != null) {
-                        { newSeconds -> onRestTimeChange(workoutSet, newSeconds) }
-                    } else {
-                        null
-                    },
-                    isTimerActive = activeTimerSetId == workoutSet.id,
-                    timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L
-                )
+                if (showRestTime) {
+                    RestTimeRow(
+                        restTimeSeconds = workoutSet.restTimeSeconds,
+                        onRestTimeChange = if (onRestTimeChange != null) {
+                            { newSeconds -> onRestTimeChange(workoutSet, newSeconds) }
+                        } else {
+                            null
+                        },
+                        isTimerActive = activeTimerSetId == workoutSet.id,
+                        timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L
+                    )
+                }
             }
         }
     }

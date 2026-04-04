@@ -1,6 +1,7 @@
 package com.example.nocapfit.ui.screens.workout
 
 import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
 import com.example.nocapfit.MainDispatcherRule
 import com.example.nocapfit.data.db.entity.Workout
 import com.example.nocapfit.data.db.entity.WorkoutExercise
@@ -84,6 +85,7 @@ class WorkoutInProgressViewModelTest {
 
     private fun createViewModel(): WorkoutInProgressViewModel {
         coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(testWorkoutWithExercises)
+        coEvery { workoutRepository.getWithExercises(1L) } returns testWorkoutWithExercises
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         return WorkoutInProgressViewModel(
             workoutRepository,
@@ -99,6 +101,7 @@ class WorkoutInProgressViewModelTest {
     fun completeSet_marksCompletedAndStartsTimer() = runTest {
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.completeSet(10L, 60)
 
         coVerify {
@@ -122,6 +125,7 @@ class WorkoutInProgressViewModelTest {
 
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.revertSet(10L)
 
         coVerify {
@@ -143,6 +147,7 @@ class WorkoutInProgressViewModelTest {
 
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.revertSet(10L)
 
         coVerify {
@@ -189,6 +194,7 @@ class WorkoutInProgressViewModelTest {
     fun finishWorkout_setsEndTimeAndCancelsTimer() = runTest {
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         val result = viewModel.finishWorkout()
 
         assertTrue(result)
@@ -202,6 +208,7 @@ class WorkoutInProgressViewModelTest {
     fun cancelWorkout_deletesWorkoutAndTimers() = runTest {
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.cancelWorkout()
 
         coVerify { timerCoordinator.cancelTimer() }
@@ -213,13 +220,14 @@ class WorkoutInProgressViewModelTest {
     fun moveExercise_swapsOrderIndexes() = runTest {
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.moveExercise(100L, 1)
 
         coVerify {
-            workoutRepository.updateWorkoutExercise(match { it.id == 100L && it.orderIndex == 1 })
-        }
-        coVerify {
-            workoutRepository.updateWorkoutExercise(match { it.id == 200L && it.orderIndex == 0 })
+            workoutRepository.swapExerciseOrder(
+                match { it.id == 100L && it.orderIndex == 1 },
+                match { it.id == 200L && it.orderIndex == 0 }
+            )
         }
     }
 
@@ -227,9 +235,10 @@ class WorkoutInProgressViewModelTest {
     fun moveExercise_outOfBounds_doesNothing() = runTest {
         val viewModel = createViewModel()
 
+        viewModel.workout.test { awaitItem() }
         viewModel.moveExercise(100L, -1)
 
-        coVerify(exactly = 0) { workoutRepository.updateWorkoutExercise(any()) }
+        coVerify(exactly = 0) { workoutRepository.swapExerciseOrder(any(), any()) }
     }
 
     @Test
@@ -239,8 +248,11 @@ class WorkoutInProgressViewModelTest {
             exercises = listOf(
                 WorkoutExerciseWithSets(
                     workoutExercise = WorkoutExercise(
-                        id = 100L, workoutId = 1L, exerciseName = "Bench Press",
-                        exerciseId = 1L, orderIndex = 0
+                        id = 100L,
+                        workoutId = 1L,
+                        exerciseName = "Bench Press",
+                        exerciseId = 1L,
+                        orderIndex = 0
                     ),
                     sets = listOf(testSet)
                 )
@@ -251,13 +263,20 @@ class WorkoutInProgressViewModelTest {
             exercises = listOf(
                 WorkoutExerciseWithSets(
                     workoutExercise = WorkoutExercise(
-                        id = 300L, workoutId = 99L, exerciseName = "Bench Press",
-                        exerciseId = 1L, orderIndex = 0
+                        id = 300L,
+                        workoutId = 99L,
+                        exerciseName = "Bench Press",
+                        exerciseId = 1L,
+                        orderIndex = 0
                     ),
                     sets = listOf(
                         WorkoutSet(
-                            id = 30L, workoutExerciseId = 300L, setIndex = 0,
-                            weightThousandths = 60000, reps = 10, restTimeSeconds = 60,
+                            id = 30L,
+                            workoutExerciseId = 300L,
+                            setIndex = 0,
+                            weightThousandths = 60000,
+                            reps = 10,
+                            restTimeSeconds = 60,
                             completed = true
                         )
                     )
@@ -265,11 +284,16 @@ class WorkoutInProgressViewModelTest {
             )
         )
         coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(workoutWithProgram)
+        coEvery { workoutRepository.getWithExercises(1L) } returns workoutWithProgram
         coEvery { workoutRepository.getLastFinishedByProgramId(5L, 1L) } returns previousWorkout
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         val viewModel = WorkoutInProgressViewModel(
-            workoutRepository, timerRepository, exerciseRepository,
-            profileRepository, savedStateHandle, timerCoordinator
+            workoutRepository,
+            timerRepository,
+            exerciseRepository,
+            profileRepository,
+            savedStateHandle,
+            timerCoordinator
         )
 
         val prev = viewModel.previousSets.value

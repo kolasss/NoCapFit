@@ -45,7 +45,7 @@ class BackupManager @Inject constructor(
         }
     }
 
-    suspend fun importDatabase(sourceUri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun validateBackup(sourceUri: Uri): Result<ByteArray> = withContext(Dispatchers.IO) {
         runCatching {
             val inputStream = context.contentResolver.openInputStream(sourceUri)
                 ?: throw IOException("Cannot open input stream")
@@ -57,15 +57,19 @@ class BackupManager @Inject constructor(
                     String(bytes, 0, SQLITE_HEADER.length, Charsets.US_ASCII) == SQLITE_HEADER
             ) { "Not a valid database file" }
 
-            database.close()
+            bytes
+        }
+    }
 
-            val dbFile = context.getDatabasePath(DatabaseModule.DATABASE_NAME)
-            File(dbFile.path + "-wal").delete()
-            File(dbFile.path + "-shm").delete()
+    fun applyBackup(bytes: ByteArray) {
+        database.close()
 
-            dbFile.outputStream().use { out ->
-                out.write(bytes)
-            }
+        val dbFile = context.getDatabasePath(DatabaseModule.DATABASE_NAME)
+        File(dbFile.path + "-wal").delete()
+        File(dbFile.path + "-shm").delete()
+
+        dbFile.outputStream().use { out ->
+            out.write(bytes)
         }
     }
 

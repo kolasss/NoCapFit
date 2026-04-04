@@ -35,7 +35,7 @@ class WorkoutEditViewModel @Inject constructor(
 
     val workout: StateFlow<WorkoutWithExercises?> = workoutRepository
         .getWithExercisesFlow(workoutId)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _profileId = MutableStateFlow<Long?>(null)
 
@@ -112,15 +112,16 @@ class WorkoutEditViewModel @Inject constructor(
         val current = exercises[currentIndex].workoutExercise
         val target = exercises[targetIndex].workoutExercise
         viewModelScope.launch {
-            workoutRepository.updateWorkoutExercise(current.copy(orderIndex = target.orderIndex))
-            workoutRepository.updateWorkoutExercise(target.copy(orderIndex = current.orderIndex))
+            workoutRepository.swapExerciseOrder(
+                current.copy(orderIndex = target.orderIndex),
+                target.copy(orderIndex = current.orderIndex)
+            )
         }
     }
 
     fun addExercise(exerciseId: Long, exerciseName: String) {
         viewModelScope.launch {
-            val workoutData = workout.value ?: return@launch
-            val maxOrder = workoutData.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1
+            val maxOrder = workoutRepository.getMaxOrderIndex(workoutId)
             val weId = workoutRepository.insertWorkoutExercise(
                 WorkoutExercise(
                     workoutId = workoutId,

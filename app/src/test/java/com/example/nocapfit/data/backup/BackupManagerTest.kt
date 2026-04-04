@@ -87,42 +87,50 @@ class BackupManagerTest {
     }
 
     @Test
-    fun importDatabase_rejectsInvalidSqliteHeader() = runTest {
+    fun validateBackup_rejectsInvalidSqliteHeader() = runTest {
         val uri = mockk<Uri>()
         val invalidData = "This is not a database file".toByteArray()
         every { contentResolver.openInputStream(uri) } returns ByteArrayInputStream(invalidData)
 
-        val result = backupManager.importDatabase(uri)
+        val result = backupManager.validateBackup(uri)
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IllegalArgumentException)
     }
 
     @Test
-    fun importDatabase_closesDatabaseBeforeCopying() = runTest {
+    fun validateBackup_returnsBytesWithoutClosingDatabase() = runTest {
         val uri = mockk<Uri>()
         val validHeader = "SQLite format 3\u0000".toByteArray() + ByteArray(100)
         every { contentResolver.openInputStream(uri) } returns ByteArrayInputStream(validHeader)
 
-        val result = backupManager.importDatabase(uri)
+        val result = backupManager.validateBackup(uri)
 
         assertTrue(result.isSuccess)
+        assertTrue(result.getOrThrow().contentEquals(validHeader))
+        verify(exactly = 0) { database.close() }
+    }
+
+    @Test
+    fun applyBackup_closesDatabaseAndWritesFile() {
+        val validHeader = "SQLite format 3\u0000".toByteArray() + ByteArray(100)
+
+        backupManager.applyBackup(validHeader)
+
         verify { database.close() }
         assertTrue(dbFile.readBytes().contentEquals(validHeader))
     }
 
     @Test
-    fun importDatabase_deletesWalAndShmFiles() = runTest {
+    fun applyBackup_deletesWalAndShmFiles() {
         val walFile = File(dbFile.path + "-wal")
         val shmFile = File(dbFile.path + "-shm")
         walFile.writeText("wal data")
         shmFile.writeText("shm data")
 
-        val uri = mockk<Uri>()
         val validHeader = "SQLite format 3\u0000".toByteArray() + ByteArray(100)
-        every { contentResolver.openInputStream(uri) } returns ByteArrayInputStream(validHeader)
 
-        backupManager.importDatabase(uri)
+        backupManager.applyBackup(validHeader)
 
         assertTrue(!walFile.exists())
         assertTrue(!shmFile.exists())

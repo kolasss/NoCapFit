@@ -102,7 +102,8 @@ fun SettingsScreen(
             importUri = null
             viewModel.importDatabase(uri)
         },
-        onImportDismiss = { importUri = null }
+        onImportDismiss = { importUri = null },
+        onApplyAndRestart = { viewModel.applyPendingBackup() }
     )
 
     Scaffold(
@@ -185,13 +186,14 @@ private fun ImportConfirmDialog(
 }
 
 @Composable
-private fun RestartDialog(context: android.content.Context) {
+private fun RestartDialog(context: android.content.Context, onApplyAndRestart: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
         title = { Text("Data Restored") },
         text = { Text("Data restored successfully. The app will restart.") },
         confirmButton = {
             TextButton(onClick = {
+                onApplyAndRestart()
                 val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                 intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 context.startActivity(intent)
@@ -287,7 +289,8 @@ private fun BackupDialogs(
     hasActiveWorkout: Boolean,
     backupEvent: BackupEvent,
     onImportConfirm: (Uri) -> Unit,
-    onImportDismiss: () -> Unit
+    onImportDismiss: () -> Unit,
+    onApplyAndRestart: () -> Unit
 ) {
     if (importUri != null) {
         ImportConfirmDialog(
@@ -298,7 +301,10 @@ private fun BackupDialogs(
     }
 
     if (backupEvent is BackupEvent.RestartRequired) {
-        RestartDialog(context = LocalContext.current)
+        RestartDialog(
+            context = LocalContext.current,
+            onApplyAndRestart = onApplyAndRestart
+        )
     }
 }
 

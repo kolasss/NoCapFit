@@ -39,7 +39,7 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     val workout: StateFlow<WorkoutWithExercises?> = workoutRepository
         .getWithExercisesFlow(workoutId)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val timerState: StateFlow<TimerCoordinator.TimerUiState> = timerCoordinator.timerState
 
@@ -66,7 +66,7 @@ class WorkoutInProgressViewModel @Inject constructor(
     }
 
     private suspend fun loadPreviousWorkoutData() {
-        val currentWorkout = workout.value ?: return
+        val currentWorkout = workoutRepository.getWithExercises(workoutId) ?: return
         val programId = currentWorkout.workout.programId ?: return
         val previous = workoutRepository.getLastFinishedByProgramId(programId, workoutId) ?: return
         val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
@@ -133,8 +133,7 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     fun addExerciseFromDb(exerciseId: Long, exerciseName: String) {
         viewModelScope.launch {
-            val workoutData = workout.value ?: return@launch
-            val maxOrder = workoutData.exercises.maxOfOrNull { it.workoutExercise.orderIndex } ?: -1
+            val maxOrder = workoutRepository.getMaxOrderIndex(workoutId)
             val weId = workoutRepository.insertWorkoutExercise(
                 WorkoutExercise(
                     workoutId = workoutId,
@@ -170,8 +169,10 @@ class WorkoutInProgressViewModel @Inject constructor(
         val current = exercises[currentIndex].workoutExercise
         val target = exercises[targetIndex].workoutExercise
         viewModelScope.launch {
-            workoutRepository.updateWorkoutExercise(current.copy(orderIndex = target.orderIndex))
-            workoutRepository.updateWorkoutExercise(target.copy(orderIndex = current.orderIndex))
+            workoutRepository.swapExerciseOrder(
+                current.copy(orderIndex = target.orderIndex),
+                target.copy(orderIndex = current.orderIndex)
+            )
         }
     }
 

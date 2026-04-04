@@ -88,6 +88,7 @@ class WorkoutEditViewModelTest {
         every { workoutRepository.getWithExercisesFlow(10L) } returns flowOf(testData)
         coEvery { workoutRepository.getWithExercises(10L) } returns testData
         every { exerciseRepository.getAllByProfile(1L) } returns flowOf(emptyList())
+        coEvery { workoutRepository.getMaxOrderIndex(10L) } returns 1
         coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 60L
         coEvery { workoutRepository.insertWorkoutSet(any()) } returns 200L
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 10L))
@@ -260,10 +261,10 @@ class WorkoutEditViewModelTest {
         viewModel.moveExercise(50L, 1)
 
         coVerify {
-            workoutRepository.updateWorkoutExercise(match { it.id == 50L && it.orderIndex == 1 })
-        }
-        coVerify {
-            workoutRepository.updateWorkoutExercise(match { it.id == 51L && it.orderIndex == 0 })
+            workoutRepository.swapExerciseOrder(
+                match { it.id == 50L && it.orderIndex == 1 },
+                match { it.id == 51L && it.orderIndex == 0 }
+            )
         }
     }
 
@@ -275,6 +276,6 @@ class WorkoutEditViewModelTest {
 
         viewModel.moveExercise(50L, -1)
 
-        coVerify(exactly = 0) { workoutRepository.updateWorkoutExercise(any()) }
+        coVerify(exactly = 0) { workoutRepository.swapExerciseOrder(any(), any()) }
     }
 }

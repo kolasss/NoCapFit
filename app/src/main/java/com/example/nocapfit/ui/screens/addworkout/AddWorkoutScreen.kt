@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -25,11 +26,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -51,14 +57,60 @@ fun AddWorkoutScreen(
     val lastWorkoutTimes by viewModel.lastWorkoutTimes.collectAsState()
     val profileLoaded by viewModel.profileLoaded.collectAsState()
     val scope = rememberCoroutineScope()
+    var showActiveWorkoutDialog by remember { mutableStateOf(false) }
+    var activeWorkoutId by remember { mutableLongStateOf(0L) }
 
+    if (showActiveWorkoutDialog) {
+        ActiveWorkoutDialog(
+            onResume = {
+                showActiveWorkoutDialog = false
+                navController.navigate(Screen.WorkoutInProgress.createRoute(activeWorkoutId))
+            },
+            onDismiss = { showActiveWorkoutDialog = false }
+        )
+    }
+
+    AddWorkoutContent(
+        programs = programs,
+        lastWorkoutTimes = lastWorkoutTimes,
+        onBack = { navController.popBackStack() },
+        onStartWorkout = { createWorkout ->
+            if (!profileLoaded) return@AddWorkoutContent
+            scope.launch {
+                val existing = viewModel.getActiveWorkoutId()
+                if (existing != null) {
+                    activeWorkoutId = existing
+                    showActiveWorkoutDialog = true
+                    return@launch
+                }
+                val workoutId = createWorkout()
+                navController.navigate(Screen.WorkoutInProgress.createRoute(workoutId))
+            }
+        },
+        onCreateEmpty = { viewModel.createEmptyWorkout() },
+        onCreateFromProgram = { viewModel.createWorkoutFromProgram(it) },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddWorkoutContent(
+    programs: List<ProgramWithExercises>,
+    lastWorkoutTimes: Map<Long, Long>,
+    onBack: () -> Unit,
+    onStartWorkout: (suspend () -> Long) -> Unit,
+    onCreateEmpty: suspend () -> Long,
+    onCreateFromProgram: suspend (Long) -> Long,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text("Start Workout") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -82,15 +134,7 @@ fun AddWorkoutScreen(
             }
 
             item {
-                QuickStartCard(onClick = {
-                    if (!profileLoaded) return@QuickStartCard
-                    scope.launch {
-                        val workoutId = viewModel.createEmptyWorkout()
-                        navController.navigate(
-                            Screen.WorkoutInProgress.createRoute(workoutId)
-                        )
-                    }
-                })
+                QuickStartCard(onClick = { onStartWorkout(onCreateEmpty) })
             }
 
             if (programs.isNotEmpty()) {
@@ -109,15 +153,7 @@ fun AddWorkoutScreen(
                         programWithExercises = programWithExercises,
                         lastWorkoutTime = lastWorkoutTimes[programWithExercises.program.id],
                         onClick = {
-                            if (!profileLoaded) return@ProgramCard
-                            scope.launch {
-                                val workoutId = viewModel.createWorkoutFromProgram(
-                                    programWithExercises.program.id
-                                )
-                                navController.navigate(
-                                    Screen.WorkoutInProgress.createRoute(workoutId)
-                                )
-                            }
+                            onStartWorkout { onCreateFromProgram(programWithExercises.program.id) }
                         }
                     )
                 }
@@ -160,6 +196,21 @@ private fun QuickStartCard(onClick: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun ActiveWorkoutDialog(onResume: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Active Workout") },
+        text = { Text("You already have a workout in progress. Resume it or cancel it first.") },
+        confirmButton = {
+            TextButton(onClick = onResume) { Text("Resume") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable

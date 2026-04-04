@@ -43,7 +43,10 @@ fun CompactInput(
             visualTransformation = visualTransformation,
             interactionSource = interactionSource,
             contentPadding = OutlinedTextFieldDefaults.contentPadding(
-                top = 4.dp, bottom = 4.dp, start = 8.dp, end = 8.dp
+                top = 4.dp,
+                bottom = 4.dp,
+                start = 8.dp,
+                end = 8.dp
             ),
             container = {
                 OutlinedTextFieldDefaults.Container(

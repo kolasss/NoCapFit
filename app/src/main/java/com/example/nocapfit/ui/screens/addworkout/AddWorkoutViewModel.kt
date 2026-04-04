@@ -57,6 +57,8 @@ class AddWorkoutViewModel @Inject constructor(
         }
     }
 
+    suspend fun getActiveWorkoutId(): Long? = workoutRepository.getActiveWorkout()?.id
+
     suspend fun createWorkoutFromProgram(programId: Long): Long {
         val profileId = checkNotNull(_profileId.value) { "Profile not loaded" }
         val programWithExercises = programRepository.getProgramWithExercises(programId)

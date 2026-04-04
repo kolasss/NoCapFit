@@ -61,14 +61,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private var pendingBackupBytes: ByteArray? = null
+
     fun importDatabase(uri: Uri) {
         viewModelScope.launch {
             _backupEvent.value = BackupEvent.Importing
-            backupManager.importDatabase(uri).fold(
-                onSuccess = { _backupEvent.value = BackupEvent.RestartRequired },
+            backupManager.validateBackup(uri).fold(
+                onSuccess = {
+                    pendingBackupBytes = it
+                    _backupEvent.value = BackupEvent.RestartRequired
+                },
                 onFailure = { _backupEvent.value = BackupEvent.Error(it.message ?: "Import failed") }
             )
         }
+    }
+
+    fun applyPendingBackup() {
+        val bytes = pendingBackupBytes ?: return
+        backupManager.applyBackup(bytes)
     }
 
     suspend fun hasActiveWorkout(): Boolean = backupManager.hasActiveWorkout()

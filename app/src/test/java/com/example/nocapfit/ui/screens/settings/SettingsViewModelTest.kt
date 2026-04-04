@@ -83,7 +83,8 @@ class SettingsViewModelTest {
     @Test
     fun importDatabase_emitsRestartRequiredOnSuccess() = runTest {
         val uri = mockk<Uri>()
-        coEvery { backupManager.importDatabase(uri) } returns Result.success(Unit)
+        val bytes = "SQLite format 3\u0000".toByteArray()
+        coEvery { backupManager.validateBackup(uri) } returns Result.success(bytes)
 
         val viewModel = createViewModel()
         viewModel.importDatabase(uri)
@@ -94,7 +95,7 @@ class SettingsViewModelTest {
     @Test
     fun importDatabase_emitsErrorOnInvalidFile() = runTest {
         val uri = mockk<Uri>()
-        coEvery { backupManager.importDatabase(uri) } returns
+        coEvery { backupManager.validateBackup(uri) } returns
             Result.failure(IllegalArgumentException("Not a valid database file"))
 
         val viewModel = createViewModel()

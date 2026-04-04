@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.nocapfit.data.db.DEFAULT_EXERCISES
 import com.example.nocapfit.data.db.DEFAULT_PROGRAMS
+import com.example.nocapfit.data.db.MIGRATION_1_2
 import com.example.nocapfit.data.db.NoCapFitDatabase
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.dao.ExerciseDao
@@ -46,7 +47,8 @@ object DatabaseModule {
                     seedDefaultPrograms(db)
                 }
             })
-            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_1_2)
+            .fallbackToDestructiveMigration(false)
             .build()
     }
 

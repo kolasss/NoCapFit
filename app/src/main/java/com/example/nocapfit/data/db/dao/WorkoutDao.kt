@@ -75,6 +75,12 @@ interface WorkoutDao {
     @Update
     suspend fun updateWorkoutExercise(exercise: WorkoutExercise)
 
+    @Transaction
+    suspend fun swapExerciseOrder(first: WorkoutExercise, second: WorkoutExercise) {
+        updateWorkoutExercise(first)
+        updateWorkoutExercise(second)
+    }
+
     @Update
     suspend fun updateWorkoutSet(set: WorkoutSet)
 
@@ -83,6 +89,9 @@ interface WorkoutDao {
 
     @Query("DELETE FROM workout_exercises WHERE id = :exerciseId")
     suspend fun deleteWorkoutExercise(exerciseId: Long)
+
+    @Query("SELECT COALESCE(MAX(orderIndex), -1) FROM workout_exercises WHERE workoutId = :workoutId")
+    suspend fun getMaxOrderIndex(workoutId: Long): Int
 
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :exerciseId ORDER BY setIndex ASC")
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet>

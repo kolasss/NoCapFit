@@ -124,6 +124,19 @@ class ProgramFormViewModel @Inject constructor(
         )
     }
 
+    fun moveExercise(fromIndex: Int, toIndex: Int) {
+        val current = _uiState.value
+        if (fromIndex < 0 || toIndex < 0 || fromIndex >= current.exercises.size ||
+            toIndex >= current.exercises.size
+        ) {
+            return
+        }
+        val exercises = current.exercises.toMutableList()
+        val item = exercises.removeAt(fromIndex)
+        exercises.add(toIndex, item)
+        _uiState.value = current.copy(exercises = exercises)
+    }
+
     fun addSet(exerciseIndex: Int) {
         val current = _uiState.value
         val exercises = current.exercises.toMutableList()

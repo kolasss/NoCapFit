@@ -18,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,6 +85,7 @@ fun ProgramFormScreen(
         ProgramFormContent(
             uiState = uiState,
             onNameChange = viewModel::updateName,
+            onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onRemoveSet = viewModel::removeSet,
@@ -108,6 +111,7 @@ fun ProgramFormScreen(
 internal fun ProgramFormContent(
     uiState: ProgramFormUiState,
     onNameChange: (String) -> Unit,
+    onMoveExercise: (Int, Int) -> Unit,
     onRemoveExercise: (Int) -> Unit,
     onAddSet: (Int) -> Unit,
     onRemoveSet: (Int, Int) -> Unit,
@@ -160,6 +164,16 @@ internal fun ProgramFormContent(
             itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
                 ExerciseCard(
                     exerciseEntry = exerciseEntry,
+                    onMoveUp = if (exerciseIndex > 0) {
+                        { onMoveExercise(exerciseIndex, exerciseIndex - 1) }
+                    } else {
+                        null
+                    },
+                    onMoveDown = if (exerciseIndex < uiState.exercises.lastIndex) {
+                        { onMoveExercise(exerciseIndex, exerciseIndex + 1) }
+                    } else {
+                        null
+                    },
                     onRemoveExercise = { onRemoveExercise(exerciseIndex) },
                     onAddSet = { onAddSet(exerciseIndex) },
                     onRemoveSet = { setIndex -> onRemoveSet(exerciseIndex, setIndex) },
@@ -216,6 +230,8 @@ internal fun ProgramFormTopBar(
 @Composable
 private fun ExerciseCard(
     exerciseEntry: ExerciseEntry,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
     onRemoveExercise: () -> Unit,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
@@ -235,6 +251,16 @@ private fun ExerciseCard(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
+                if (onMoveUp != null) {
+                    IconButton(onClick = onMoveUp) {
+                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move up")
+                    }
+                }
+                if (onMoveDown != null) {
+                    IconButton(onClick = onMoveDown) {
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move down")
+                    }
+                }
                 IconButton(onClick = onRemoveExercise) {
                     Icon(
                         Icons.Default.Close,

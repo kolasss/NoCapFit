@@ -44,7 +44,9 @@ fun ExerciseCard(
     onRestTimeChange: ((WorkoutSet, Int) -> Unit)? = null,
     activeTimerSetId: Long? = null,
     timerEndAtEpochMs: Long = 0L,
-    showRestTime: Boolean = true
+    showRestTime: Boolean = true,
+    onMoveUp: (() -> Unit)? = null,
+    onMoveDown: (() -> Unit)? = null
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
     val accentColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -74,7 +76,9 @@ fun ExerciseCard(
                 )
                 ExerciseOverflowMenu(
                     onAddSetClick = { onAddSet(workoutExerciseId) },
-                    onRemoveClick = { showRemoveDialog = true }
+                    onRemoveClick = { showRemoveDialog = true },
+                    onMoveUp = onMoveUp,
+                    onMoveDown = onMoveDown
                 )
             }
 
@@ -116,7 +120,12 @@ fun ExerciseCard(
 }
 
 @Composable
-private fun ExerciseOverflowMenu(onAddSetClick: () -> Unit, onRemoveClick: () -> Unit) {
+private fun ExerciseOverflowMenu(
+    onAddSetClick: () -> Unit,
+    onRemoveClick: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?
+) {
     Box {
         var showMenu by remember { mutableStateOf(false) }
         IconButton(onClick = { showMenu = true }) {
@@ -126,6 +135,24 @@ private fun ExerciseOverflowMenu(onAddSetClick: () -> Unit, onRemoveClick: () ->
             expanded = showMenu,
             onDismissRequest = { showMenu = false }
         ) {
+            if (onMoveUp != null) {
+                DropdownMenuItem(
+                    text = { Text("Move Up") },
+                    onClick = {
+                        showMenu = false
+                        onMoveUp()
+                    }
+                )
+            }
+            if (onMoveDown != null) {
+                DropdownMenuItem(
+                    text = { Text("Move Down") },
+                    onClick = {
+                        showMenu = false
+                        onMoveDown()
+                    }
+                )
+            }
             DropdownMenuItem(
                 text = { Text("Add Set") },
                 onClick = {

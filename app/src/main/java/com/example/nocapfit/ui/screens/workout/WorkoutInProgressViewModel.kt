@@ -143,6 +143,19 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
+    fun moveExercise(workoutExerciseId: Long, direction: Int) {
+        val exercises = workout.value?.exercises?.sortedBy { it.workoutExercise.orderIndex } ?: return
+        val currentIndex = exercises.indexOfFirst { it.workoutExercise.id == workoutExerciseId }
+        val targetIndex = currentIndex + direction
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= exercises.size) return
+        val current = exercises[currentIndex].workoutExercise
+        val target = exercises[targetIndex].workoutExercise
+        viewModelScope.launch {
+            workoutRepository.updateWorkoutExercise(current.copy(orderIndex = target.orderIndex))
+            workoutRepository.updateWorkoutExercise(target.copy(orderIndex = current.orderIndex))
+        }
+    }
+
     fun finishWorkout(): Boolean {
         val workoutData = workout.value ?: return false
         viewModelScope.launch {

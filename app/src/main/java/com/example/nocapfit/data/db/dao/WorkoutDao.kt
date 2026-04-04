@@ -49,6 +49,9 @@ interface WorkoutDao {
     suspend fun insertWorkoutSet(set: WorkoutSet): Long
 
     @Update
+    suspend fun updateWorkoutExercise(exercise: WorkoutExercise)
+
+    @Update
     suspend fun updateWorkoutSet(set: WorkoutSet)
 
     @Query("DELETE FROM workout_sets WHERE id = :setId")

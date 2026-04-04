@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Suppress("TooManyFunctions")
 @Singleton
 class WorkoutRepository @Inject constructor(
     private val workoutDao: WorkoutDao
@@ -24,6 +25,7 @@ class WorkoutRepository @Inject constructor(
     )
     suspend fun getActiveWorkout(): Workout? = workoutDao.getActiveWorkout()
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(exercise)
+    suspend fun updateWorkoutExercise(exercise: WorkoutExercise) = workoutDao.updateWorkoutExercise(exercise)
     suspend fun insertWorkoutSet(set: WorkoutSet): Long = workoutDao.insertWorkoutSet(set)
     suspend fun updateWorkoutSet(set: WorkoutSet) = workoutDao.updateWorkoutSet(set)
     suspend fun deleteWorkoutExercise(exerciseId: Long) = workoutDao.deleteWorkoutExercise(exerciseId)

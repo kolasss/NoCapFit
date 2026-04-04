@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -103,6 +103,7 @@ fun WorkoutInProgressScreen(
             padding = padding,
             workout = workout,
             timerState = timerState,
+            onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onUpdateSet = viewModel::updateSet,
@@ -173,6 +174,7 @@ private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
     timerState: TimerCoordinator.TimerUiState,
+    onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
@@ -203,6 +205,7 @@ private fun WorkoutContent(
             timerState = timerState,
             activeTimerSetId = activeTimerSetId,
             timerEndAtEpochMs = timerEndAtEpochMs,
+            onMoveExercise = onMoveExercise,
             onRemoveExercise = onRemoveExercise,
             onAddSet = onAddSet,
             onUpdateSet = onUpdateSet,
@@ -229,6 +232,7 @@ private fun WorkoutExerciseList(
     timerState: TimerCoordinator.TimerUiState,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
+    onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
@@ -258,11 +262,12 @@ private fun WorkoutExerciseList(
             )
         }
 
-        items(sortedExercises, key = { it.workoutExercise.id }) { exerciseWithSets ->
+        itemsIndexed(sortedExercises, key = { _, item -> item.workoutExercise.id }) { index, exerciseWithSets ->
+            val id = exerciseWithSets.workoutExercise.id
             ExerciseCard(
                 exerciseName = exerciseWithSets.workoutExercise.exerciseName,
                 sets = exerciseWithSets.sets,
-                workoutExerciseId = exerciseWithSets.workoutExercise.id,
+                workoutExerciseId = id,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
                 onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
@@ -276,7 +281,13 @@ private fun WorkoutExerciseList(
                 },
                 onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
                 activeTimerSetId = activeTimerSetId,
-                timerEndAtEpochMs = timerEndAtEpochMs
+                timerEndAtEpochMs = timerEndAtEpochMs,
+                onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null,
+                onMoveDown = if (index < sortedExercises.lastIndex) {
+                    { onMoveExercise(id, 1) }
+                } else {
+                    null
+                }
             )
         }
 

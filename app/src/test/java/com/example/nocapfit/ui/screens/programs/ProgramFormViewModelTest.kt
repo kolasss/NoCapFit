@@ -100,6 +100,31 @@ class ProgramFormViewModelTest {
     }
 
     @Test
+    fun moveExercise_swapsPositions() {
+        val viewModel = createViewModel()
+        val exercise2 = Exercise(id = 2L, profileId = 1L, name = "Squat")
+
+        viewModel.addExercise(testExercise)
+        viewModel.addExercise(exercise2)
+        viewModel.moveExercise(0, 1)
+
+        val exercises = viewModel.uiState.value.exercises
+        assertEquals("Squat", exercises[0].exercise.name)
+        assertEquals("Bench Press", exercises[1].exercise.name)
+    }
+
+    @Test
+    fun moveExercise_outOfBounds_doesNothing() {
+        val viewModel = createViewModel()
+
+        viewModel.addExercise(testExercise)
+        viewModel.moveExercise(0, 1)
+
+        assertEquals(1, viewModel.uiState.value.exercises.size)
+        assertEquals("Bench Press", viewModel.uiState.value.exercises[0].exercise.name)
+    }
+
+    @Test
     fun updateName_clearsError() {
         val viewModel = createViewModel()
 

@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +68,7 @@ fun WorkoutEditScreen(
             data = workout,
             programName = programName,
             onProgramNameChange = viewModel::updateProgramName,
+            onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onUpdateSet = { ws, w -> viewModel.updateSet(ws.copy(weightThousandths = w)) },
@@ -95,6 +96,7 @@ internal fun WorkoutEditContent(
     data: WorkoutWithExercises?,
     programName: String,
     onProgramNameChange: (String) -> Unit,
+    onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
@@ -132,17 +134,27 @@ internal fun WorkoutEditContent(
             Spacer(modifier = Modifier.height(4.dp))
         }
 
-        items(sortedExercises, key = { it.workoutExercise.id }) { exerciseWithSets ->
+        itemsIndexed(
+            sortedExercises,
+            key = { _, item -> item.workoutExercise.id }
+        ) { index, exerciseWithSets ->
+            val id = exerciseWithSets.workoutExercise.id
             ExerciseCard(
                 exerciseName = exerciseWithSets.workoutExercise.exerciseName,
                 sets = exerciseWithSets.sets,
-                workoutExerciseId = exerciseWithSets.workoutExercise.id,
+                workoutExerciseId = id,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
                 onWeightChange = { ws, w -> onUpdateSet(ws, w) },
                 onRepsChange = { ws, r -> onUpdateReps(ws, r) },
                 onToggleComplete = { ws -> onToggleComplete(ws) },
-                showRestTime = false
+                showRestTime = false,
+                onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null,
+                onMoveDown = if (index < sortedExercises.lastIndex) {
+                    { onMoveExercise(id, 1) }
+                } else {
+                    null
+                }
             )
         }
 

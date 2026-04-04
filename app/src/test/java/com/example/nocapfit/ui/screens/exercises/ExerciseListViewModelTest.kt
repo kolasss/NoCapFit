@@ -59,5 +59,4 @@ class ExerciseListViewModelTest {
             assertEquals(searchResults, awaitItem())
         }
     }
-
 }

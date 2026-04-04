@@ -58,9 +58,29 @@ class WorkoutEditViewModelTest {
         ),
         sets = listOf(testSet)
     )
+    private val testExerciseWithSets2 = WorkoutExerciseWithSets(
+        workoutExercise = WorkoutExercise(
+            id = 51L,
+            workoutId = 10L,
+            exerciseName = "Squat",
+            exerciseId = 2L,
+            orderIndex = 1
+        ),
+        sets = listOf(
+            WorkoutSet(
+                id = 101L,
+                workoutExerciseId = 51L,
+                setIndex = 0,
+                weightThousandths = 80000,
+                reps = 8,
+                restTimeSeconds = 120,
+                completed = false
+            )
+        )
+    )
     private val testData = WorkoutWithExercises(
         workout = testWorkout,
-        exercises = listOf(testExerciseWithSets)
+        exercises = listOf(testExerciseWithSets, testExerciseWithSets2)
     )
 
     private fun createViewModel(): WorkoutEditViewModel {
@@ -72,7 +92,10 @@ class WorkoutEditViewModelTest {
         coEvery { workoutRepository.insertWorkoutSet(any()) } returns 200L
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 10L))
         return WorkoutEditViewModel(
-            workoutRepository, exerciseRepository, profileRepository, savedStateHandle
+            workoutRepository,
+            exerciseRepository,
+            profileRepository,
+            savedStateHandle
         )
     }
 
@@ -213,7 +236,7 @@ class WorkoutEditViewModelTest {
                     it.workoutId == 10L &&
                         it.exerciseName == "Squat" &&
                         it.exerciseId == 2L &&
-                        it.orderIndex == 1
+                        it.orderIndex == 2
                 }
             )
         }
@@ -226,5 +249,32 @@ class WorkoutEditViewModelTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun moveExercise_swapsOrderIndexes() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.workout.test { awaitItem() }
+
+        viewModel.moveExercise(50L, 1)
+
+        coVerify {
+            workoutRepository.updateWorkoutExercise(match { it.id == 50L && it.orderIndex == 1 })
+        }
+        coVerify {
+            workoutRepository.updateWorkoutExercise(match { it.id == 51L && it.orderIndex == 0 })
+        }
+    }
+
+    @Test
+    fun moveExercise_outOfBounds_doesNothing() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.workout.test { awaitItem() }
+
+        viewModel.moveExercise(50L, -1)
+
+        coVerify(exactly = 0) { workoutRepository.updateWorkoutExercise(any()) }
     }
 }

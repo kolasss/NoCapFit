@@ -17,6 +17,7 @@ import com.example.nocapfit.ui.screens.programs.ProgramListScreen
 import com.example.nocapfit.ui.screens.settings.SettingsScreen
 import com.example.nocapfit.ui.screens.workout.WorkoutInProgressScreen
 import com.example.nocapfit.ui.screens.workoutdetail.WorkoutDetailScreen
+import com.example.nocapfit.ui.screens.workoutedit.WorkoutEditScreen
 import com.example.nocapfit.ui.screens.workouthistory.WorkoutHistoryScreen
 
 @Composable
@@ -72,6 +73,12 @@ fun NavGraph(
             arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
         ) {
             WorkoutDetailScreen(navController = navController)
+        }
+        composable(
+            route = Screen.WorkoutEdit.route,
+            arguments = listOf(navArgument("workoutId") { type = NavType.LongType })
+        ) {
+            WorkoutEditScreen(navController = navController)
         }
         composable(Screen.Settings.route) {
             SettingsScreen(navController = navController)

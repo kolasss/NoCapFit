@@ -13,6 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
+import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
 import com.example.nocapfit.util.MILLIS_PER_SECOND
@@ -48,6 +53,7 @@ fun WorkoutDetailScreen(
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
     val workoutWithExercises by viewModel.workoutWithExercises.collectAsState()
+    val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val data = workoutWithExercises
@@ -62,6 +68,22 @@ fun WorkoutDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    if (data != null) {
+                        IconButton(
+                            onClick = {
+                                navController.navigate(
+                                    Screen.WorkoutEdit.createRoute(data.workout.id)
+                                )
+                            }
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
+                        IconButton(onClick = { viewModel.showDeleteConfirmation() }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    }
+                },
                 scrollBehavior = scrollBehavior
             )
         }
@@ -69,6 +91,28 @@ fun WorkoutDetailScreen(
         WorkoutDetailContent(
             data = data,
             modifier = Modifier.padding(padding)
+        )
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
+            title = { Text("Delete Workout") },
+            text = {
+                Text("Are you sure you want to delete this workout? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.deleteWorkout { navController.popBackStack() } }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

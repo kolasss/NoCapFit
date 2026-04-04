@@ -7,8 +7,10 @@ import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,12 +22,26 @@ class WorkoutDetailViewModel @Inject constructor(
 
     private val workoutId: Long = checkNotNull(savedStateHandle["workoutId"])
 
-    private val _workoutWithExercises = MutableStateFlow<WorkoutWithExercises?>(null)
-    val workoutWithExercises: StateFlow<WorkoutWithExercises?> = _workoutWithExercises.asStateFlow()
+    val workoutWithExercises: StateFlow<WorkoutWithExercises?> = workoutRepository
+        .getWithExercisesFlow(workoutId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    init {
+    private val _showDeleteConfirmation = MutableStateFlow(false)
+    val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation.asStateFlow()
+
+    fun showDeleteConfirmation() {
+        _showDeleteConfirmation.value = true
+    }
+
+    fun dismissDeleteConfirmation() {
+        _showDeleteConfirmation.value = false
+    }
+
+    fun deleteWorkout(onDeleted: () -> Unit) {
+        val workout = workoutWithExercises.value?.workout ?: return
         viewModelScope.launch {
-            _workoutWithExercises.value = workoutRepository.getWithExercises(workoutId)
+            workoutRepository.delete(workout)
+            onDeleted()
         }
     }
 }

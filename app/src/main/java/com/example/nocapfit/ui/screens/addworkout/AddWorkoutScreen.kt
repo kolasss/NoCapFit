@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
 import com.example.nocapfit.ui.navigation.Screen
+import com.example.nocapfit.ui.util.formatRelativeDate
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +48,7 @@ fun AddWorkoutScreen(
     viewModel: AddWorkoutViewModel = hiltViewModel()
 ) {
     val programs by viewModel.programs.collectAsState()
+    val lastWorkoutTimes by viewModel.lastWorkoutTimes.collectAsState()
     val profileLoaded by viewModel.profileLoaded.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -104,6 +107,7 @@ fun AddWorkoutScreen(
                 items(programs) { programWithExercises ->
                     ProgramCard(
                         programWithExercises = programWithExercises,
+                        lastWorkoutTime = lastWorkoutTimes[programWithExercises.program.id],
                         onClick = {
                             if (!profileLoaded) return@ProgramCard
                             scope.launch {
@@ -161,6 +165,7 @@ private fun QuickStartCard(onClick: () -> Unit) {
 @Composable
 private fun ProgramCard(
     programWithExercises: ProgramWithExercises,
+    lastWorkoutTime: Long?,
     onClick: () -> Unit
 ) {
     val exerciseNames = programWithExercises.exercises
@@ -197,6 +202,25 @@ private fun ProgramCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                if (lastWorkoutTime != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.History,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formatRelativeDate(lastWorkoutTime),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

@@ -21,6 +21,7 @@ data class Workout(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val profileId: Long,
     val programName: String? = null,
+    val programId: Long? = null,
     val startTime: Long,
     val endTime: Long? = null
 )

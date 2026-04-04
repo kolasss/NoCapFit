@@ -111,4 +111,43 @@ class DateTimeFormattingTest {
         val expectedTime = formatTime(epochMs)
         assertEquals("$expectedDate · $expectedTime", result)
     }
+
+    // formatRelativeDate tests
+
+    @Test
+    fun formatRelativeDate_today() {
+        val now = System.currentTimeMillis()
+        assertEquals("Today", formatRelativeDate(now))
+    }
+
+    @Test
+    fun formatRelativeDate_fewHoursAgo_isToday() {
+        val fewHoursAgo = System.currentTimeMillis() - 3 * 3600 * 1000L
+        assertEquals("Today", formatRelativeDate(fewHoursAgo))
+    }
+
+    @Test
+    fun formatRelativeDate_yesterday() {
+        val yesterday = System.currentTimeMillis() - 36 * 3600 * 1000L
+        assertEquals("Yesterday", formatRelativeDate(yesterday))
+    }
+
+    @Test
+    fun formatRelativeDate_daysAgo() {
+        val fiveDaysAgo = System.currentTimeMillis() - 5 * 86_400_000L
+        assertEquals("5 days ago", formatRelativeDate(fiveDaysAgo))
+    }
+
+    @Test
+    fun formatRelativeDate_29DaysAgo() {
+        val twentyNineDaysAgo = System.currentTimeMillis() - 29 * 86_400_000L
+        assertEquals("29 days ago", formatRelativeDate(twentyNineDaysAgo))
+    }
+
+    @Test
+    fun formatRelativeDate_30DaysAgo_showsFullDate() {
+        val thirtyDaysAgo = System.currentTimeMillis() - 30 * 86_400_000L
+        val result = formatRelativeDate(thirtyDaysAgo)
+        assertEquals(formatDate(thirtyDaysAgo), result)
+    }
 }

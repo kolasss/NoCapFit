@@ -46,6 +46,7 @@ object DatabaseModule {
                     seedDefaultPrograms(db)
                 }
             })
+            .fallbackToDestructiveMigration()
             .build()
     }
 

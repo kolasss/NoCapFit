@@ -17,6 +17,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -52,12 +53,30 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _previousSets = MutableStateFlow<Map<Pair<Long, Int>, PreviousSetData>>(emptyMap())
+    val previousSets: StateFlow<Map<Pair<Long, Int>, PreviousSetData>> = _previousSets.asStateFlow()
+
     init {
         viewModelScope.launch {
             val profile = profileRepository.getDefault()
             _profileId.value = profile?.id
             timerCoordinator.reconstructState()
+            loadPreviousWorkoutData()
         }
+    }
+
+    private suspend fun loadPreviousWorkoutData() {
+        val currentWorkout = workout.value ?: return
+        val programId = currentWorkout.workout.programId ?: return
+        val previous = workoutRepository.getLastFinishedByProgramId(programId, workoutId) ?: return
+        val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
+        for (exercise in previous.exercises) {
+            val exId = exercise.workoutExercise.exerciseId ?: continue
+            for (set in exercise.sets.filter { it.completed }) {
+                map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
+            }
+        }
+        _previousSets.value = map
     }
 
     fun completeSet(workoutSetId: Long, restTimeSeconds: Int) {
@@ -188,3 +207,5 @@ class WorkoutInProgressViewModel @Inject constructor(
             ?.find { it.id == workoutSetId }
     }
 }
+
+data class PreviousSetData(val weightThousandths: Int, val reps: Int)

@@ -19,7 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ExerciseDetailViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
-    private val workoutRepository: WorkoutRepository,
+    workoutRepository: WorkoutRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 

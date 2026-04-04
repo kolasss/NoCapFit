@@ -3,16 +3,15 @@ package com.example.nocapfit.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -88,7 +87,8 @@ fun RestTimeRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+                .defaultMinSize(minHeight = 40.dp)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -105,18 +105,16 @@ fun RestTimeRow(
             if (isTimerActive && timerEndAtEpochMs > 0) {
                 RestTimerCountdown(timerEndAtEpochMs)
             } else if (!isCompleted && onRestTimeChange != null) {
-                OutlinedTextField(
+                CompactInput(
                     value = digits,
                     onValueChange = { newValue ->
                         val filtered = newValue.filter { it.isDigit() }.take(4)
                         digits = filtered
                         onRestTimeChange(parseMmSsToSeconds(filtered))
                     },
-                    label = { Text("Rest") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardType = KeyboardType.Number,
                     visualTransformation = mmSsTransformation,
-                    modifier = Modifier.width(100.dp)
+                    modifier = Modifier.width(80.dp)
                 )
             } else {
                 Text(

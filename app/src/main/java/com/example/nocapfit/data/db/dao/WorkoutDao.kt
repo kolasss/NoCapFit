@@ -48,6 +48,21 @@ interface WorkoutDao {
     )
     fun getFinishedByExerciseId(exerciseId: Long): Flow<List<WorkoutWithExercises>>
 
+    @Query(
+        "SELECT programId, MAX(startTime) as lastTime FROM workouts " +
+            "WHERE endTime IS NOT NULL AND programId IS NOT NULL " +
+            "GROUP BY programId"
+    )
+    fun getLastWorkoutTimeByProgram(): Flow<List<ProgramLastWorkout>>
+
+    @Transaction
+    @Query(
+        "SELECT * FROM workouts " +
+            "WHERE programId = :programId AND endTime IS NOT NULL AND id != :excludeWorkoutId " +
+            "ORDER BY startTime DESC LIMIT 1"
+    )
+    suspend fun getLastFinishedByProgramId(programId: Long, excludeWorkoutId: Long): WorkoutWithExercises?
+
     @Query("SELECT * FROM workouts WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun getActiveWorkout(): Workout?
 

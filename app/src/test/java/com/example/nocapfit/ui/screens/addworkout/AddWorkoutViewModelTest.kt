@@ -61,6 +61,7 @@ class AddWorkoutViewModelTest {
     private fun createViewModel(): AddWorkoutViewModel {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { programRepository.getAllWithExercises(1L) } returns flowOf(listOf(testProgram))
+        every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
         return AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
     }
 
@@ -94,6 +95,7 @@ class AddWorkoutViewModelTest {
     fun createEmptyWorkout_throwsWhenProfileNotLoaded() = runTest {
         coEvery { profileRepository.getDefault() } returns null
         every { programRepository.getAllWithExercises(any()) } returns flowOf(emptyList())
+        every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
         val viewModel = AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
 
         viewModel.createEmptyWorkout()
@@ -103,6 +105,7 @@ class AddWorkoutViewModelTest {
     fun profileLoaded_isFalseWhenProfileIsNull() = runTest {
         coEvery { profileRepository.getDefault() } returns null
         every { programRepository.getAllWithExercises(any()) } returns flowOf(emptyList())
+        every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
         val viewModel = AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
 
         viewModel.profileLoaded.test {

@@ -18,6 +18,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -229,5 +230,58 @@ class WorkoutInProgressViewModelTest {
         viewModel.moveExercise(100L, -1)
 
         coVerify(exactly = 0) { workoutRepository.updateWorkoutExercise(any()) }
+    }
+
+    @Test
+    fun previousSets_loadsFromPreviousWorkout() = runTest {
+        val workoutWithProgram = WorkoutWithExercises(
+            workout = Workout(id = 1L, profileId = 1L, startTime = 1000L, programId = 5L),
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(
+                        id = 100L, workoutId = 1L, exerciseName = "Bench Press",
+                        exerciseId = 1L, orderIndex = 0
+                    ),
+                    sets = listOf(testSet)
+                )
+            )
+        )
+        val previousWorkout = WorkoutWithExercises(
+            workout = Workout(id = 99L, profileId = 1L, startTime = 500L, endTime = 900L, programId = 5L),
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(
+                        id = 300L, workoutId = 99L, exerciseName = "Bench Press",
+                        exerciseId = 1L, orderIndex = 0
+                    ),
+                    sets = listOf(
+                        WorkoutSet(
+                            id = 30L, workoutExerciseId = 300L, setIndex = 0,
+                            weightThousandths = 60000, reps = 10, restTimeSeconds = 60,
+                            completed = true
+                        )
+                    )
+                )
+            )
+        )
+        coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(workoutWithProgram)
+        coEvery { workoutRepository.getLastFinishedByProgramId(5L, 1L) } returns previousWorkout
+        val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
+        val viewModel = WorkoutInProgressViewModel(
+            workoutRepository, timerRepository, exerciseRepository,
+            profileRepository, savedStateHandle, timerCoordinator
+        )
+
+        val prev = viewModel.previousSets.value
+        val key = 1L to 0
+        assertEquals(60000, prev[key]?.weightThousandths)
+        assertEquals(10, prev[key]?.reps)
+    }
+
+    @Test
+    fun previousSets_emptyForFreeWorkout() = runTest {
+        val viewModel = createViewModel()
+
+        assertTrue(viewModel.previousSets.value.isEmpty())
     }
 }

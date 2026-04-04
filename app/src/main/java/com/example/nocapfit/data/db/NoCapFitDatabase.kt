@@ -30,7 +30,7 @@ import com.example.nocapfit.data.db.entity.WorkoutSet
         WorkoutSet::class,
         ActiveTimer::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

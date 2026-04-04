@@ -35,6 +35,11 @@ class AddWorkoutViewModel @Inject constructor(
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val lastWorkoutTimes: StateFlow<Map<Long, Long>> = workoutRepository
+        .getLastWorkoutTimeByProgram()
+        .map { list -> list.associate { it.programId to it.lastTime } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val programs: StateFlow<List<ProgramWithExercises>> = _profileId
         .flatMapLatest { profileId ->
             if (profileId == null) {
@@ -60,6 +65,7 @@ class AddWorkoutViewModel @Inject constructor(
         val workout = Workout(
             profileId = profileId,
             programName = programWithExercises.program.name,
+            programId = programWithExercises.program.id,
             startTime = System.currentTimeMillis(),
             endTime = null
         )

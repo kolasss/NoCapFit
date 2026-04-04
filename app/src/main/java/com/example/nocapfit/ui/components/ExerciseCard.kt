@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -46,7 +48,8 @@ fun ExerciseCard(
     timerEndAtEpochMs: Long = 0L,
     showRestTime: Boolean = true,
     onMoveUp: (() -> Unit)? = null,
-    onMoveDown: (() -> Unit)? = null
+    onMoveDown: (() -> Unit)? = null,
+    previousSets: Map<Int, String>? = null
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
     val accentColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -61,8 +64,8 @@ fun ExerciseCard(
                 .drawBehind {
                     drawRect(accentColor, size = Size(accentWidthPx, size.height))
                 }
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,6 +85,8 @@ fun ExerciseCard(
                 )
             }
 
+            SetHeaderRow()
+
             val sortedSets = remember(sets) { sets.sortedBy { it.setIndex } }
             sortedSets.forEachIndexed { index, workoutSet ->
                 SetRow(
@@ -89,7 +94,8 @@ fun ExerciseCard(
                     workoutSet = workoutSet,
                     onWeightChange = { newWeight -> onWeightChange(workoutSet, newWeight) },
                     onRepsChange = { newReps -> onRepsChange(workoutSet, newReps) },
-                    onToggleComplete = { onToggleComplete(workoutSet) }
+                    onToggleComplete = { onToggleComplete(workoutSet) },
+                    previousText = previousSets?.get(workoutSet.setIndex)
                 )
                 if (showRestTime) {
                     RestTimeRow(
@@ -168,6 +174,43 @@ private fun ExerciseOverflowMenu(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun SetHeaderRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Set",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(20.dp)
+        )
+        Text(
+            text = "Prev",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "kg",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(56.dp)
+        )
+        Text(
+            text = "Reps",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(56.dp)
+        )
+        Spacer(modifier = Modifier.width(48.dp))
     }
 }
 

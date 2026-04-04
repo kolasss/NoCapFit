@@ -53,6 +53,7 @@ import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_HOUR
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
+import com.example.nocapfit.util.WEIGHT_DIVISOR
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +67,7 @@ fun WorkoutInProgressScreen(
     val workout by viewModel.workout.collectAsState()
     val timerState by viewModel.timerState.collectAsState()
     val availableExercises by viewModel.availableExercises.collectAsState()
+    val previousSets by viewModel.previousSets.collectAsState()
 
     var showFinishDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
@@ -103,6 +105,7 @@ fun WorkoutInProgressScreen(
             padding = padding,
             workout = workout,
             timerState = timerState,
+            previousSets = previousSets,
             onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
@@ -174,6 +177,7 @@ private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
     timerState: TimerCoordinator.TimerUiState,
+    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -205,6 +209,7 @@ private fun WorkoutContent(
             timerState = timerState,
             activeTimerSetId = activeTimerSetId,
             timerEndAtEpochMs = timerEndAtEpochMs,
+            previousSets = previousSets,
             onMoveExercise = onMoveExercise,
             onRemoveExercise = onRemoveExercise,
             onAddSet = onAddSet,
@@ -232,6 +237,7 @@ private fun WorkoutExerciseList(
     timerState: TimerCoordinator.TimerUiState,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
+    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -264,6 +270,14 @@ private fun WorkoutExerciseList(
 
         itemsIndexed(sortedExercises, key = { _, item -> item.workoutExercise.id }) { index, exerciseWithSets ->
             val id = exerciseWithSets.workoutExercise.id
+            val exId = exerciseWithSets.workoutExercise.exerciseId
+            val exercisePrevSets = if (exId != null) {
+                previousSets.filterKeys { it.first == exId }
+                    .map { (key, data) -> key.second to formatPrevSet(data) }
+                    .toMap()
+            } else {
+                null
+            }
             ExerciseCard(
                 exerciseName = exerciseWithSets.workoutExercise.exerciseName,
                 sets = exerciseWithSets.sets,
@@ -287,7 +301,8 @@ private fun WorkoutExerciseList(
                     { onMoveExercise(id, 1) }
                 } else {
                     null
-                }
+                },
+                previousSets = exercisePrevSets
             )
         }
 
@@ -431,6 +446,16 @@ private fun WorkoutDialogs(
             }
         )
     }
+}
+
+private fun formatPrevSet(data: PreviousSetData): String {
+    val kg = data.weightThousandths / WEIGHT_DIVISOR
+    val weightStr = if (kg == kg.toLong().toDouble()) {
+        kg.toLong().toString()
+    } else {
+        kg.toBigDecimal().stripTrailingZeros().toPlainString()
+    }
+    return "${weightStr}x${data.reps}"
 }
 
 private fun formatElapsedTime(millis: Long): String {

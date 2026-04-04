@@ -28,6 +28,20 @@ fun formatDateTime(epochMs: Long): String {
     return "${formatDate(epochMs)} · ${formatTime(epochMs)}"
 }
 
+private const val MS_PER_DAY = 86_400_000L
+private const val DAYS_THRESHOLD = 30
+
+fun formatRelativeDate(epochMs: Long): String {
+    val now = System.currentTimeMillis()
+    val daysAgo = (now - epochMs) / MS_PER_DAY
+    return when {
+        daysAgo < 1 -> "Today"
+        daysAgo < 2 -> "Yesterday"
+        daysAgo < DAYS_THRESHOLD -> "$daysAgo days ago"
+        else -> formatDate(epochMs)
+    }
+}
+
 fun formatDuration(durationMs: Long): String {
     val totalSeconds = durationMs / MILLIS_PER_SECOND
     val hours = totalSeconds / SECONDS_PER_HOUR

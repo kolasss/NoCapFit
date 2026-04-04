@@ -96,7 +96,8 @@ fun ExerciseCard(
                             null
                         },
                         isTimerActive = activeTimerSetId == workoutSet.id,
-                        timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L
+                        timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L,
+                        isCompleted = workoutSet.completed
                     )
                 }
             }

@@ -1,16 +1,19 @@
 package com.example.nocapfit.ui.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,73 +66,93 @@ fun RestTimeRow(
     onRestTimeChange: ((Int) -> Unit)?,
     modifier: Modifier = Modifier,
     isTimerActive: Boolean = false,
-    timerEndAtEpochMs: Long = 0L
+    timerEndAtEpochMs: Long = 0L,
+    isCompleted: Boolean = false
 ) {
     var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            Icons.Default.Timer,
-            contentDescription = "Rest time",
-            tint = if (isTimerActive) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
-
-        if (isTimerActive && timerEndAtEpochMs > 0) {
-            // Show live countdown
-            var remainingMs by remember { mutableLongStateOf(timerEndAtEpochMs - System.currentTimeMillis()) }
-
-            LaunchedEffect(timerEndAtEpochMs) {
-                while (true) {
-                    remainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-                    if (remainingMs <= 0) break
-                    delay(MILLIS_PER_SECOND)
-                }
-            }
-
-            val totalSecs = (remainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
-            val mins = totalSecs / SECONDS_PER_MINUTE
-            val secs = totalSecs % SECONDS_PER_MINUTE
-            Text(
-                text = "%d:%02d".format(mins, secs),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-        } else if (onRestTimeChange != null) {
-            // Editable input
-            OutlinedTextField(
-                value = digits,
-                onValueChange = { newValue ->
-                    val filtered = newValue.filter { it.isDigit() }.take(4)
-                    digits = filtered
-                    onRestTimeChange(parseMmSsToSeconds(filtered))
-                },
-                label = { Text("Rest") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = mmSsTransformation,
-                modifier = Modifier.width(100.dp)
-            )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isCompleted && !isTimerActive) {
+            MaterialTheme.colorScheme.primaryContainer
         } else {
-            // Read-only display
-            val mins = restTimeSeconds / SECONDS_PER_MINUTE
-            val secs = restTimeSeconds % SECONDS_PER_MINUTE
-            Text(
-                text = "%d:%02d".format(mins, secs),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            MaterialTheme.colorScheme.surface
+        },
+        label = "rest-row-bg"
+    )
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = backgroundColor,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Timer,
+                contentDescription = "Rest time",
+                tint = if (isTimerActive) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
+
+            if (isTimerActive && timerEndAtEpochMs > 0) {
+                RestTimerCountdown(timerEndAtEpochMs)
+            } else if (!isCompleted && onRestTimeChange != null) {
+                OutlinedTextField(
+                    value = digits,
+                    onValueChange = { newValue ->
+                        val filtered = newValue.filter { it.isDigit() }.take(4)
+                        digits = filtered
+                        onRestTimeChange(parseMmSsToSeconds(filtered))
+                    },
+                    label = { Text("Rest") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    visualTransformation = mmSsTransformation,
+                    modifier = Modifier.width(100.dp)
+                )
+            } else {
+                Text(
+                    text = formatMmSs(restTimeSeconds),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun RestTimerCountdown(timerEndAtEpochMs: Long) {
+    var remainingMs by remember { mutableLongStateOf(timerEndAtEpochMs - System.currentTimeMillis()) }
+
+    LaunchedEffect(timerEndAtEpochMs) {
+        while (true) {
+            remainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+            if (remainingMs <= 0) break
+            delay(MILLIS_PER_SECOND)
+        }
+    }
+
+    val totalSecs = (remainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
+    Text(
+        text = formatMmSs(totalSecs.toInt()),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.primary
+    )
+}
+
+private fun formatMmSs(totalSeconds: Int): String {
+    val mins = totalSeconds / SECONDS_PER_MINUTE
+    val secs = totalSeconds % SECONDS_PER_MINUTE
+    return "%d:%02d".format(mins, secs)
 }
 
 private val mmSsTransformation = MmSsVisualTransformation()

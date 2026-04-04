@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nocapfit.data.db.entity.Exercise
+import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ExerciseRepository
+import com.example.nocapfit.data.repository.WorkoutRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ExerciseDetailViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
+    private val workoutRepository: WorkoutRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -25,6 +28,15 @@ class ExerciseDetailViewModel @Inject constructor(
     val exercise: StateFlow<Exercise?> = exerciseRepository
         .getByIdFlow(exerciseId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val exerciseHistory: StateFlow<List<WorkoutWithExercises>> = workoutRepository
+        .getFinishedByExerciseId(exerciseId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _selectedTab = MutableStateFlow(0)
+    val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
+
+    fun selectTab(index: Int) { _selectedTab.value = index }
 
     private val _showDeleteConfirmation = MutableStateFlow(false)
     val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation.asStateFlow()

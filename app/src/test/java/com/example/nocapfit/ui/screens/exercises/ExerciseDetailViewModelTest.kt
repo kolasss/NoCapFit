@@ -4,7 +4,10 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.example.nocapfit.MainDispatcherRule
 import com.example.nocapfit.data.db.entity.Exercise
+import com.example.nocapfit.data.db.entity.Workout
+import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ExerciseRepository
+import com.example.nocapfit.data.repository.WorkoutRepository
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -23,6 +26,7 @@ class ExerciseDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val exerciseRepository = mockk<ExerciseRepository>(relaxUnitFun = true)
+    private val workoutRepository = mockk<WorkoutRepository>(relaxUnitFun = true)
 
     private val testExercise = Exercise(
         id = 1L,
@@ -34,8 +38,9 @@ class ExerciseDetailViewModelTest {
 
     private fun createViewModel(): ExerciseDetailViewModel {
         every { exerciseRepository.getByIdFlow(1L) } returns flowOf(testExercise)
+        every { workoutRepository.getFinishedByExerciseId(1L) } returns flowOf(emptyList())
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 1L))
-        return ExerciseDetailViewModel(exerciseRepository, savedStateHandle)
+        return ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
     }
 
     @Test
@@ -83,10 +88,64 @@ class ExerciseDetailViewModelTest {
     }
 
     @Test
+    fun exerciseHistory_loadsFromRepository() = runTest {
+        val testHistory = listOf(
+            WorkoutWithExercises(
+                workout = Workout(id = 10L, profileId = 1L, startTime = 1000L, endTime = 2000L),
+                exercises = emptyList()
+            )
+        )
+        every { exerciseRepository.getByIdFlow(1L) } returns flowOf(testExercise)
+        every { workoutRepository.getFinishedByExerciseId(1L) } returns flowOf(testHistory)
+        val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 1L))
+        val viewModel = ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
+
+        viewModel.exerciseHistory.test {
+            assertEquals(testHistory, awaitItem())
+        }
+    }
+
+    @Test
+    fun exerciseHistory_emptyWhenNoWorkouts() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.exerciseHistory.test {
+            assertEquals(emptyList<WorkoutWithExercises>(), awaitItem())
+        }
+    }
+
+    @Test
+    fun selectedTab_defaultsToZero() = runTest {
+        val viewModel = createViewModel()
+        assertEquals(0, viewModel.selectedTab.value)
+    }
+
+    @Test
+    fun selectTab_updatesState() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.selectTab(1)
+
+        viewModel.selectedTab.test { assertEquals(1, awaitItem()) }
+    }
+
+    @Test
+    fun selectTab_persistsAcrossAccess() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.selectTab(1)
+        assertEquals(1, viewModel.selectedTab.value)
+
+        viewModel.selectTab(0)
+        assertEquals(0, viewModel.selectedTab.value)
+    }
+
+    @Test
     fun exercise_returnsNullWhenNotFound() = runTest {
         every { exerciseRepository.getByIdFlow(99L) } returns flowOf(null)
+        every { workoutRepository.getFinishedByExerciseId(99L) } returns flowOf(emptyList())
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 99L))
-        val viewModel = ExerciseDetailViewModel(exerciseRepository, savedStateHandle)
+        val viewModel = ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
 
         viewModel.exercise.test {
             assertNull(awaitItem())

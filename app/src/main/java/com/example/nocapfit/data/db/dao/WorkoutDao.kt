@@ -39,6 +39,15 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE profileId = :profileId ORDER BY startTime DESC")
     fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>>
 
+    @Transaction
+    @Query(
+        "SELECT DISTINCT w.* FROM workouts w " +
+            "INNER JOIN workout_exercises we ON w.id = we.workoutId " +
+            "WHERE we.exerciseId = :exerciseId AND w.endTime IS NOT NULL " +
+            "ORDER BY w.startTime DESC"
+    )
+    fun getFinishedByExerciseId(exerciseId: Long): Flow<List<WorkoutWithExercises>>
+
     @Query("SELECT * FROM workouts WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun getActiveWorkout(): Workout?
 

@@ -128,4 +128,24 @@ class SettingsViewModelTest {
         assertEquals(true, result)
         coVerify { backupManager.hasActiveWorkout() }
     }
+
+    @Test
+    fun notificationSoundUri_emitsValueFromPreferences() = runTest {
+        every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
+        every { themePreferences.notificationSoundUri } returns flowOf("content://some/sound")
+
+        val viewModel = SettingsViewModel(themePreferences, backupManager)
+
+        viewModel.notificationSoundUri.test {
+            assertEquals("content://some/sound", awaitItem())
+        }
+    }
+
+    @Test
+    fun setNotificationSoundUri_callsPreferences() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setNotificationSoundUri("content://new/sound")
+
+        coVerify { themePreferences.setNotificationSoundUri("content://new/sound") }
+    }
 }

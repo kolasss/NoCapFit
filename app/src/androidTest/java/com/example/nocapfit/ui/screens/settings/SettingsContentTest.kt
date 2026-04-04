@@ -165,4 +165,59 @@ class SettingsContentTest {
         composeTestRule.onNodeWithText("NoCapFit").assertIsDisplayed()
         composeTestRule.onNodeWithText("Version 1.0").assertIsDisplayed()
     }
+
+    @Test
+    fun rendersNotificationsSection() {
+        composeTestRule.setThemedContent {
+            SettingsContent(
+                themeMode = ThemeMode.SYSTEM,
+                onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {},
+                versionName = "1.0"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Notifications").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Timer Sound").assertIsDisplayed()
+    }
+
+    @Test
+    fun timerSound_showsDefaultWhenUriIsNull() {
+        composeTestRule.setThemedContent {
+            SettingsContent(
+                themeMode = ThemeMode.SYSTEM,
+                onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {},
+                versionName = "1.0"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Default").assertIsDisplayed()
+    }
+
+    @Test
+    fun timerSound_showsSilentWhenEmpty() {
+        composeTestRule.setThemedContent {
+            SettingsContent(
+                themeMode = ThemeMode.SYSTEM,
+                onThemeModeChange = {},
+                notificationSoundUri = "",
+                onTimerSoundClick = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {},
+                versionName = "1.0"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Silent").assertIsDisplayed()
+    }
 }

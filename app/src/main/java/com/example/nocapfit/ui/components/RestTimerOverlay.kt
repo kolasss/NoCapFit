@@ -4,14 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.delay
@@ -39,10 +38,10 @@ fun RestTimerOverlay(
     var currentRemainingMs by remember(endAtEpochMs) {
         mutableLongStateOf((endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0))
     }
-    val progress by remember {
+    val fillProgress by remember {
         derivedStateOf {
             val remainingSec = currentRemainingMs / MILLIS_PER_SECOND
-            if (totalSec > 0) remainingSec.toFloat() / totalSec else 0f
+            if (totalSec > 0) 1f - (remainingSec.toFloat() / totalSec) else 0f
         }
     }
 
@@ -65,6 +64,8 @@ fun RestTimerOverlay(
         exit = slideOutVertically { it },
         modifier = modifier
     ) {
+        val progressColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -77,27 +78,20 @@ fun RestTimerOverlay(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .drawBehind {
+                        drawRect(
+                            color = progressColor,
+                            size = Size(size.width * fillProgress, size.height)
+                        )
+                    }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(
-                            progress = { progress },
-                            modifier = Modifier.size(48.dp),
-                            color = MaterialTheme.colorScheme.tertiary,
-                            trackColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    }
-                    Text(
-                        text = "Rest: $timeText",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
+                Text(
+                    text = "Rest: $timeText",
+                    style = MaterialTheme.typography.headlineMedium
+                )
                 TextButton(onClick = onCancel) {
                     Text("Skip")
                 }

@@ -22,6 +22,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -38,6 +40,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -54,6 +58,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -72,6 +78,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -88,6 +96,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -104,6 +114,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.DARK,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -121,6 +133,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
                 onThemeModeChange = { selectedMode = it },
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
@@ -138,6 +152,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},

@@ -20,6 +20,7 @@ class ThemePreferences @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
+    private val notificationSoundUriKey = stringPreferencesKey("notification_sound_uri")
 
     val themeMode: Flow<ThemeMode> = dataStore.data.map { preferences ->
         val name = preferences[themeModeKey] ?: ThemeMode.SYSTEM.name
@@ -30,9 +31,23 @@ class ThemePreferences @Inject constructor(
         }
     }
 
+    val notificationSoundUri: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[notificationSoundUriKey]
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences ->
             preferences[themeModeKey] = mode.name
+        }
+    }
+
+    suspend fun setNotificationSoundUri(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri != null) {
+                preferences[notificationSoundUriKey] = uri
+            } else {
+                preferences.remove(notificationSoundUriKey)
+            }
         }
     }
 }

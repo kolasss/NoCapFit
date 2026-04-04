@@ -28,12 +28,14 @@ class SettingsViewModelTest {
 
     private fun createViewModel(): SettingsViewModel {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
+        every { themePreferences.notificationSoundUri } returns flowOf(null)
         return SettingsViewModel(themePreferences, backupManager)
     }
 
     @Test
     fun themeMode_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.DARK)
+        every { themePreferences.notificationSoundUri } returns flowOf(null)
 
         val viewModel = SettingsViewModel(themePreferences, backupManager)
 

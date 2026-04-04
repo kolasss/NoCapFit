@@ -1,6 +1,7 @@
 package com.example.nocapfit.ui.screens.settings
 
 import android.content.Intent
+import android.media.RingtoneManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,6 +57,7 @@ fun SettingsScreen(
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val backupEvent by viewModel.backupEvent.collectAsState()
+    val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -80,23 +82,27 @@ fun SettingsScreen(
         }
     }
 
+    val ringtoneLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val pickedUri = result.data
+                ?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            viewModel.setNotificationSoundUri(pickedUri?.toString() ?: "")
+        }
+    }
+
     HandleBackupSnackbar(backupEvent, snackbarHostState, viewModel::clearBackupEvent)
-
-    if (importUri != null) {
-        ImportConfirmDialog(
-            hasActiveWorkout = hasActiveWorkout,
-            onConfirm = {
-                val uri = importUri!!
-                importUri = null
-                viewModel.importDatabase(uri)
-            },
-            onDismiss = { importUri = null }
-        )
-    }
-
-    if (backupEvent is BackupEvent.RestartRequired) {
-        RestartDialog(context = context)
-    }
+    BackupDialogs(
+        importUri = importUri,
+        hasActiveWorkout = hasActiveWorkout,
+        backupEvent = backupEvent,
+        onImportConfirm = { uri ->
+            importUri = null
+            viewModel.importDatabase(uri)
+        },
+        onImportDismiss = { importUri = null }
+    )
 
     Scaffold(
         modifier = modifier,
@@ -115,20 +121,13 @@ fun SettingsScreen(
         SettingsContent(
             themeMode = themeMode,
             onThemeModeChange = { viewModel.setThemeMode(it) },
+            notificationSoundUri = notificationSoundUri,
+            onTimerSoundClick = {
+                ringtoneLauncher.launch(createRingtonePickerIntent(notificationSoundUri))
+            },
             isBackupInProgress = backupEvent is BackupEvent.Exporting ||
                 backupEvent is BackupEvent.Importing,
-            onExportClick = {
-                val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
-                    .toLocalDateTime(TimeZone.currentSystemDefault())
-                val fileName = "nocapfit_backup_%04d-%02d-%02d_%02d-%02d.db".format(
-                    now.year,
-                    now.month.ordinal + 1,
-                    now.day,
-                    now.hour,
-                    now.minute
-                )
-                exportLauncher.launch(fileName)
-            },
+            onExportClick = { exportLauncher.launch(generateBackupFileName()) },
             onImportClick = {
                 importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
             },
@@ -209,6 +208,8 @@ private fun RestartDialog(context: android.content.Context) {
 internal fun SettingsContent(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    notificationSoundUri: String?,
+    onTimerSoundClick: () -> Unit,
     isBackupInProgress: Boolean,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -218,41 +219,20 @@ internal fun SettingsContent(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
+        ThemeSection(themeMode = themeMode, onThemeModeChange = onThemeModeChange)
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
         Text(
-            text = "Appearance",
+            text = "Notifications",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
-        ListItem(
-            headlineContent = { Text("Theme") },
-            supportingContent = {
-                SingleChoiceSegmentedButtonRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                ) {
-                    ThemeMode.entries.forEachIndexed { index, mode ->
-                        SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = ThemeMode.entries.size
-                            ),
-                            onClick = { onThemeModeChange(mode) },
-                            selected = themeMode == mode
-                        ) {
-                            Text(
-                                when (mode) {
-                                    ThemeMode.LIGHT -> "Light"
-                                    ThemeMode.DARK -> "Dark"
-                                    ThemeMode.SYSTEM -> "System"
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+        TimerSoundItem(
+            soundUri = notificationSoundUri,
+            onClick = onTimerSoundClick
         )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -298,4 +278,115 @@ internal fun SettingsContent(
             supportingContent = { Text("Version $versionName") }
         )
     }
+}
+
+@Composable
+private fun BackupDialogs(
+    importUri: Uri?,
+    hasActiveWorkout: Boolean,
+    backupEvent: BackupEvent,
+    onImportConfirm: (Uri) -> Unit,
+    onImportDismiss: () -> Unit
+) {
+    if (importUri != null) {
+        ImportConfirmDialog(
+            hasActiveWorkout = hasActiveWorkout,
+            onConfirm = { onImportConfirm(importUri) },
+            onDismiss = onImportDismiss
+        )
+    }
+
+    if (backupEvent is BackupEvent.RestartRequired) {
+        RestartDialog(context = LocalContext.current)
+    }
+}
+
+private fun generateBackupFileName(): String {
+    val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    return "nocapfit_backup_%04d-%02d-%02d_%02d-%02d.db".format(
+        now.year,
+        now.month.ordinal + 1,
+        now.day,
+        now.hour,
+        now.minute
+    )
+}
+
+private fun createRingtonePickerIntent(currentUri: String?): Intent {
+    return Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+        putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+        putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+        val existingUri = when {
+            currentUri == null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            currentUri.isEmpty() -> null
+            else -> Uri.parse(currentUri)
+        }
+        putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existingUri)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeSection(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) -> Unit) {
+    Text(
+        text = "Appearance",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+
+    ListItem(
+        headlineContent = { Text("Theme") },
+        supportingContent = {
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                ThemeMode.entries.forEachIndexed { index, mode ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = ThemeMode.entries.size
+                        ),
+                        onClick = { onThemeModeChange(mode) },
+                        selected = themeMode == mode
+                    ) {
+                        Text(
+                            when (mode) {
+                                ThemeMode.LIGHT -> "Light"
+                                ThemeMode.DARK -> "Dark"
+                                ThemeMode.SYSTEM -> "System"
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun TimerSoundItem(soundUri: String?, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val soundName = remember(soundUri) {
+        when {
+            soundUri == null -> "Default"
+            soundUri.isEmpty() -> "Silent"
+            else -> try {
+                val uri = Uri.parse(soundUri)
+                RingtoneManager.getRingtone(context, uri)?.getTitle(context) ?: "Unknown"
+            } catch (_: Exception) {
+                "Unknown"
+            }
+        }
+    }
+
+    ListItem(
+        headlineContent = { Text("Timer Sound") },
+        supportingContent = { Text(soundName) },
+        modifier = Modifier.clickable(onClick = onClick)
+    )
 }

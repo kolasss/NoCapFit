@@ -4,19 +4,23 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer
+import com.example.nocapfit.data.preferences.ThemePreferences
 import com.example.nocapfit.util.VIBRATION_DURATION_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TimerRepository @Inject constructor(
     private val activeTimerDao: ActiveTimerDao,
+    private val themePreferences: ThemePreferences,
     @param:ApplicationContext private val context: Context
 ) {
     suspend fun insert(timer: ActiveTimer): Long = activeTimerDao.insert(timer)
@@ -29,11 +33,19 @@ class TimerRepository @Inject constructor(
         val rowsAffected = activeTimerDao.completeIfRunning(timerId)
         if (rowsAffected == 0) return false
 
-        // Play sound
+        // Play sound (empty string = silent)
         try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(context, uri)
-            ringtone?.play()
+            val savedUri = themePreferences.notificationSoundUri.first()
+            if (savedUri != "") {
+                val uri = if (savedUri != null) {
+                    Uri.parse(savedUri)
+                } else {
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                }
+                if (uri != null) {
+                    RingtoneManager.getRingtone(context, uri)?.play()
+                }
+            }
         } catch (_: Exception) { }
 
         // Vibrate

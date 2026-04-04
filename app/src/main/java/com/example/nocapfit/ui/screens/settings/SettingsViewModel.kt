@@ -33,12 +33,21 @@ class SettingsViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = themePreferences.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
 
+    val notificationSoundUri: StateFlow<String?> = themePreferences.notificationSoundUri
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     private val _backupEvent = MutableStateFlow<BackupEvent>(BackupEvent.Idle)
     val backupEvent: StateFlow<BackupEvent> = _backupEvent.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             themePreferences.setThemeMode(mode)
+        }
+    }
+
+    fun setNotificationSoundUri(uri: String?) {
+        viewModelScope.launch {
+            themePreferences.setNotificationSoundUri(uri)
         }
     }
 

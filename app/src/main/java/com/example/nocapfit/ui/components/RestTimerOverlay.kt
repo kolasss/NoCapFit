@@ -64,7 +64,7 @@ fun RestTimerOverlay(
         exit = slideOutVertically { it },
         modifier = modifier
     ) {
-        val progressColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
+        val progressColor = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.3f)
 
         Card(
             modifier = Modifier
@@ -93,7 +93,10 @@ fun RestTimerOverlay(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 TextButton(onClick = onCancel) {
-                    Text("Skip")
+                    Text(
+                        "Skip",
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
                 }
             }
         }

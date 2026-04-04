@@ -88,7 +88,7 @@ fun SettingsScreen(
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val pickedUri = result.data
-                ?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+                ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
             viewModel.setNotificationSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
         }
     }

@@ -4,13 +4,14 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.media.RingtoneManager
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.nocapfit.R
 import com.example.nocapfit.data.db.dao.ActiveTimerDao
 import com.example.nocapfit.data.db.entity.ActiveTimer
 import com.example.nocapfit.data.preferences.ThemePreferences
+import com.example.nocapfit.util.NOTIFICATION_SOUND_SILENT
 import com.example.nocapfit.util.VIBRATION_DURATION_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -36,12 +37,8 @@ class TimerRepository @Inject constructor(
         // Play sound (empty string = silent)
         try {
             val savedUri = themePreferences.notificationSoundUri.first()
-            if (savedUri != "") {
-                val uri = if (savedUri != null) {
-                    Uri.parse(savedUri)
-                } else {
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                }
+            if (savedUri != NOTIFICATION_SOUND_SILENT) {
+                val uri = savedUri?.toUri() ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
                 if (uri != null) {
                     RingtoneManager.getRingtone(context, uri)?.play()
                 }

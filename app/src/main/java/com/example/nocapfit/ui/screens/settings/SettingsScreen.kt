@@ -3,6 +3,7 @@ package com.example.nocapfit.ui.screens.settings
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -43,6 +44,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.BuildConfig
 import com.example.nocapfit.data.preferences.ThemeMode
+import com.example.nocapfit.util.NOTIFICATION_SOUND_SILENT
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -60,7 +62,6 @@ fun SettingsScreen(
     val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     var importUri by remember { mutableStateOf<Uri?>(null) }
     var hasActiveWorkout by remember { mutableStateOf(false) }
@@ -88,7 +89,7 @@ fun SettingsScreen(
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val pickedUri = result.data
                 ?.getParcelableExtra<Uri>(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-            viewModel.setNotificationSoundUri(pickedUri?.toString() ?: "")
+            viewModel.setNotificationSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
         }
     }
 
@@ -320,8 +321,8 @@ private fun createRingtonePickerIntent(currentUri: String?): Intent {
         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
         val existingUri = when {
             currentUri == null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            currentUri.isEmpty() -> null
-            else -> Uri.parse(currentUri)
+            currentUri == NOTIFICATION_SOUND_SILENT -> null
+            else -> currentUri.toUri()
         }
         putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existingUri)
     }
@@ -374,9 +375,9 @@ private fun TimerSoundItem(soundUri: String?, onClick: () -> Unit) {
     val soundName = remember(soundUri) {
         when {
             soundUri == null -> "Default"
-            soundUri.isEmpty() -> "Silent"
+            soundUri == NOTIFICATION_SOUND_SILENT -> "Silent"
             else -> try {
-                val uri = Uri.parse(soundUri)
+                val uri = soundUri.toUri()
                 RingtoneManager.getRingtone(context, uri)?.getTitle(context) ?: "Unknown"
             } catch (_: Exception) {
                 "Unknown"

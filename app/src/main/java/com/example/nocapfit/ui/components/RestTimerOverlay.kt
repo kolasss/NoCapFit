@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -34,15 +33,13 @@ fun RestTimerOverlay(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalSec = totalMs / MILLIS_PER_SECOND
     var currentRemainingMs by remember(endAtEpochMs) {
         mutableLongStateOf((endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0))
     }
-    val fillProgress by remember {
-        derivedStateOf {
-            val remainingSec = currentRemainingMs / MILLIS_PER_SECOND
-            if (totalSec > 0) 1f - (remainingSec.toFloat() / totalSec) else 0f
-        }
+    val fillProgress = if (totalMs > 0) {
+        1f - (currentRemainingMs.toFloat() / totalMs)
+    } else {
+        0f
     }
 
     LaunchedEffect(endAtEpochMs, totalMs) {

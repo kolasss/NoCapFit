@@ -89,27 +89,18 @@ fun ExerciseCard(
 
             val sortedSets = remember(sets) { sets.sortedBy { it.setIndex } }
             sortedSets.forEachIndexed { index, workoutSet ->
-                SetRow(
-                    setNumber = index + 1,
+                ExerciseSetItem(
+                    index = index,
                     workoutSet = workoutSet,
-                    onWeightChange = { newWeight -> onWeightChange(workoutSet, newWeight) },
-                    onRepsChange = { newReps -> onRepsChange(workoutSet, newReps) },
-                    onToggleComplete = { onToggleComplete(workoutSet) },
+                    onWeightChange = onWeightChange,
+                    onRepsChange = onRepsChange,
+                    onToggleComplete = onToggleComplete,
+                    onRestTimeChange = onRestTimeChange,
+                    showRestTime = showRestTime,
+                    activeTimerSetId = activeTimerSetId,
+                    timerEndAtEpochMs = timerEndAtEpochMs,
                     previousText = previousSets?.get(workoutSet.setIndex)
                 )
-                if (showRestTime) {
-                    RestTimeRow(
-                        restTimeSeconds = workoutSet.restTimeSeconds,
-                        onRestTimeChange = if (onRestTimeChange != null) {
-                            { newSeconds -> onRestTimeChange(workoutSet, newSeconds) }
-                        } else {
-                            null
-                        },
-                        isTimerActive = activeTimerSetId == workoutSet.id,
-                        timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L,
-                        isCompleted = workoutSet.completed
-                    )
-                }
             }
         }
     }
@@ -123,6 +114,62 @@ fun ExerciseCard(
         },
         onDismiss = { showRemoveDialog = false }
     )
+}
+
+@Composable
+private fun ExerciseSetItem(
+    index: Int,
+    workoutSet: WorkoutSet,
+    onWeightChange: (WorkoutSet, Int) -> Unit,
+    onRepsChange: (WorkoutSet, Int) -> Unit,
+    onToggleComplete: (WorkoutSet) -> Unit,
+    onRestTimeChange: ((WorkoutSet, Int) -> Unit)?,
+    showRestTime: Boolean,
+    activeTimerSetId: Long?,
+    timerEndAtEpochMs: Long,
+    previousText: String?
+) {
+    val rememberedOnWeightChange = remember(workoutSet.id) {
+        {
+                newWeight: Int ->
+            onWeightChange(workoutSet, newWeight)
+        }
+    }
+    val rememberedOnRepsChange = remember(workoutSet.id) {
+        {
+                newReps: Int ->
+            onRepsChange(workoutSet, newReps)
+        }
+    }
+    val rememberedOnToggleComplete = remember(workoutSet.id) {
+        {
+            onToggleComplete(workoutSet)
+        }
+    }
+    SetRow(
+        setNumber = index + 1,
+        workoutSet = workoutSet,
+        onWeightChange = rememberedOnWeightChange,
+        onRepsChange = rememberedOnRepsChange,
+        onToggleComplete = rememberedOnToggleComplete,
+        previousText = previousText
+    )
+    if (showRestTime) {
+        val rememberedOnRestTimeChange = remember(workoutSet.id, onRestTimeChange) {
+            if (onRestTimeChange != null) {
+                { newSeconds: Int -> onRestTimeChange(workoutSet, newSeconds) }
+            } else {
+                null
+            }
+        }
+        RestTimeRow(
+            restTimeSeconds = workoutSet.restTimeSeconds,
+            onRestTimeChange = rememberedOnRestTimeChange,
+            isTimerActive = activeTimerSetId == workoutSet.id,
+            timerEndAtEpochMs = if (activeTimerSetId == workoutSet.id) timerEndAtEpochMs else 0L,
+            isCompleted = workoutSet.completed
+        )
+    }
 }
 
 @Composable

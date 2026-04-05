@@ -247,8 +247,12 @@ private fun WorkoutExerciseList(
     onAddExerciseClick: () -> Unit,
     onFinishClick: () -> Unit
 ) {
-    val completedSets = sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
-    val totalSets = sortedExercises.sumOf { it.sets.size }
+    val completedSets = remember(sortedExercises) {
+        sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
+    }
+    val totalSets = remember(sortedExercises) {
+        sortedExercises.sumOf { it.sets.size }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -260,7 +264,7 @@ private fun WorkoutExerciseList(
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
+        item(contentType = "summary") {
             WorkoutSummaryCard(
                 exerciseCount = sortedExercises.size,
                 completedSets = completedSets,
@@ -268,45 +272,28 @@ private fun WorkoutExerciseList(
             )
         }
 
-        itemsIndexed(sortedExercises, key = { _, item -> item.workoutExercise.id }) { index, exerciseWithSets ->
-            val id = exerciseWithSets.workoutExercise.id
-            val exId = exerciseWithSets.workoutExercise.exerciseId
-            val exercisePrevSets = if (exId != null) {
-                previousSets.filterKeys { it.first == exId }
-                    .map { (key, data) -> key.second to formatPrevSet(data) }
-                    .toMap()
-            } else {
-                null
-            }
-            ExerciseCard(
-                exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-                sets = exerciseWithSets.sets,
-                workoutExerciseId = id,
-                onRemoveExercise = onRemoveExercise,
-                onAddSet = onAddSet,
-                onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
-                onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
-                onToggleComplete = { ws ->
-                    if (ws.completed) {
-                        onRevertSet(ws.id)
-                    } else {
-                        onCompleteSet(ws.id, ws.restTimeSeconds)
-                    }
-                },
-                onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
+        itemsIndexed(
+            sortedExercises,
+            key = { _, item -> item.workoutExercise.id },
+            contentType = { _, _ -> "exercise" }
+        ) { index, exerciseWithSets ->
+            ExerciseCardItem(
+                exerciseWithSets = exerciseWithSets,
+                index = index,
+                lastIndex = sortedExercises.lastIndex,
+                previousSets = previousSets,
                 activeTimerSetId = activeTimerSetId,
                 timerEndAtEpochMs = timerEndAtEpochMs,
-                onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null,
-                onMoveDown = if (index < sortedExercises.lastIndex) {
-                    { onMoveExercise(id, 1) }
-                } else {
-                    null
-                },
-                previousSets = exercisePrevSets
+                onMoveExercise = onMoveExercise,
+                onRemoveExercise = onRemoveExercise,
+                onAddSet = onAddSet,
+                onUpdateSet = onUpdateSet,
+                onCompleteSet = onCompleteSet,
+                onRevertSet = onRevertSet
             )
         }
 
-        item {
+        item(contentType = "controls") {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -320,6 +307,62 @@ private fun WorkoutExerciseList(
             }
         }
     }
+}
+
+@Composable
+private fun ExerciseCardItem(
+    exerciseWithSets: com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets,
+    index: Int,
+    lastIndex: Int,
+    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    activeTimerSetId: Long?,
+    timerEndAtEpochMs: Long,
+    onMoveExercise: (Long, Int) -> Unit,
+    onRemoveExercise: (Long) -> Unit,
+    onAddSet: (Long) -> Unit,
+    onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onCompleteSet: (Long, Int) -> Unit,
+    onRevertSet: (Long) -> Unit
+) {
+    val id = exerciseWithSets.workoutExercise.id
+    val exId = exerciseWithSets.workoutExercise.exerciseId
+    val exercisePrevSets = remember(exId, previousSets) {
+        if (exId != null) {
+            previousSets.filterKeys { it.first == exId }
+                .map { (key, data) -> key.second to formatPrevSet(data) }
+                .toMap()
+        } else {
+            null
+        }
+    }
+    val onMoveUp = remember(id, index) {
+        if (index > 0) { { onMoveExercise(id, -1) } } else null
+    }
+    val onMoveDown = remember(id, index, lastIndex) {
+        if (index < lastIndex) { { onMoveExercise(id, 1) } } else null
+    }
+    ExerciseCard(
+        exerciseName = exerciseWithSets.workoutExercise.exerciseName,
+        sets = exerciseWithSets.sets,
+        workoutExerciseId = id,
+        onRemoveExercise = onRemoveExercise,
+        onAddSet = onAddSet,
+        onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
+        onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
+        onToggleComplete = { ws ->
+            if (ws.completed) {
+                onRevertSet(ws.id)
+            } else {
+                onCompleteSet(ws.id, ws.restTimeSeconds)
+            }
+        },
+        onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
+        activeTimerSetId = activeTimerSetId,
+        timerEndAtEpochMs = timerEndAtEpochMs,
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
+        previousSets = exercisePrevSets
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -209,4 +209,5 @@ class WorkoutInProgressViewModel @Inject constructor(
     }
 }
 
+@androidx.compose.runtime.Immutable
 data class PreviousSetData(val weightThousandths: Int, val reps: Int)

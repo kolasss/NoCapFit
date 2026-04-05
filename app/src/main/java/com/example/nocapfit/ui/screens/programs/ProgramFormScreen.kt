@@ -16,12 +16,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -90,6 +91,7 @@ fun ProgramFormScreen(
             onAddSet = viewModel::addSet,
             onRemoveSet = viewModel::removeSet,
             onUpdateSet = viewModel::updateSet,
+            onSetRestTimeForAll = viewModel::setRestTimeForAll,
             onShowExercisePicker = { showExercisePicker = true },
             modifier = Modifier.padding(padding)
         )
@@ -116,6 +118,7 @@ internal fun ProgramFormContent(
     onAddSet: (Int) -> Unit,
     onRemoveSet: (Int, Int) -> Unit,
     onUpdateSet: (Int, Int, SetEntry) -> Unit,
+    onSetRestTimeForAll: (Int, String) -> Unit,
     onShowExercisePicker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -175,7 +178,8 @@ internal fun ProgramFormContent(
                     onRemoveExercise = onRemoveExercise,
                     onAddSet = onAddSet,
                     onRemoveSet = onRemoveSet,
-                    onUpdateSet = onUpdateSet
+                    onUpdateSet = onUpdateSet,
+                    onSetRestTimeForAll = onSetRestTimeForAll
                 )
             }
 
@@ -233,7 +237,8 @@ private fun ExerciseCardItem(
     onRemoveExercise: (Int) -> Unit,
     onAddSet: (Int) -> Unit,
     onRemoveSet: (Int, Int) -> Unit,
-    onUpdateSet: (Int, Int, SetEntry) -> Unit
+    onUpdateSet: (Int, Int, SetEntry) -> Unit,
+    onSetRestTimeForAll: (Int, String) -> Unit
 ) {
     val onMoveUp = remember(exerciseIndex) {
         if (exerciseIndex > 0) {
@@ -263,6 +268,12 @@ private fun ExerciseCardItem(
             onUpdateSet(exerciseIndex, setIndex, setEntry)
         }
     }
+    val onSetRestTimeForAllCallback = remember(exerciseIndex) {
+        {
+                digits: String ->
+            onSetRestTimeForAll(exerciseIndex, digits)
+        }
+    }
     ExerciseCard(
         exerciseEntry = exerciseEntry,
         onMoveUp = onMoveUp,
@@ -270,7 +281,8 @@ private fun ExerciseCardItem(
         onRemoveExercise = onRemove,
         onAddSet = onAdd,
         onRemoveSet = onRemoveSetCallback,
-        onUpdateSet = onUpdateSetCallback
+        onUpdateSet = onUpdateSetCallback,
+        onSetRestTimeForAll = onSetRestTimeForAllCallback
     )
 }
 
@@ -282,8 +294,10 @@ private fun ExerciseCard(
     onRemoveExercise: () -> Unit,
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
-    onUpdateSet: (Int, SetEntry) -> Unit
+    onUpdateSet: (Int, SetEntry) -> Unit,
+    onSetRestTimeForAll: (String) -> Unit
 ) {
+    var showRestTimeDialog by remember { mutableStateOf(false) }
     OutlinedCard(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -298,23 +312,12 @@ private fun ExerciseCard(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
-                if (onMoveUp != null) {
-                    IconButton(onClick = onMoveUp) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move up")
-                    }
-                }
-                if (onMoveDown != null) {
-                    IconButton(onClick = onMoveDown) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move down")
-                    }
-                }
-                IconButton(onClick = onRemoveExercise) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Remove exercise",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
+                ExerciseOverflowMenu(
+                    onMoveUp = onMoveUp,
+                    onMoveDown = onMoveDown,
+                    onSetRestTimeForAll = { showRestTimeDialog = true },
+                    onRemoveExercise = onRemoveExercise
+                )
             }
 
             exerciseEntry.sets.forEachIndexed { setIndex, setEntry ->
@@ -349,6 +352,15 @@ private fun ExerciseCard(
                 Text("Add Set")
             }
         }
+    }
+    if (showRestTimeDialog) {
+        RestTimeForAllDialog(
+            onDismiss = { showRestTimeDialog = false },
+            onConfirm = { digits ->
+                onSetRestTimeForAll(digits)
+                showRestTimeDialog = false
+            }
+        )
     }
 }
 
@@ -422,4 +434,90 @@ private fun SetRow(
             )
         }
     }
+}
+
+@Composable
+private fun ExerciseOverflowMenu(
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+    onSetRestTimeForAll: () -> Unit,
+    onRemoveExercise: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Exercise options")
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            if (onMoveUp != null) {
+                DropdownMenuItem(
+                    text = { Text("Move Up") },
+                    onClick = {
+                        expanded = false
+                        onMoveUp()
+                    }
+                )
+            }
+            if (onMoveDown != null) {
+                DropdownMenuItem(
+                    text = { Text("Move Down") },
+                    onClick = {
+                        expanded = false
+                        onMoveDown()
+                    }
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("Set Rest Time for All Sets") },
+                onClick = {
+                    expanded = false
+                    onSetRestTimeForAll()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Remove Exercise") },
+                onClick = {
+                    expanded = false
+                    onRemoveExercise()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RestTimeForAllDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var restTimeDigits by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set Rest Time for All Sets") },
+        text = {
+            OutlinedTextField(
+                value = restTimeDigits,
+                onValueChange = { newValue ->
+                    restTimeDigits = newValue.filter { it.isDigit() }.take(4)
+                },
+                label = { Text("Rest Time") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = MmSsVisualTransformation()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(restTimeDigits) }) {
+                Text("Apply")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

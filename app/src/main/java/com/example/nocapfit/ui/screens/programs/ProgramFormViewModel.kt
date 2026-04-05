@@ -170,6 +170,16 @@ class ProgramFormViewModel @Inject constructor(
         _uiState.value = current.copy(exercises = exercises)
     }
 
+    fun setRestTimeForAll(exerciseIndex: Int, restTimeDigits: String) {
+        val current = _uiState.value
+        val exercises = current.exercises.toMutableList()
+        val entry = exercises[exerciseIndex]
+        exercises[exerciseIndex] = entry.copy(
+            sets = entry.sets.map { it.copy(restTimeSeconds = restTimeDigits) }
+        )
+        _uiState.value = current.copy(exercises = exercises)
+    }
+
     suspend fun save(): Boolean {
         val state = _uiState.value
         val profileId = _profileId.value ?: return false

@@ -107,17 +107,10 @@ class RestTimerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val progressStyle = Notification.ProgressStyle()
-            .setProgressSegments(
-                listOf(Notification.ProgressStyle.Segment(totalSeconds))
-            )
-            .setProgress(elapsedSeconds)
-
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo_foreground)
             .setContentTitle("Rest Timer")
             .setProgress(totalSeconds, elapsedSeconds, false)
-            .setStyle(progressStyle)
             .setOngoing(true)
             .apply {
                 if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) {

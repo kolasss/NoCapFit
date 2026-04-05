@@ -129,19 +129,19 @@ private fun ExerciseSetItem(
     timerEndAtEpochMs: Long,
     previousText: String?
 ) {
-    val rememberedOnWeightChange = remember(workoutSet.id) {
+    val rememberedOnWeightChange = remember(workoutSet) {
         {
                 newWeight: Int ->
             onWeightChange(workoutSet, newWeight)
         }
     }
-    val rememberedOnRepsChange = remember(workoutSet.id) {
+    val rememberedOnRepsChange = remember(workoutSet) {
         {
                 newReps: Int ->
             onRepsChange(workoutSet, newReps)
         }
     }
-    val rememberedOnToggleComplete = remember(workoutSet.id) {
+    val rememberedOnToggleComplete = remember(workoutSet) {
         {
             onToggleComplete(workoutSet)
         }
@@ -155,7 +155,7 @@ private fun ExerciseSetItem(
         previousText = previousText
     )
     if (showRestTime) {
-        val rememberedOnRestTimeChange = remember(workoutSet.id, onRestTimeChange) {
+        val rememberedOnRestTimeChange = remember(workoutSet, onRestTimeChange) {
             if (onRestTimeChange != null) {
                 { newSeconds: Int -> onRestTimeChange(workoutSet, newSeconds) }
             } else {

@@ -142,17 +142,26 @@ class WorkoutInProgressViewModel @Inject constructor(
                     orderIndex = maxOrder + 1
                 )
             )
+            val prev = loadPreviousSetForExercise(exerciseId, setIndex = 0)
             workoutRepository.insertWorkoutSet(
                 WorkoutSet(
                     workoutExerciseId = weId,
                     setIndex = 0,
-                    weightThousandths = 0,
-                    reps = 0,
-                    restTimeSeconds = 60,
+                    weightThousandths = prev?.weightThousandths ?: 0,
+                    reps = prev?.reps ?: 0,
+                    restTimeSeconds = DEFAULT_REST_TIME_SECONDS,
                     completed = false
                 )
             )
         }
+    }
+
+    private suspend fun loadPreviousSetForExercise(exerciseId: Long, setIndex: Int): WorkoutSet? {
+        val previousWorkout = workoutRepository.getLastFinishedByExerciseId(exerciseId)
+            ?: return null
+        val exercise = previousWorkout.exercises.find { it.workoutExercise.exerciseId == exerciseId }
+            ?: return null
+        return exercise.sets.find { it.setIndex == setIndex && it.completed }
     }
 
     fun removeExercise(workoutExerciseId: Long) {
@@ -206,6 +215,10 @@ class WorkoutInProgressViewModel @Inject constructor(
         return workout.value?.exercises
             ?.flatMap { it.sets }
             ?.find { it.id == workoutSetId }
+    }
+
+    companion object {
+        private const val DEFAULT_REST_TIME_SECONDS = 60
     }
 }
 

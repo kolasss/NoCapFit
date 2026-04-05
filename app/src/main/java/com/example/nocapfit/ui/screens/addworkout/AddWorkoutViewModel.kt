@@ -71,6 +71,7 @@ class AddWorkoutViewModel @Inject constructor(
             startTime = System.currentTimeMillis(),
             endTime = null
         )
+        val previousSets = buildPreviousSetsMap(programWithExercises.program.id)
         val exercisesWithSets = programWithExercises.exercises.map { peWithSets ->
             val we = WorkoutExercise(
                 workoutId = 0L,
@@ -79,11 +80,12 @@ class AddWorkoutViewModel @Inject constructor(
                 orderIndex = peWithSets.programExercise.orderIndex
             )
             val sets = peWithSets.sets.map { programSet ->
+                val prev = previousSets[peWithSets.exercise.id to programSet.setIndex]
                 WorkoutSet(
                     workoutExerciseId = 0L,
                     setIndex = programSet.setIndex,
-                    weightThousandths = programSet.weightThousandths,
-                    reps = programSet.reps,
+                    weightThousandths = prev?.first ?: programSet.weightThousandths,
+                    reps = prev?.second ?: programSet.reps,
                     restTimeSeconds = programSet.restTimeSeconds,
                     completed = false
                 )
@@ -91,6 +93,21 @@ class AddWorkoutViewModel @Inject constructor(
             we to sets
         }
         return workoutRepository.insertWorkoutWithExercises(workout, exercisesWithSets)
+    }
+
+    private suspend fun buildPreviousSetsMap(
+        programId: Long
+    ): Map<Pair<Long, Int>, Pair<Int, Int>> {
+        val previous = workoutRepository.getLastFinishedByProgramId(programId, excludeWorkoutId = 0)
+            ?: return emptyMap()
+        val map = mutableMapOf<Pair<Long, Int>, Pair<Int, Int>>()
+        for (exercise in previous.exercises) {
+            val exId = exercise.workoutExercise.exerciseId ?: continue
+            for (set in exercise.sets.filter { it.completed }) {
+                map[exId to set.setIndex] = set.weightThousandths to set.reps
+            }
+        }
+        return map
     }
 
     suspend fun createEmptyWorkout(): Long {

@@ -308,4 +308,63 @@ class WorkoutInProgressViewModelTest {
 
         assertTrue(viewModel.previousSets.value.isEmpty())
     }
+
+    @Test
+    fun addExerciseFromDb_prefillsFromPreviousWorkout() = runTest {
+        val previousWorkout = WorkoutWithExercises(
+            workout = Workout(id = 50L, profileId = 1L, startTime = 100L, endTime = 200L),
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(
+                        id = 500L,
+                        workoutId = 50L,
+                        exerciseName = "OHP",
+                        exerciseId = 5L,
+                        orderIndex = 0
+                    ),
+                    sets = listOf(
+                        WorkoutSet(
+                            id = 50L,
+                            workoutExerciseId = 500L,
+                            setIndex = 0,
+                            weightThousandths = 40000,
+                            reps = 10,
+                            restTimeSeconds = 90,
+                            completed = true
+                        )
+                    )
+                )
+            )
+        )
+        coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
+        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
+        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
+        coEvery { workoutRepository.getLastFinishedByExerciseId(5L) } returns previousWorkout
+
+        val viewModel = createViewModel()
+        viewModel.addExerciseFromDb(5L, "OHP")
+
+        coVerify {
+            workoutRepository.insertWorkoutSet(
+                match { it.weightThousandths == 40000 && it.reps == 10 && it.restTimeSeconds == 60 }
+            )
+        }
+    }
+
+    @Test
+    fun addExerciseFromDb_defaultsWhenNoPreviousWorkout() = runTest {
+        coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
+        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
+        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
+        coEvery { workoutRepository.getLastFinishedByExerciseId(5L) } returns null
+
+        val viewModel = createViewModel()
+        viewModel.addExerciseFromDb(5L, "OHP")
+
+        coVerify {
+            workoutRepository.insertWorkoutSet(
+                match { it.weightThousandths == 0 && it.reps == 0 && it.restTimeSeconds == 60 }
+            )
+        }
+    }
 }

@@ -7,8 +7,13 @@ import com.example.nocapfit.data.db.entity.Profile
 import com.example.nocapfit.data.db.entity.Program
 import com.example.nocapfit.data.db.entity.ProgramExercise
 import com.example.nocapfit.data.db.entity.ProgramExerciseSet
+import com.example.nocapfit.data.db.entity.Workout
+import com.example.nocapfit.data.db.entity.WorkoutExercise
+import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.ProgramExerciseWithSets
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
+import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
+import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
@@ -126,6 +131,7 @@ class AddWorkoutViewModelTest {
     fun createWorkoutFromProgram_insertsWorkoutWithExercisesTransactionally() = runTest {
         coEvery { workoutRepository.insertWorkoutWithExercises(any(), any()) } returns 42L
         coEvery { programRepository.getProgramWithExercises(10L) } returns testProgram
+        coEvery { workoutRepository.getLastFinishedByProgramId(10L, 0) } returns null
         val viewModel = createViewModel()
 
         val workoutId = viewModel.createWorkoutFromProgram(10L)
@@ -139,6 +145,57 @@ class AddWorkoutViewModelTest {
                         exercises[0].first.exerciseName == "Bench Press" &&
                         exercises[0].second.size == 1 &&
                         exercises[0].second[0].weightThousandths == 60000
+                }
+            )
+        }
+    }
+
+    @Test
+    fun createWorkoutFromProgram_prefillsFromPreviousWorkout() = runTest {
+        coEvery { workoutRepository.insertWorkoutWithExercises(any(), any()) } returns 42L
+        coEvery { programRepository.getProgramWithExercises(10L) } returns testProgram
+        val previousWorkout = WorkoutWithExercises(
+            workout = Workout(
+                id = 99L,
+                profileId = 1L,
+                startTime = 500L,
+                endTime = 900L,
+                programId = 10L
+            ),
+            exercises = listOf(
+                WorkoutExerciseWithSets(
+                    workoutExercise = WorkoutExercise(
+                        id = 300L,
+                        workoutId = 99L,
+                        exerciseName = "Bench Press",
+                        exerciseId = 1L,
+                        orderIndex = 0
+                    ),
+                    sets = listOf(
+                        WorkoutSet(
+                            id = 30L,
+                            workoutExerciseId = 300L,
+                            setIndex = 0,
+                            weightThousandths = 75000,
+                            reps = 12,
+                            restTimeSeconds = 120,
+                            completed = true
+                        )
+                    )
+                )
+            )
+        )
+        coEvery { workoutRepository.getLastFinishedByProgramId(10L, 0) } returns previousWorkout
+        val viewModel = createViewModel()
+
+        viewModel.createWorkoutFromProgram(10L)
+
+        coVerify {
+            workoutRepository.insertWorkoutWithExercises(
+                any(),
+                match { exercises ->
+                    val set = exercises[0].second[0]
+                    set.weightThousandths == 75000 && set.reps == 12 && set.restTimeSeconds == 90
                 }
             )
         }

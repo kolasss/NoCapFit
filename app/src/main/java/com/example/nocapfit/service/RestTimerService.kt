@@ -116,6 +116,7 @@ class RestTimerService : Service() {
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo_foreground)
             .setContentTitle("Rest Timer")
+            .setProgress(totalSeconds, elapsedSeconds, false)
             .setStyle(progressStyle)
             .setOngoing(true)
             .apply {

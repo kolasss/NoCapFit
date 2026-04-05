@@ -1,5 +1,6 @@
 package com.example.nocapfit.ui.screens.programs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.ui.components.ExercisePickerSheet
 import com.example.nocapfit.ui.components.MmSsVisualTransformation
+import com.example.nocapfit.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,6 +94,9 @@ fun ProgramFormScreen(
             onRemoveSet = viewModel::removeSet,
             onUpdateSet = viewModel::updateSet,
             onSetRestTimeForAll = viewModel::setRestTimeForAll,
+            onExerciseTitleClick = { exerciseId ->
+                navController.navigate(Screen.ExerciseDetail.createRoute(exerciseId))
+            },
             onShowExercisePicker = { showExercisePicker = true },
             modifier = Modifier.padding(padding)
         )
@@ -119,6 +124,7 @@ internal fun ProgramFormContent(
     onRemoveSet: (Int, Int) -> Unit,
     onUpdateSet: (Int, Int, SetEntry) -> Unit,
     onSetRestTimeForAll: (Int, String) -> Unit,
+    onExerciseTitleClick: (Long) -> Unit,
     onShowExercisePicker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -179,7 +185,8 @@ internal fun ProgramFormContent(
                     onAddSet = onAddSet,
                     onRemoveSet = onRemoveSet,
                     onUpdateSet = onUpdateSet,
-                    onSetRestTimeForAll = onSetRestTimeForAll
+                    onSetRestTimeForAll = onSetRestTimeForAll,
+                    onExerciseTitleClick = onExerciseTitleClick
                 )
             }
 
@@ -238,7 +245,8 @@ private fun ExerciseCardItem(
     onAddSet: (Int) -> Unit,
     onRemoveSet: (Int, Int) -> Unit,
     onUpdateSet: (Int, Int, SetEntry) -> Unit,
-    onSetRestTimeForAll: (Int, String) -> Unit
+    onSetRestTimeForAll: (Int, String) -> Unit,
+    onExerciseTitleClick: (Long) -> Unit
 ) {
     val onMoveUp = remember(exerciseIndex) {
         if (exerciseIndex > 0) {
@@ -282,7 +290,12 @@ private fun ExerciseCardItem(
         onAddSet = onAdd,
         onRemoveSet = onRemoveSetCallback,
         onUpdateSet = onUpdateSetCallback,
-        onSetRestTimeForAll = onSetRestTimeForAllCallback
+        onSetRestTimeForAll = onSetRestTimeForAllCallback,
+        onExerciseTitleClick = remember(exerciseEntry.exercise.id) {
+            {
+                onExerciseTitleClick(exerciseEntry.exercise.id)
+            }
+        }
     )
 }
 
@@ -295,7 +308,8 @@ private fun ExerciseCard(
     onAddSet: () -> Unit,
     onRemoveSet: (Int) -> Unit,
     onUpdateSet: (Int, SetEntry) -> Unit,
-    onSetRestTimeForAll: (String) -> Unit
+    onSetRestTimeForAll: (String) -> Unit,
+    onExerciseTitleClick: () -> Unit
 ) {
     var showRestTimeDialog by remember { mutableStateOf(false) }
     OutlinedCard(
@@ -310,7 +324,10 @@ private fun ExerciseCard(
                 Text(
                     text = exerciseEntry.exercise.name,
                     style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(onClick = onExerciseTitleClick)
                 )
                 ExerciseOverflowMenu(
                     onMoveUp = onMoveUp,

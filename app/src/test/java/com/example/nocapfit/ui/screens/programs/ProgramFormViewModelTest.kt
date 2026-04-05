@@ -137,6 +137,63 @@ class ProgramFormViewModelTest {
         assertEquals("My Program", viewModel.uiState.value.name)
     }
 
+    // --- updateSet ---
+
+    @Test
+    fun updateSet_updatesSetEntry() {
+        val viewModel = createViewModel()
+        viewModel.addExercise(testExercise)
+
+        val updated = SetEntry(weight = "100", reps = "8", restTimeSeconds = "0130")
+        viewModel.updateSet(0, 0, updated)
+
+        val set = viewModel.uiState.value.exercises[0].sets[0]
+        assertEquals("100", set.weight)
+        assertEquals("8", set.reps)
+        assertEquals("0130", set.restTimeSeconds)
+    }
+
+    // --- setRestTimeForAll ---
+
+    @Test
+    fun setRestTimeForAll_updatesAllSetsInExercise() {
+        val viewModel = createViewModel()
+        viewModel.addExercise(testExercise)
+        viewModel.addSet(0)
+        viewModel.addSet(0)
+        assertEquals(3, viewModel.uiState.value.exercises[0].sets.size)
+
+        viewModel.setRestTimeForAll(0, "0200")
+
+        val sets = viewModel.uiState.value.exercises[0].sets
+        sets.forEach { assertEquals("0200", it.restTimeSeconds) }
+    }
+
+    @Test
+    fun setRestTimeForAll_doesNotAffectOtherExercises() {
+        val viewModel = createViewModel()
+        val exercise2 = Exercise(id = 2L, profileId = 1L, name = "Squat")
+        viewModel.addExercise(testExercise)
+        viewModel.addExercise(exercise2)
+
+        viewModel.setRestTimeForAll(0, "0130")
+
+        val exercises = viewModel.uiState.value.exercises
+        assertEquals("0130", exercises[0].sets[0].restTimeSeconds)
+        assertEquals("100", exercises[1].sets[0].restTimeSeconds)
+    }
+
+    @Test
+    fun setRestTimeForAll_emptyDigits_clearsRestTime() {
+        val viewModel = createViewModel()
+        viewModel.addExercise(testExercise)
+        viewModel.updateSet(0, 0, SetEntry(weight = "", reps = "", restTimeSeconds = "0200"))
+
+        viewModel.setRestTimeForAll(0, "")
+
+        assertEquals("", viewModel.uiState.value.exercises[0].sets[0].restTimeSeconds)
+    }
+
     // --- Save validation ---
 
     @Test

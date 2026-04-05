@@ -133,7 +133,7 @@ internal fun ProgramFormContent(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item {
+            item(contentType = "name") {
                 OutlinedTextField(
                     value = uiState.name,
                     onValueChange = onNameChange,
@@ -151,7 +151,7 @@ internal fun ProgramFormContent(
             }
 
             if (uiState.exercises.isNotEmpty()) {
-                item {
+                item(contentType = "header") {
                     Text(
                         text = "Exercises",
                         style = MaterialTheme.typography.labelLarge,
@@ -161,29 +161,25 @@ internal fun ProgramFormContent(
                 }
             }
 
-            itemsIndexed(uiState.exercises) { exerciseIndex, exerciseEntry ->
-                ExerciseCard(
+            itemsIndexed(
+                uiState.exercises,
+                key = { _, entry -> entry.exercise.id },
+                contentType = { _, _ -> "exercise" }
+            ) { exerciseIndex, exerciseEntry ->
+                ExerciseCardItem(
+                    exerciseIndex = exerciseIndex,
                     exerciseEntry = exerciseEntry,
-                    onMoveUp = if (exerciseIndex > 0) {
-                        { onMoveExercise(exerciseIndex, exerciseIndex - 1) }
-                    } else {
-                        null
-                    },
-                    onMoveDown = if (exerciseIndex < uiState.exercises.lastIndex) {
-                        { onMoveExercise(exerciseIndex, exerciseIndex + 1) }
-                    } else {
-                        null
-                    },
-                    onRemoveExercise = { onRemoveExercise(exerciseIndex) },
-                    onAddSet = { onAddSet(exerciseIndex) },
-                    onRemoveSet = { setIndex -> onRemoveSet(exerciseIndex, setIndex) },
-                    onUpdateSet = { setIndex, setEntry ->
-                        onUpdateSet(exerciseIndex, setIndex, setEntry)
-                    }
+                    lastIndex = uiState.exercises.lastIndex,
+                    exerciseCount = uiState.exercises.size,
+                    onMoveExercise = onMoveExercise,
+                    onRemoveExercise = onRemoveExercise,
+                    onAddSet = onAddSet,
+                    onRemoveSet = onRemoveSet,
+                    onUpdateSet = onUpdateSet
                 )
             }
 
-            item {
+            item(contentType = "controls") {
                 Spacer(modifier = Modifier.height(4.dp))
                 FilledTonalButton(
                     onClick = onShowExercisePicker,
@@ -224,6 +220,57 @@ internal fun ProgramFormTopBar(
                 Text("Save")
             }
         }
+    )
+}
+
+@Composable
+private fun ExerciseCardItem(
+    exerciseIndex: Int,
+    exerciseEntry: ExerciseEntry,
+    lastIndex: Int,
+    exerciseCount: Int,
+    onMoveExercise: (Int, Int) -> Unit,
+    onRemoveExercise: (Int) -> Unit,
+    onAddSet: (Int) -> Unit,
+    onRemoveSet: (Int, Int) -> Unit,
+    onUpdateSet: (Int, Int, SetEntry) -> Unit
+) {
+    val onMoveUp = remember(exerciseIndex) {
+        if (exerciseIndex > 0) {
+            { onMoveExercise(exerciseIndex, exerciseIndex - 1) }
+        } else {
+            null
+        }
+    }
+    val onMoveDown = remember(exerciseIndex, exerciseCount) {
+        if (exerciseIndex < lastIndex) {
+            { onMoveExercise(exerciseIndex, exerciseIndex + 1) }
+        } else {
+            null
+        }
+    }
+    val onRemove = remember(exerciseIndex) { { onRemoveExercise(exerciseIndex) } }
+    val onAdd = remember(exerciseIndex) { { onAddSet(exerciseIndex) } }
+    val onRemoveSetCallback = remember(exerciseIndex) {
+        {
+                setIndex: Int ->
+            onRemoveSet(exerciseIndex, setIndex)
+        }
+    }
+    val onUpdateSetCallback = remember(exerciseIndex) {
+        {
+                setIndex: Int, setEntry: SetEntry ->
+            onUpdateSet(exerciseIndex, setIndex, setEntry)
+        }
+    }
+    ExerciseCard(
+        exerciseEntry = exerciseEntry,
+        onMoveUp = onMoveUp,
+        onMoveDown = onMoveDown,
+        onRemoveExercise = onRemove,
+        onAddSet = onAdd,
+        onRemoveSet = onRemoveSetCallback,
+        onUpdateSet = onUpdateSetCallback
     )
 }
 
@@ -274,12 +321,23 @@ private fun ExerciseCard(
                 if (setIndex > 0) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 }
+                val onUpdateCallback = remember(setIndex) {
+                    {
+                            updated: SetEntry ->
+                        onUpdateSet(setIndex, updated)
+                    }
+                }
+                val onRemoveCallback = remember(setIndex) {
+                    {
+                        onRemoveSet(setIndex)
+                    }
+                }
                 SetRow(
                     setIndex = setIndex,
                     setEntry = setEntry,
                     showRemove = exerciseEntry.sets.size > 1,
-                    onUpdate = { updated -> onUpdateSet(setIndex, updated) },
-                    onRemove = { onRemoveSet(setIndex) }
+                    onUpdate = onUpdateCallback,
+                    onRemove = onRemoveCallback
                 )
             }
 

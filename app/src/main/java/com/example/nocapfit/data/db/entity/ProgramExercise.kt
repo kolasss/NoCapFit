@@ -1,10 +1,12 @@
 package com.example.nocapfit.data.db.entity
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+@Immutable
 @Entity(
     tableName = "program_exercises",
     foreignKeys = [

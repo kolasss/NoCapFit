@@ -1,11 +1,13 @@
 package com.example.nocapfit.data.db.relation
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Embedded
 import androidx.room.Relation
 import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.db.entity.ProgramExercise
 import com.example.nocapfit.data.db.entity.ProgramExerciseSet
 
+@Immutable
 data class ProgramExerciseWithSets(
     @Embedded val programExercise: ProgramExercise,
     @Relation(

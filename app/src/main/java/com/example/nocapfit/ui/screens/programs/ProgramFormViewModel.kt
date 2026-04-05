@@ -27,17 +27,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
+@androidx.compose.runtime.Immutable
 data class SetEntry(
     val weight: String = "0.0",
     val reps: String = "0",
     val restTimeSeconds: String = "100"
 )
 
+@androidx.compose.runtime.Immutable
 data class ExerciseEntry(
     val exercise: Exercise,
     val sets: List<SetEntry> = listOf(SetEntry())
 )
 
+@androidx.compose.runtime.Immutable
 data class ProgramFormUiState(
     val name: String = "",
     val exercises: List<ExerciseEntry> = emptyList(),

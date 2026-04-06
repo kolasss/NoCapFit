@@ -49,11 +49,13 @@ import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
 import com.example.nocapfit.ui.components.RestTimerOverlay
+import com.example.nocapfit.ui.model.PreviousSetData
+import com.example.nocapfit.ui.model.SetUiModel
+import com.example.nocapfit.ui.model.formatPreviousSet
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_HOUR
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
-import com.example.nocapfit.util.WEIGHT_DIVISOR
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -326,13 +328,24 @@ private fun ExerciseCardItem(
 ) {
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
-    val exercisePrevSets = remember(exId, previousSets) {
-        if (exId != null) {
-            previousSets.filterKeys { it.first == exId }
-                .map { (key, data) -> key.second to formatPrevSet(data) }
-                .toMap()
-        } else {
-            null
+    val sets = exerciseWithSets.sets
+    val setsById = remember(sets) { sets.associateBy { it.id } }
+    val setUiModels = remember(sets, exId, previousSets) {
+        sets.map { ws ->
+            val prevText = if (exId != null) {
+                previousSets[exId to ws.setIndex]?.let { formatPreviousSet(it) }
+            } else {
+                null
+            }
+            SetUiModel(
+                id = ws.id,
+                setIndex = ws.setIndex,
+                weightThousandths = ws.weightThousandths,
+                reps = ws.reps,
+                restTimeSeconds = ws.restTimeSeconds,
+                completed = ws.completed,
+                previousText = prevText
+            )
         }
     }
     val onMoveUp = remember(id, index) {
@@ -343,25 +356,31 @@ private fun ExerciseCardItem(
     }
     ExerciseCard(
         exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-        sets = exerciseWithSets.sets,
-        workoutExerciseId = id,
-        onRemoveExercise = onRemoveExercise,
-        onAddSet = onAddSet,
-        onWeightChange = { ws, w -> onUpdateSet(ws.copy(weightThousandths = w)) },
-        onRepsChange = { ws, r -> onUpdateSet(ws.copy(reps = r)) },
-        onToggleComplete = { ws ->
-            if (ws.completed) {
-                onRevertSet(ws.id)
-            } else {
-                onCompleteSet(ws.id, ws.restTimeSeconds)
+        sets = setUiModels,
+        onAddSet = { onAddSet(id) },
+        onRemoveExercise = { onRemoveExercise(id) },
+        onWeightChange = { model, w ->
+            setsById[model.id]?.let { onUpdateSet(it.copy(weightThousandths = w)) }
+        },
+        onRepsChange = { model, r ->
+            setsById[model.id]?.let { onUpdateSet(it.copy(reps = r)) }
+        },
+        onToggleComplete = { model ->
+            setsById[model.id]?.let { ws ->
+                if (ws.completed) {
+                    onRevertSet(ws.id)
+                } else {
+                    onCompleteSet(ws.id, ws.restTimeSeconds)
+                }
             }
         },
-        onRestTimeChange = { ws, s -> onUpdateSet(ws.copy(restTimeSeconds = s)) },
+        onRestTimeChange = { model, s ->
+            setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
+        },
         activeTimerSetId = activeTimerSetId,
         timerEndAtEpochMs = timerEndAtEpochMs,
         onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
-        previousSets = exercisePrevSets
+        onMoveDown = onMoveDown
     )
 }
 
@@ -489,16 +508,6 @@ private fun WorkoutDialogs(
             }
         )
     }
-}
-
-private fun formatPrevSet(data: PreviousSetData): String {
-    val kg = data.weightThousandths / WEIGHT_DIVISOR
-    val weightStr = if (kg == kg.toLong().toDouble()) {
-        kg.toLong().toString()
-    } else {
-        kg.toBigDecimal().stripTrailingZeros().toPlainString()
-    }
-    return "${weightStr}x${data.reps}"
 }
 
 private fun formatElapsedTime(millis: Long): String {

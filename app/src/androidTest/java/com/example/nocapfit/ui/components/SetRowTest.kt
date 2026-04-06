@@ -5,8 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.setThemedContent
+import com.example.nocapfit.ui.model.SetUiModel
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -20,9 +20,8 @@ class SetRowTest {
         weightThousandths: Int = 75000,
         reps: Int = 10,
         completed: Boolean = false
-    ) = WorkoutSet(
+    ) = SetUiModel(
         id = 1L,
-        workoutExerciseId = 1L,
         setIndex = 0,
         weightThousandths = weightThousandths,
         reps = reps,
@@ -35,7 +34,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(),
+                set = testSet(),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}
@@ -50,7 +49,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(weightThousandths = 75000),
+                set = testSet(weightThousandths = 75000),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}
@@ -65,7 +64,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(reps = 10),
+                set = testSet(reps = 10),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}
@@ -80,7 +79,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(),
+                set = testSet(),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}
@@ -96,7 +95,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(),
+                set = testSet(),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = { toggled = true }
@@ -112,7 +111,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(weightThousandths = 0),
+                set = testSet(weightThousandths = 0),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}
@@ -127,7 +126,7 @@ class SetRowTest {
         composeTestRule.setThemedContent {
             SetRow(
                 setNumber = 1,
-                workoutSet = testSet(reps = 0),
+                set = testSet(reps = 0),
                 onWeightChange = {},
                 onRepsChange = {},
                 onToggleComplete = {}

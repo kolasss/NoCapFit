@@ -5,8 +5,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.setThemedContent
+import com.example.nocapfit.ui.model.SetUiModel
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -16,9 +16,8 @@ class ExerciseCardTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private fun testSet(index: Int) = WorkoutSet(
+    private fun testSet(index: Int) = SetUiModel(
         id = index.toLong(),
-        workoutExerciseId = 1L,
         setIndex = index,
         weightThousandths = 75000,
         reps = 10,
@@ -32,7 +31,6 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
-                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -50,7 +48,6 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0), testSet(1), testSet(2)),
-                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -71,7 +68,6 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
-                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = { addSetClicked = true },
                 onWeightChange = { _, _ -> },
@@ -92,7 +88,6 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
-                workoutExerciseId = 1L,
                 onRemoveExercise = { removeClicked = true },
                 onAddSet = {},
                 onWeightChange = { _, _ -> },
@@ -113,7 +108,6 @@ class ExerciseCardTest {
             ExerciseCard(
                 exerciseName = "Bench Press",
                 sets = listOf(testSet(0)),
-                workoutExerciseId = 1L,
                 onRemoveExercise = {},
                 onAddSet = {},
                 onWeightChange = { _, _ -> },

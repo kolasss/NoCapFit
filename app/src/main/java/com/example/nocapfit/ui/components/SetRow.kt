@@ -3,14 +3,17 @@ package com.example.nocapfit.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,29 +26,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.nocapfit.data.db.entity.WorkoutSet
+import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.util.WEIGHT_DIVISOR
 import com.example.nocapfit.util.WEIGHT_MULTIPLIER
 
 @Composable
 fun SetRow(
     setNumber: Int,
-    workoutSet: WorkoutSet,
+    set: SetUiModel,
     onWeightChange: (Int) -> Unit,
     onRepsChange: (Int) -> Unit,
-    onToggleComplete: () -> Unit,
     modifier: Modifier = Modifier,
-    previousText: String? = null
+    showComplete: Boolean = true,
+    onToggleComplete: (() -> Unit)? = null,
+    onRemove: (() -> Unit)? = null
 ) {
-    var weightText by remember(workoutSet.id, workoutSet.weightThousandths) {
-        val kg = workoutSet.weightThousandths / WEIGHT_DIVISOR
+    var weightText by remember(set.id, set.weightThousandths) {
+        val kg = set.weightThousandths / WEIGHT_DIVISOR
         mutableStateOf(if (kg == 0.0) "" else formatWeight(kg))
     }
-    var repsText by remember(workoutSet.id, workoutSet.reps) {
-        mutableStateOf(if (workoutSet.reps == 0) "" else workoutSet.reps.toString())
+    var repsText by remember(set.id, set.reps) {
+        mutableStateOf(if (set.reps == 0) "" else set.reps.toString())
     }
     val backgroundColor by animateColorAsState(
-        targetValue = if (workoutSet.completed) {
+        targetValue = if (set.completed) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
             MaterialTheme.colorScheme.surfaceContainerLow
@@ -60,10 +64,11 @@ fun SetRow(
     ) {
         SetRowContent(
             setNumber = setNumber,
-            previousText = previousText,
+            previousText = set.previousText,
             weightText = weightText,
             repsText = repsText,
-            completed = workoutSet.completed,
+            completed = set.completed,
+            showComplete = showComplete,
             onWeightTextChange = { newValue ->
                 weightText = newValue
                 val parsed = newValue.toDoubleOrNull()
@@ -78,7 +83,8 @@ fun SetRow(
                     onRepsChange(parsed)
                 } else if (newValue.isEmpty()) onRepsChange(0)
             },
-            onToggleComplete = onToggleComplete
+            onToggleComplete = onToggleComplete,
+            onRemove = onRemove
         )
     }
 }
@@ -90,9 +96,11 @@ private fun SetRowContent(
     weightText: String,
     repsText: String,
     completed: Boolean,
+    showComplete: Boolean,
     onWeightTextChange: (String) -> Unit,
     onRepsTextChange: (String) -> Unit,
-    onToggleComplete: () -> Unit
+    onToggleComplete: (() -> Unit)?,
+    onRemove: (() -> Unit)?
 ) {
     Row(
         modifier = Modifier
@@ -124,11 +132,23 @@ private fun SetRowContent(
             keyboardType = KeyboardType.Number,
             modifier = Modifier.padding(start = 4.dp).width(56.dp)
         )
-        FilledIconToggleButton(
-            checked = completed,
-            onCheckedChange = { onToggleComplete() }
-        ) {
-            Icon(Icons.Default.Check, contentDescription = "Complete set")
+        if (showComplete && onToggleComplete != null) {
+            FilledIconToggleButton(
+                checked = completed,
+                onCheckedChange = { onToggleComplete() }
+            ) {
+                Icon(Icons.Default.Check, contentDescription = "Complete set")
+            }
+        } else if (onRemove != null) {
+            IconButton(onClick = onRemove) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Remove set",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        } else {
+            Spacer(modifier = Modifier.width(48.dp))
         }
     }
 }

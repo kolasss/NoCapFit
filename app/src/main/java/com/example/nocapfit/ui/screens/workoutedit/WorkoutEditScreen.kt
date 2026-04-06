@@ -35,6 +35,7 @@ import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
+import com.example.nocapfit.ui.model.SetUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,23 +139,16 @@ internal fun WorkoutEditContent(
             sortedExercises,
             key = { _, item -> item.workoutExercise.id }
         ) { index, exerciseWithSets ->
-            val id = exerciseWithSets.workoutExercise.id
-            ExerciseCard(
-                exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-                sets = exerciseWithSets.sets,
-                workoutExerciseId = id,
+            WorkoutEditExerciseItem(
+                exerciseWithSets = exerciseWithSets,
+                index = index,
+                lastIndex = sortedExercises.lastIndex,
+                onMoveExercise = onMoveExercise,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
-                onWeightChange = { ws, w -> onUpdateSet(ws, w) },
-                onRepsChange = { ws, r -> onUpdateReps(ws, r) },
-                onToggleComplete = { ws -> onToggleComplete(ws) },
-                showRestTime = false,
-                onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null,
-                onMoveDown = if (index < sortedExercises.lastIndex) {
-                    { onMoveExercise(id, 1) }
-                } else {
-                    null
-                }
+                onUpdateSet = onUpdateSet,
+                onUpdateReps = onUpdateReps,
+                onToggleComplete = onToggleComplete
             )
         }
 
@@ -170,4 +164,55 @@ internal fun WorkoutEditContent(
             }
         }
     }
+}
+
+@Composable
+private fun WorkoutEditExerciseItem(
+    exerciseWithSets: com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets,
+    index: Int,
+    lastIndex: Int,
+    onMoveExercise: (Long, Int) -> Unit,
+    onRemoveExercise: (Long) -> Unit,
+    onAddSet: (Long) -> Unit,
+    onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
+    onUpdateReps: (com.example.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
+    onToggleComplete: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit
+) {
+    val id = exerciseWithSets.workoutExercise.id
+    val sets = exerciseWithSets.sets
+    val setsById = remember(sets) { sets.associateBy { it.id } }
+    val setUiModels = remember(sets) {
+        sets.map { ws ->
+            SetUiModel(
+                id = ws.id,
+                setIndex = ws.setIndex,
+                weightThousandths = ws.weightThousandths,
+                reps = ws.reps,
+                restTimeSeconds = ws.restTimeSeconds,
+                completed = ws.completed
+            )
+        }
+    }
+    ExerciseCard(
+        exerciseName = exerciseWithSets.workoutExercise.exerciseName,
+        sets = setUiModels,
+        onAddSet = { onAddSet(id) },
+        onRemoveExercise = { onRemoveExercise(id) },
+        onWeightChange = { model, w ->
+            setsById[model.id]?.let { onUpdateSet(it, w) }
+        },
+        onRepsChange = { model, r ->
+            setsById[model.id]?.let { onUpdateReps(it, r) }
+        },
+        onToggleComplete = { model ->
+            setsById[model.id]?.let { onToggleComplete(it) }
+        },
+        showRestTime = false,
+        onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null,
+        onMoveDown = if (index < lastIndex) {
+            { onMoveExercise(id, 1) }
+        } else {
+            null
+        }
+    )
 }

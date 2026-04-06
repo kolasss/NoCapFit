@@ -7,6 +7,7 @@ import com.example.nocapfit.data.db.entity.Profile
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
+import com.example.nocapfit.data.repository.WorkoutRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +30,7 @@ class ProgramFormViewModelTest {
     private val programRepository = mockk<ProgramRepository>(relaxUnitFun = true)
     private val exerciseRepository = mockk<ExerciseRepository>()
     private val profileRepository = mockk<ProfileRepository>()
+    private val workoutRepository = mockk<WorkoutRepository>(relaxUnitFun = true)
 
     private val testProfile = Profile(id = 1L, name = "Default")
     private val testExercise = Exercise(id = 1L, profileId = 1L, name = "Bench Press")
@@ -36,11 +38,18 @@ class ProgramFormViewModelTest {
     private fun createViewModel(programId: Long = -1L): ProgramFormViewModel {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { exerciseRepository.getAllByProfile(1L) } returns flowOf(listOf(testExercise))
+        coEvery { workoutRepository.getLastFinishedByExerciseId(any()) } returns null
 
         val savedStateHandle = SavedStateHandle(
             if (programId > 0) mapOf("programId" to programId) else emptyMap()
         )
-        return ProgramFormViewModel(programRepository, exerciseRepository, profileRepository, savedStateHandle)
+        return ProgramFormViewModel(
+            programRepository,
+            exerciseRepository,
+            profileRepository,
+            workoutRepository,
+            savedStateHandle
+        )
     }
 
     // --- Form state ---

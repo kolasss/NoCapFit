@@ -10,8 +10,10 @@ import com.example.nocapfit.data.db.entity.ProgramExerciseSet
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
+import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.ui.components.parseMmSsToSeconds
 import com.example.nocapfit.ui.components.secondsToMmSsDigits
+import com.example.nocapfit.ui.model.PreviousSetData
 import com.example.nocapfit.util.WEIGHT_DIVISOR
 import com.example.nocapfit.util.WEIGHT_MULTIPLIER
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,6 +57,7 @@ class ProgramFormViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     private val exerciseRepository: ExerciseRepository,
     private val profileRepository: ProfileRepository,
+    private val workoutRepository: WorkoutRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -69,6 +72,9 @@ class ProgramFormViewModel @Inject constructor(
     val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
         if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _previousSets = MutableStateFlow<Map<Pair<Long, Int>, PreviousSetData>>(emptyMap())
+    val previousSets: StateFlow<Map<Pair<Long, Int>, PreviousSetData>> = _previousSets.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -100,6 +106,7 @@ class ProgramFormViewModel @Inject constructor(
                         exercises = exerciseEntries,
                         isLoading = false
                     )
+                    loadPreviousData(exerciseEntries)
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false)
                 }
@@ -118,6 +125,9 @@ class ProgramFormViewModel @Inject constructor(
         _uiState.value = current.copy(
             exercises = current.exercises + ExerciseEntry(exercise = exercise)
         )
+        viewModelScope.launch {
+            loadPreviousDataForExercise(exercise.id)
+        }
     }
 
     fun removeExercise(index: Int) {
@@ -178,6 +188,33 @@ class ProgramFormViewModel @Inject constructor(
             sets = entry.sets.map { it.copy(restTimeSeconds = restTimeDigits) }
         )
         _uiState.value = current.copy(exercises = exercises)
+    }
+
+    private suspend fun loadPreviousData(exercises: List<ExerciseEntry>) {
+        val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
+        for (entry in exercises) {
+            loadPreviousForExercise(entry.exercise.id, map)
+        }
+        _previousSets.value = map
+    }
+
+    private suspend fun loadPreviousForExercise(
+        exId: Long,
+        map: MutableMap<Pair<Long, Int>, PreviousSetData>
+    ) {
+        val previous = workoutRepository.getLastFinishedByExerciseId(exId) ?: return
+        val prevExercise = previous.exercises.find {
+            it.workoutExercise.exerciseId == exId
+        } ?: return
+        for (set in prevExercise.sets.filter { it.completed }) {
+            map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
+        }
+    }
+
+    private suspend fun loadPreviousDataForExercise(exerciseId: Long) {
+        val map = _previousSets.value.toMutableMap()
+        loadPreviousForExercise(exerciseId, map)
+        _previousSets.value = map
     }
 
     suspend fun save(): Boolean {

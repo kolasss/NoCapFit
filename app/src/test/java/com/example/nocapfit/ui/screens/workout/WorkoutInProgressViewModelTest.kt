@@ -243,8 +243,8 @@ class WorkoutInProgressViewModelTest {
 
     @Test
     fun previousSets_loadsFromPreviousWorkout() = runTest {
-        val workoutWithProgram = WorkoutWithExercises(
-            workout = Workout(id = 1L, profileId = 1L, startTime = 1000L, programId = 5L),
+        val workoutWithExerciseIds = WorkoutWithExercises(
+            workout = Workout(id = 1L, profileId = 1L, startTime = 1000L),
             exercises = listOf(
                 WorkoutExerciseWithSets(
                     workoutExercise = WorkoutExercise(
@@ -259,7 +259,7 @@ class WorkoutInProgressViewModelTest {
             )
         )
         val previousWorkout = WorkoutWithExercises(
-            workout = Workout(id = 99L, profileId = 1L, startTime = 500L, endTime = 900L, programId = 5L),
+            workout = Workout(id = 99L, profileId = 1L, startTime = 500L, endTime = 900L),
             exercises = listOf(
                 WorkoutExerciseWithSets(
                     workoutExercise = WorkoutExercise(
@@ -283,9 +283,9 @@ class WorkoutInProgressViewModelTest {
                 )
             )
         )
-        coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(workoutWithProgram)
-        coEvery { workoutRepository.getWithExercises(1L) } returns workoutWithProgram
-        coEvery { workoutRepository.getLastFinishedByProgramId(5L, 1L) } returns previousWorkout
+        coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(workoutWithExerciseIds)
+        coEvery { workoutRepository.getWithExercises(1L) } returns workoutWithExerciseIds
+        coEvery { workoutRepository.getLastFinishedByExerciseId(1L) } returns previousWorkout
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         val viewModel = WorkoutInProgressViewModel(
             workoutRepository,

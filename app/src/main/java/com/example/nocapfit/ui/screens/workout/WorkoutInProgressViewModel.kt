@@ -12,6 +12,7 @@ import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.service.TimerCoordinator
+import com.example.nocapfit.ui.model.PreviousSetData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,16 +68,25 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     private suspend fun loadPreviousWorkoutData() {
         val currentWorkout = workoutRepository.getWithExercises(workoutId) ?: return
-        val programId = currentWorkout.workout.programId ?: return
-        val previous = workoutRepository.getLastFinishedByProgramId(programId, workoutId) ?: return
         val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
-        for (exercise in previous.exercises) {
-            val exId = exercise.workoutExercise.exerciseId ?: continue
-            for (set in exercise.sets.filter { it.completed }) {
-                map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
-            }
+        for (exercise in currentWorkout.exercises) {
+            loadPreviousForExercise(exercise.workoutExercise.exerciseId, map)
         }
         _previousSets.value = map
+    }
+
+    private suspend fun loadPreviousForExercise(
+        exId: Long?,
+        map: MutableMap<Pair<Long, Int>, PreviousSetData>
+    ) {
+        exId ?: return
+        val previous = workoutRepository.getLastFinishedByExerciseId(exId) ?: return
+        val prevExercise = previous.exercises.find {
+            it.workoutExercise.exerciseId == exId
+        } ?: return
+        for (set in prevExercise.sets.filter { it.completed }) {
+            map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
+        }
     }
 
     fun completeSet(workoutSetId: Long, restTimeSeconds: Int) {
@@ -142,7 +152,7 @@ class WorkoutInProgressViewModel @Inject constructor(
                     orderIndex = maxOrder + 1
                 )
             )
-            val prev = loadPreviousSetForExercise(exerciseId, setIndex = 0)
+            val prev = loadPreviousSetForExercise(exerciseId)
             workoutRepository.insertWorkoutSet(
                 WorkoutSet(
                     workoutExerciseId = weId,
@@ -156,12 +166,12 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadPreviousSetForExercise(exerciseId: Long, setIndex: Int): WorkoutSet? {
+    private suspend fun loadPreviousSetForExercise(exerciseId: Long): WorkoutSet? {
         val previousWorkout = workoutRepository.getLastFinishedByExerciseId(exerciseId)
             ?: return null
         val exercise = previousWorkout.exercises.find { it.workoutExercise.exerciseId == exerciseId }
             ?: return null
-        return exercise.sets.find { it.setIndex == setIndex && it.completed }
+        return exercise.sets.find { it.setIndex == 0 && it.completed }
     }
 
     fun removeExercise(workoutExerciseId: Long) {
@@ -221,6 +231,3 @@ class WorkoutInProgressViewModel @Inject constructor(
         private const val DEFAULT_REST_TIME_SECONDS = 60
     }
 }
-
-@androidx.compose.runtime.Immutable
-data class PreviousSetData(val weightThousandths: Int, val reps: Int)

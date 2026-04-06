@@ -21,13 +21,34 @@ class MmSsVisualTransformation : VisualTransformation {
             }
         }
 
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                return display.length
-            }
+        val offsetMapping = if (digits.length <= 2) {
+            val prefixLen = display.length - digits.length
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int = when {
+                    digits.isEmpty() -> display.length
+                    offset == 0 -> 0
+                    else -> offset + prefixLen
+                }
 
-            override fun transformedToOriginal(offset: Int): Int {
-                return digits.length
+                override fun transformedToOriginal(offset: Int): Int =
+                    if (offset <= prefixLen) {
+                        0
+                    } else {
+                        (offset - prefixLen).coerceAtMost(digits.length)
+                    }
+            }
+        } else {
+            val minutesLen = digits.length - 2
+            object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int =
+                    if (offset < minutesLen) offset else offset + 1
+
+                override fun transformedToOriginal(offset: Int): Int =
+                    if (offset <= minutesLen) {
+                        offset
+                    } else {
+                        (offset - 1).coerceAtMost(digits.length)
+                    }
             }
         }
 

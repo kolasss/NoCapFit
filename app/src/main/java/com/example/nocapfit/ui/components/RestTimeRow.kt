@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +70,11 @@ fun RestTimeRow(
     isCompleted: Boolean = false
 ) {
     var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
+    var lastReportedSeconds by remember { mutableIntStateOf(restTimeSeconds) }
+    if (restTimeSeconds != lastReportedSeconds) {
+        digits = secondsToMmSsDigits(restTimeSeconds)
+        lastReportedSeconds = restTimeSeconds
+    }
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isCompleted && !isTimerActive) {
@@ -110,7 +116,9 @@ fun RestTimeRow(
                     onValueChange = { newValue ->
                         val filtered = newValue.filter { it.isDigit() }.take(4)
                         digits = filtered
-                        onRestTimeChange(parseMmSsToSeconds(filtered))
+                        val seconds = parseMmSsToSeconds(filtered)
+                        lastReportedSeconds = seconds
+                        onRestTimeChange(seconds)
                     },
                     keyboardType = KeyboardType.Number,
                     visualTransformation = mmSsTransformation,

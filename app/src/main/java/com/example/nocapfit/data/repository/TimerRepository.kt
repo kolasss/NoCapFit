@@ -3,6 +3,7 @@ package com.example.nocapfit.data.repository
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -39,9 +40,12 @@ class TimerRepository @Inject constructor(
             val savedUri = themePreferences.notificationSoundUri.first()
             if (savedUri != NOTIFICATION_SOUND_SILENT) {
                 val uri = savedUri?.toUri() ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                if (uri != null) {
-                    RingtoneManager.getRingtone(context, uri)?.play()
-                }
+                val ringtone = uri?.let { RingtoneManager.getRingtone(context, it) }
+                ringtone?.audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                ringtone?.play()
             }
         } catch (_: Exception) { }
 

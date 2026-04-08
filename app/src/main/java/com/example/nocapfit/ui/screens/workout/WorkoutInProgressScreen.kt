@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -26,6 +30,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,12 +40,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -48,7 +56,6 @@ import androidx.navigation.NavController
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
-import com.example.nocapfit.ui.components.RestTimerOverlay
 import com.example.nocapfit.ui.model.PreviousSetData
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.model.formatPreviousSet
@@ -70,22 +77,16 @@ fun WorkoutInProgressScreen(
     val timerState by viewModel.timerState.collectAsState()
     val availableExercises by viewModel.availableExercises.collectAsState()
     val previousSets by viewModel.previousSets.collectAsState()
-
     var showFinishDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
     var showExercisePicker by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
-    val onBack: () -> Unit = {
-        if (onMinimize != null) onMinimize(viewModel.workoutId) else navController.popBackStack()
-    }
-    val navigateToHistory: () -> Unit = {
-        navController.navigate(Screen.WorkoutHistory.route) {
-            popUpTo(Screen.WorkoutHistory.route) { inclusive = true }
-        }
-    }
+    val onBack: () -> Unit = { onMinimize?.invoke(viewModel.workoutId) ?: navController.popBackStack() }
     BackHandler(onBack = onBack)
     KeepScreenOn()
-
+    val lazyListState = rememberLazyListState()
+    val showTopBarTimer = rememberShowTopBarTimer(timerState, workout, lazyListState)
+    val runningState = timerState as? TimerCoordinator.TimerUiState.Running
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -99,7 +100,10 @@ fun WorkoutInProgressScreen(
                 onCancelWorkoutClick = {
                     showOverflowMenu = false
                     showCancelDialog = true
-                }
+                },
+                showTimer = showTopBarTimer,
+                timerEndAtEpochMs = runningState?.endAtEpochMs ?: 0L,
+                timerTotalMs = runningState?.totalMs ?: 0L
             )
         }
     ) { padding ->
@@ -108,6 +112,7 @@ fun WorkoutInProgressScreen(
             workout = workout,
             timerState = timerState,
             previousSets = previousSets,
+            lazyListState = lazyListState,
             onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
@@ -127,15 +132,14 @@ fun WorkoutInProgressScreen(
         onCancelDismiss = { showCancelDialog = false },
         onFinishConfirm = {
             showFinishDialog = false
-            if (viewModel.finishWorkout()) navigateToHistory()
+            if (viewModel.finishWorkout()) navController.navigateToWorkoutHistory()
         },
         onCancelConfirm = {
             showCancelDialog = false
             viewModel.cancelWorkout()
-            navigateToHistory()
+            navController.navigateToWorkoutHistory()
         }
     )
-
     if (showExercisePicker) {
         ExercisePickerSheet(
             exercises = availableExercises,
@@ -175,11 +179,36 @@ private fun rememberElapsedTime(startTime: Long?): String {
 }
 
 @Composable
+private fun rememberShowTopBarTimer(
+    timerState: TimerCoordinator.TimerUiState,
+    workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
+    lazyListState: LazyListState
+): Boolean {
+    val activeTimerExerciseId: Long? = remember(timerState, workout) {
+        val setId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
+            ?: return@remember null
+        workout?.exercises?.firstOrNull { ex ->
+            ex.sets.any { it.id == setId }
+        }?.workoutExercise?.id
+    }
+    val isVisible by remember(activeTimerExerciseId) {
+        derivedStateOf {
+            activeTimerExerciseId != null &&
+                lazyListState.layoutInfo.visibleItemsInfo.any {
+                    it.key == activeTimerExerciseId
+                }
+        }
+    }
+    return timerState is TimerCoordinator.TimerUiState.Running && !isVisible
+}
+
+@Composable
 private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
     timerState: TimerCoordinator.TimerUiState,
     previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -204,50 +233,47 @@ private fun WorkoutContent(
     val activeTimerSetId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
     val timerEndAtEpochMs = (timerState as? TimerCoordinator.TimerUiState.Running)
         ?.endAtEpochMs ?: 0L
+    val timerTotalMs = (timerState as? TimerCoordinator.TimerUiState.Running)
+        ?.totalMs ?: 0L
 
-    Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-        WorkoutExerciseList(
-            sortedExercises = sortedExercises,
-            timerState = timerState,
-            activeTimerSetId = activeTimerSetId,
-            timerEndAtEpochMs = timerEndAtEpochMs,
-            previousSets = previousSets,
-            onMoveExercise = onMoveExercise,
-            onRemoveExercise = onRemoveExercise,
-            onAddSet = onAddSet,
-            onUpdateSet = onUpdateSet,
-            onCompleteSet = onCompleteSet,
-            onRevertSet = onRevertSet,
-            onAddExerciseClick = onAddExerciseClick,
-            onFinishClick = onFinishClick
-        )
-
-        if (timerState is TimerCoordinator.TimerUiState.Running) {
-            RestTimerOverlay(
-                endAtEpochMs = timerState.endAtEpochMs,
-                totalMs = timerState.totalMs,
-                onCancel = onCancelTimer,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-        }
-    }
+    WorkoutExerciseList(
+        modifier = Modifier.fillMaxSize().padding(padding),
+        sortedExercises = sortedExercises,
+        activeTimerSetId = activeTimerSetId,
+        timerEndAtEpochMs = timerEndAtEpochMs,
+        timerTotalMs = timerTotalMs,
+        previousSets = previousSets,
+        lazyListState = lazyListState,
+        onMoveExercise = onMoveExercise,
+        onRemoveExercise = onRemoveExercise,
+        onAddSet = onAddSet,
+        onUpdateSet = onUpdateSet,
+        onCompleteSet = onCompleteSet,
+        onRevertSet = onRevertSet,
+        onCancelTimer = onCancelTimer,
+        onAddExerciseClick = onAddExerciseClick,
+        onFinishClick = onFinishClick
+    )
 }
 
 @Composable
 private fun WorkoutExerciseList(
     sortedExercises: List<com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
-    timerState: TimerCoordinator.TimerUiState,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
+    timerTotalMs: Long,
     previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
+    onCancelTimer: () -> Unit,
     onAddExerciseClick: () -> Unit,
-    onFinishClick: () -> Unit
+    onFinishClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val completedSets = remember(sortedExercises) {
         sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
@@ -257,12 +283,13 @@ private fun WorkoutExerciseList(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
+        state = lazyListState,
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
             top = 8.dp,
-            bottom = if (timerState is TimerCoordinator.TimerUiState.Running) 120.dp else 80.dp
+            bottom = 80.dp
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -286,12 +313,14 @@ private fun WorkoutExerciseList(
                 previousSets = previousSets,
                 activeTimerSetId = activeTimerSetId,
                 timerEndAtEpochMs = timerEndAtEpochMs,
+                timerTotalMs = timerTotalMs,
                 onMoveExercise = onMoveExercise,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
                 onUpdateSet = onUpdateSet,
                 onCompleteSet = onCompleteSet,
-                onRevertSet = onRevertSet
+                onRevertSet = onRevertSet,
+                onCancelTimer = onCancelTimer
             )
         }
 
@@ -319,12 +348,14 @@ private fun ExerciseCardItem(
     previousSets: Map<Pair<Long, Int>, PreviousSetData>,
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
+    timerTotalMs: Long,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
-    onRevertSet: (Long) -> Unit
+    onRevertSet: (Long) -> Unit,
+    onCancelTimer: () -> Unit
 ) {
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
@@ -379,6 +410,8 @@ private fun ExerciseCardItem(
         },
         activeTimerSetId = activeTimerSetId,
         timerEndAtEpochMs = timerEndAtEpochMs,
+        timerTotalMs = timerTotalMs,
+        onCancelTimer = onCancelTimer,
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown
     )
@@ -393,36 +426,106 @@ private fun WorkoutTopAppBar(
     onFinishClick: () -> Unit,
     onOverflowClick: () -> Unit,
     onOverflowDismiss: () -> Unit,
-    onCancelWorkoutClick: () -> Unit
+    onCancelWorkoutClick: () -> Unit,
+    showTimer: Boolean = false,
+    timerEndAtEpochMs: Long = 0L,
+    timerTotalMs: Long = 0L
 ) {
     val elapsedText = rememberElapsedTime(startTime = startTime)
-    TopAppBar(
-        title = { Text(elapsedText) },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-        },
-        actions = {
-            IconButton(onClick = onFinishClick) {
-                Icon(Icons.Default.Check, contentDescription = "Finish")
-            }
-            Box {
-                IconButton(onClick = onOverflowClick) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+    val timerRemainingMs = rememberTimerRemainingMs(showTimer, timerEndAtEpochMs)
+    val timerProgress = if (showTimer && timerTotalMs > 0) {
+        (1f - (timerRemainingMs.toFloat() / timerTotalMs)).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    Column {
+        TopAppBar(
+            title = {
+                TopBarTitle(showTimer, elapsedText, timerRemainingMs)
+            },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-                DropdownMenu(
-                    expanded = showOverflowMenu,
-                    onDismissRequest = onOverflowDismiss
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Cancel Workout") },
-                        onClick = onCancelWorkoutClick
-                    )
+            },
+            actions = {
+                IconButton(onClick = onFinishClick) {
+                    Icon(Icons.Default.Check, contentDescription = "Finish")
                 }
+                Box {
+                    IconButton(onClick = onOverflowClick) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More")
+                    }
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = onOverflowDismiss
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Cancel Workout") },
+                            onClick = onCancelWorkoutClick
+                        )
+                    }
+                }
+            }
+        )
+        if (showTimer) {
+            LinearProgressIndicator(
+                progress = { timerProgress },
+                modifier = Modifier.fillMaxWidth().height(3.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                trackColor = Color.Transparent
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberTimerRemainingMs(showTimer: Boolean, timerEndAtEpochMs: Long): Long {
+    var timerRemainingMs by remember(timerEndAtEpochMs) {
+        mutableLongStateOf(
+            if (showTimer && timerEndAtEpochMs > 0) {
+                (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+            } else {
+                0L
+            }
+        )
+    }
+    if (showTimer && timerEndAtEpochMs > 0) {
+        LaunchedEffect(timerEndAtEpochMs) {
+            while (true) {
+                timerRemainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
+                if (timerRemainingMs <= 0) break
+                delay(MILLIS_PER_SECOND)
             }
         }
-    )
+    }
+    return timerRemainingMs
+}
+
+@Composable
+private fun TopBarTitle(showTimer: Boolean, elapsedText: String, timerRemainingMs: Long) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(elapsedText)
+        if (showTimer) {
+            val timerSecs = (timerRemainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
+            val mins = timerSecs / SECONDS_PER_MINUTE
+            val secs = timerSecs % SECONDS_PER_MINUTE
+            Spacer(Modifier.width(12.dp))
+            Icon(
+                Icons.Default.Timer,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.height(18.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = "%d:%02d".format(mins, secs),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 }
 
 @Composable
@@ -507,6 +610,12 @@ private fun WorkoutDialogs(
                 }
             }
         )
+    }
+}
+
+private fun NavController.navigateToWorkoutHistory() {
+    navigate(Screen.WorkoutHistory.route) {
+        popUpTo(Screen.WorkoutHistory.route) { inclusive = true }
     }
 }
 

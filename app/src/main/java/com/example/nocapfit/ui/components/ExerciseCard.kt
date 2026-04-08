@@ -52,6 +52,8 @@ fun ExerciseCard(
     onExerciseTitleClick: (() -> Unit)? = null,
     activeTimerSetId: Long? = null,
     timerEndAtEpochMs: Long = 0L,
+    timerTotalMs: Long = 0L,
+    onCancelTimer: (() -> Unit)? = null,
     showRestTime: Boolean = true,
     showAddSetButton: Boolean = false,
     onMoveUp: (() -> Unit)? = null,
@@ -100,7 +102,9 @@ fun ExerciseCard(
                     onRemoveSet = onRemoveSet,
                     showRestTime = showRestTime,
                     activeTimerSetId = activeTimerSetId,
-                    timerEndAtEpochMs = timerEndAtEpochMs
+                    timerEndAtEpochMs = timerEndAtEpochMs,
+                    timerTotalMs = timerTotalMs,
+                    onCancelTimer = onCancelTimer
                 )
             }
 
@@ -180,7 +184,9 @@ private fun ExerciseSetItem(
     onRemoveSet: ((SetUiModel) -> Unit)?,
     showRestTime: Boolean,
     activeTimerSetId: Long?,
-    timerEndAtEpochMs: Long
+    timerEndAtEpochMs: Long,
+    timerTotalMs: Long,
+    onCancelTimer: (() -> Unit)?
 ) {
     val rememberedOnWeightChange = remember(set) {
         {
@@ -230,7 +236,9 @@ private fun ExerciseSetItem(
             onRestTimeChange = rememberedOnRestTimeChange,
             isTimerActive = activeTimerSetId == set.id,
             timerEndAtEpochMs = if (activeTimerSetId == set.id) timerEndAtEpochMs else 0L,
-            isCompleted = set.completed
+            timerTotalMs = if (activeTimerSetId == set.id) timerTotalMs else 0L,
+            isCompleted = set.completed,
+            onCancelTimer = if (activeTimerSetId == set.id) onCancelTimer else null
         )
     }
 }

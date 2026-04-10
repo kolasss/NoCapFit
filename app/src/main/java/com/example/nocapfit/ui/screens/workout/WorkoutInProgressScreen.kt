@@ -120,6 +120,7 @@ fun WorkoutInProgressScreen(
             onCompleteSet = viewModel::completeSet,
             onRevertSet = viewModel::revertSet,
             onCancelTimer = viewModel::cancelTimer,
+            onExerciseTitleClick = { navController.navigate(Screen.ExerciseDetail.createRoute(it)) },
             onAddExerciseClick = { showExercisePicker = true },
             onFinishClick = { showFinishDialog = true }
         )
@@ -216,6 +217,7 @@ private fun WorkoutContent(
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
+    onExerciseTitleClick: (Long) -> Unit,
     onAddExerciseClick: () -> Unit,
     onFinishClick: () -> Unit
 ) {
@@ -251,6 +253,7 @@ private fun WorkoutContent(
         onCompleteSet = onCompleteSet,
         onRevertSet = onRevertSet,
         onCancelTimer = onCancelTimer,
+        onExerciseTitleClick = onExerciseTitleClick,
         onAddExerciseClick = onAddExerciseClick,
         onFinishClick = onFinishClick
     )
@@ -271,6 +274,7 @@ private fun WorkoutExerciseList(
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
+    onExerciseTitleClick: (Long) -> Unit,
     onAddExerciseClick: () -> Unit,
     onFinishClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -320,7 +324,8 @@ private fun WorkoutExerciseList(
                 onUpdateSet = onUpdateSet,
                 onCompleteSet = onCompleteSet,
                 onRevertSet = onRevertSet,
-                onCancelTimer = onCancelTimer
+                onCancelTimer = onCancelTimer,
+                onExerciseTitleClick = onExerciseTitleClick
             )
         }
 
@@ -355,7 +360,8 @@ private fun ExerciseCardItem(
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
-    onCancelTimer: () -> Unit
+    onCancelTimer: () -> Unit,
+    onExerciseTitleClick: (Long) -> Unit
 ) {
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
@@ -411,6 +417,7 @@ private fun ExerciseCardItem(
         activeTimerSetId = activeTimerSetId,
         timerEndAtEpochMs = timerEndAtEpochMs,
         timerTotalMs = timerTotalMs,
+        onExerciseTitleClick = exId?.let { { onExerciseTitleClick(it) } },
         onCancelTimer = onCancelTimer,
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown

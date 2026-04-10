@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,6 +39,7 @@ fun CompactInput(
     var pendingSelectAll by remember { mutableStateOf(false) }
     BasicTextField(
         value = textFieldValue,
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         onValueChange = { newValue ->
             textFieldValue = if (pendingSelectAll && newValue.text == textFieldValue.text) {
                 pendingSelectAll = false

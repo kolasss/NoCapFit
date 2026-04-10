@@ -18,6 +18,14 @@ fun formatDate(epochMs: Long): String {
     return "$dayOfWeek, ${ldt.day} $month ${ldt.year}"
 }
 
+fun formatMonth(epochMs: Long): String {
+    val ldt = Instant.fromEpochMilliseconds(epochMs)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    val month = ldt.month.name.lowercase()
+        .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+    return "$month ${ldt.year}"
+}
+
 fun formatTime(epochMs: Long): String {
     val ldt = Instant.fromEpochMilliseconds(epochMs)
         .toLocalDateTime(TimeZone.currentSystemDefault())

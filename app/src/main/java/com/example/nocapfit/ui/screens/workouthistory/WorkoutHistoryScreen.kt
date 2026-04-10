@@ -45,9 +45,9 @@ import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.ui.components.EmptyState
 import com.example.nocapfit.ui.navigation.Screen
-import com.example.nocapfit.ui.util.formatDate
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
+import com.example.nocapfit.ui.util.formatMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +63,7 @@ fun WorkoutHistoryScreen(
         .sortedByDescending { it.workout.startTime }
 
     val grouped = remember(finished) {
-        finished.groupBy { formatDate(it.workout.startTime) }
+        finished.groupBy { formatMonth(it.workout.startTime) }
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()

@@ -9,7 +9,7 @@ import com.example.nocapfit.data.db.entity.WorkoutExercise
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.setThemedContent
-import com.example.nocapfit.ui.util.formatDate
+import com.example.nocapfit.ui.util.formatMonth
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -102,7 +102,7 @@ class WorkoutHistoryContentTest {
     @Test
     fun populatedList_showsProgramName() {
         val workout = testWorkout(programName = "Push Day")
-        val dateHeader = formatDate(workout.workout.startTime)
+        val dateHeader = formatMonth(workout.workout.startTime)
 
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
@@ -120,7 +120,7 @@ class WorkoutHistoryContentTest {
     @Test
     fun populatedList_showsDateHeader() {
         val workout = testWorkout()
-        val dateHeader = formatDate(workout.workout.startTime)
+        val dateHeader = formatMonth(workout.workout.startTime)
 
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
@@ -138,7 +138,7 @@ class WorkoutHistoryContentTest {
     @Test
     fun nullProgramName_showsFreeWorkout() {
         val workout = testWorkout(programName = null)
-        val dateHeader = formatDate(workout.workout.startTime)
+        val dateHeader = formatMonth(workout.workout.startTime)
 
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
@@ -156,7 +156,7 @@ class WorkoutHistoryContentTest {
     @Test
     fun populatedList_showsExerciseNames() {
         val workout = testWorkout(exerciseNames = listOf("Bench Press", "OHP"))
-        val dateHeader = formatDate(workout.workout.startTime)
+        val dateHeader = formatMonth(workout.workout.startTime)
 
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
@@ -176,7 +176,7 @@ class WorkoutHistoryContentTest {
         val workout = testWorkout(
             exerciseNames = listOf("Bench", "OHP", "Flyes", "Dips")
         )
-        val dateHeader = formatDate(workout.workout.startTime)
+        val dateHeader = formatMonth(workout.workout.startTime)
 
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(

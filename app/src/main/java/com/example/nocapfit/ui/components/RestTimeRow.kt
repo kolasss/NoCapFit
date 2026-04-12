@@ -1,7 +1,7 @@
 package com.example.nocapfit.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,26 +83,23 @@ fun RestTimeRow(
         0f
     }
 
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isCompleted && !isTimerActive) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        label = "rest-row-bg"
-    )
+    val completedColor = MaterialTheme.colorScheme.primaryContainer
+    val surfaceColor = MaterialTheme.colorScheme.surface
     val progressColor = MaterialTheme.colorScheme.tertiaryContainer
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = backgroundColor,
-        shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp)
                 .drawBehind {
+                    drawRect(
+                        if (isCompleted && !isTimerActive) completedColor else surfaceColor
+                    )
                     if (fillProgress > 0f) {
                         drawRect(
                             color = progressColor,
@@ -192,10 +189,14 @@ private fun RowScope.RestTimeRowContent(
 @Composable
 private fun RestTimeInput(restTimeSeconds: Int, onRestTimeChange: (Int) -> Unit) {
     var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
-    var lastReportedSeconds by remember { mutableIntStateOf(restTimeSeconds) }
-    if (restTimeSeconds != lastReportedSeconds) {
-        digits = secondsToMmSsDigits(restTimeSeconds)
-        lastReportedSeconds = restTimeSeconds
+    var lastExternalSeconds by remember { mutableIntStateOf(restTimeSeconds) }
+    var lastSentSeconds by remember { mutableIntStateOf(restTimeSeconds) }
+    if (restTimeSeconds != lastExternalSeconds) {
+        lastExternalSeconds = restTimeSeconds
+        if (restTimeSeconds != lastSentSeconds) {
+            digits = secondsToMmSsDigits(restTimeSeconds)
+            lastSentSeconds = restTimeSeconds
+        }
     }
     CompactInput(
         value = digits,
@@ -203,7 +204,7 @@ private fun RestTimeInput(restTimeSeconds: Int, onRestTimeChange: (Int) -> Unit)
             val filtered = newValue.filter { it.isDigit() }.take(4)
             digits = filtered
             val seconds = parseMmSsToSeconds(filtered)
-            lastReportedSeconds = seconds
+            lastSentSeconds = seconds
             onRestTimeChange(seconds)
         },
         keyboardType = KeyboardType.Number,

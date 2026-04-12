@@ -1,7 +1,7 @@
 package com.example.nocapfit.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +15,6 @@ import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -49,21 +50,18 @@ fun SetRow(
     var repsText by remember(set.id, set.reps) {
         mutableStateOf(if (set.reps == 0) "" else set.reps.toString())
     }
-    val backgroundColor by animateColorAsState(
-        targetValue = if (set.completed) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        },
-        label = "set-row-bg"
-    )
+    val completedColor = MaterialTheme.colorScheme.primaryContainer
+    val defaultColor = MaterialTheme.colorScheme.surfaceContainerLow
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = backgroundColor,
-        shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
     ) {
         SetRowContent(
+            modifier = Modifier.drawBehind {
+                drawRect(if (set.completed) completedColor else defaultColor)
+            },
             setNumber = setNumber,
             previousText = set.previousText,
             weightText = weightText,
@@ -101,11 +99,12 @@ private fun SetRowContent(
     onWeightTextChange: (String) -> Unit,
     onRepsTextChange: (String) -> Unit,
     onToggleComplete: (() -> Unit)?,
-    onRemove: (() -> Unit)?
+    onRemove: (() -> Unit)?,
+    modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),

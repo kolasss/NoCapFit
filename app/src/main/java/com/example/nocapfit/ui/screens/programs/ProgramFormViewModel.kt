@@ -14,6 +14,7 @@ import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.ui.components.parseMmSsToSeconds
 import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import com.example.nocapfit.ui.model.PreviousSetData
+import com.example.nocapfit.ui.model.PreviousSetLookup
 import com.example.nocapfit.util.WEIGHT_DIVISOR
 import com.example.nocapfit.util.WEIGHT_MULTIPLIER
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -73,8 +74,8 @@ class ProgramFormViewModel @Inject constructor(
         if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _previousSets = MutableStateFlow<Map<Pair<Long, Int>, PreviousSetData>>(emptyMap())
-    val previousSets: StateFlow<Map<Pair<Long, Int>, PreviousSetData>> = _previousSets.asStateFlow()
+    private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
+    val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -195,7 +196,7 @@ class ProgramFormViewModel @Inject constructor(
         for (entry in exercises) {
             loadPreviousForExercise(entry.exercise.id, map)
         }
-        _previousSets.value = map
+        _previousSets.value = PreviousSetLookup(map)
     }
 
     private suspend fun loadPreviousForExercise(
@@ -214,7 +215,7 @@ class ProgramFormViewModel @Inject constructor(
     private suspend fun loadPreviousDataForExercise(exerciseId: Long) {
         val map = _previousSets.value.toMutableMap()
         loadPreviousForExercise(exerciseId, map)
-        _previousSets.value = map
+        _previousSets.value = PreviousSetLookup(map)
     }
 
     suspend fun save(): Boolean {

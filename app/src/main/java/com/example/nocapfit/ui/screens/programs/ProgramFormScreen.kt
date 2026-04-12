@@ -44,7 +44,7 @@ import com.example.nocapfit.ui.components.ExercisePickerSheet
 import com.example.nocapfit.ui.components.MmSsVisualTransformation
 import com.example.nocapfit.ui.components.parseMmSsToSeconds
 import com.example.nocapfit.ui.components.secondsToMmSsDigits
-import com.example.nocapfit.ui.model.PreviousSetData
+import com.example.nocapfit.ui.model.PreviousSetLookup
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.model.formatPreviousSet
 import com.example.nocapfit.ui.navigation.Screen
@@ -114,7 +114,7 @@ fun ProgramFormScreen(
 @Composable
 internal fun ProgramFormContent(
     uiState: ProgramFormUiState,
-    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    previousSets: PreviousSetLookup,
     onNameChange: (String) -> Unit,
     onMoveExercise: (Int, Int) -> Unit,
     onRemoveExercise: (Int) -> Unit,
@@ -239,7 +239,7 @@ private fun ExerciseCardItem(
     exerciseEntry: ExerciseEntry,
     lastIndex: Int,
     exerciseCount: Int,
-    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    previousSets: PreviousSetLookup,
     onMoveExercise: (Int, Int) -> Unit,
     onRemoveExercise: (Int) -> Unit,
     onAddSet: (Int) -> Unit,

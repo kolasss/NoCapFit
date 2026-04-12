@@ -56,7 +56,7 @@ import androidx.navigation.NavController
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
-import com.example.nocapfit.ui.model.PreviousSetData
+import com.example.nocapfit.ui.model.PreviousSetLookup
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.model.formatPreviousSet
 import com.example.nocapfit.ui.navigation.Screen
@@ -64,6 +64,7 @@ import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_HOUR
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +111,7 @@ fun WorkoutInProgressScreen(
         WorkoutContent(
             padding = padding,
             workout = workout,
-            timerState = timerState,
+            timerStateFlow = viewModel.timerState,
             previousSets = previousSets,
             lazyListState = lazyListState,
             onMoveExercise = viewModel::moveExercise,
@@ -207,8 +208,8 @@ private fun rememberShowTopBarTimer(
 private fun WorkoutContent(
     padding: PaddingValues,
     workout: com.example.nocapfit.data.db.relation.WorkoutWithExercises?,
-    timerState: TimerCoordinator.TimerUiState,
-    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
+    previousSets: PreviousSetLookup,
     lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
@@ -232,18 +233,11 @@ private fun WorkoutContent(
     val sortedExercises = remember(workout.exercises) {
         workout.exercises.sortedBy { it.workoutExercise.orderIndex }
     }
-    val activeTimerSetId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
-    val timerEndAtEpochMs = (timerState as? TimerCoordinator.TimerUiState.Running)
-        ?.endAtEpochMs ?: 0L
-    val timerTotalMs = (timerState as? TimerCoordinator.TimerUiState.Running)
-        ?.totalMs ?: 0L
 
     WorkoutExerciseList(
         modifier = Modifier.fillMaxSize().padding(padding),
         sortedExercises = sortedExercises,
-        activeTimerSetId = activeTimerSetId,
-        timerEndAtEpochMs = timerEndAtEpochMs,
-        timerTotalMs = timerTotalMs,
+        timerStateFlow = timerStateFlow,
         previousSets = previousSets,
         lazyListState = lazyListState,
         onMoveExercise = onMoveExercise,
@@ -262,10 +256,8 @@ private fun WorkoutContent(
 @Composable
 private fun WorkoutExerciseList(
     sortedExercises: List<com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
-    activeTimerSetId: Long?,
-    timerEndAtEpochMs: Long,
-    timerTotalMs: Long,
-    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
+    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
+    previousSets: PreviousSetLookup,
     lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
@@ -315,9 +307,7 @@ private fun WorkoutExerciseList(
                 index = index,
                 lastIndex = sortedExercises.lastIndex,
                 previousSets = previousSets,
-                activeTimerSetId = activeTimerSetId,
-                timerEndAtEpochMs = timerEndAtEpochMs,
-                timerTotalMs = timerTotalMs,
+                timerStateFlow = timerStateFlow,
                 onMoveExercise = onMoveExercise,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
@@ -350,10 +340,8 @@ private fun ExerciseCardItem(
     exerciseWithSets: com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets,
     index: Int,
     lastIndex: Int,
-    previousSets: Map<Pair<Long, Int>, PreviousSetData>,
-    activeTimerSetId: Long?,
-    timerEndAtEpochMs: Long,
-    timerTotalMs: Long,
+    previousSets: PreviousSetLookup,
+    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -367,6 +355,14 @@ private fun ExerciseCardItem(
     val exId = exerciseWithSets.workoutExercise.exerciseId
     val sets = exerciseWithSets.sets
     val setsById = remember(sets) { sets.associateBy { it.id } }
+
+    val timerUiState by timerStateFlow.collectAsState()
+    val setIds = remember(sets) { sets.map { it.id }.toSet() }
+    val activeTimer = remember(timerUiState, setIds) {
+        (timerUiState as? TimerCoordinator.TimerUiState.Running)
+            ?.takeIf { it.workoutSetId in setIds }
+    }
+
     val setUiModels = remember(sets, exId, previousSets) {
         sets.map { ws ->
             val prevText = if (exId != null) {
@@ -385,12 +381,8 @@ private fun ExerciseCardItem(
             )
         }
     }
-    val onMoveUp = remember(id, index) {
-        if (index > 0) { { onMoveExercise(id, -1) } } else null
-    }
-    val onMoveDown = remember(id, index, lastIndex) {
-        if (index < lastIndex) { { onMoveExercise(id, 1) } } else null
-    }
+    val onMoveUp = if (index > 0) { { onMoveExercise(id, -1) } } else null
+    val onMoveDown = if (index < lastIndex) { { onMoveExercise(id, 1) } } else null
     ExerciseCard(
         exerciseName = exerciseWithSets.workoutExercise.exerciseName,
         sets = setUiModels,
@@ -414,9 +406,9 @@ private fun ExerciseCardItem(
         onRestTimeChange = { model, s ->
             setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
         },
-        activeTimerSetId = activeTimerSetId,
-        timerEndAtEpochMs = timerEndAtEpochMs,
-        timerTotalMs = timerTotalMs,
+        activeTimerSetId = activeTimer?.workoutSetId,
+        timerEndAtEpochMs = activeTimer?.endAtEpochMs ?: 0L,
+        timerTotalMs = activeTimer?.totalMs ?: 0L,
         onExerciseTitleClick = exId?.let { { onExerciseTitleClick(it) } },
         onCancelTimer = onCancelTimer,
         onMoveUp = onMoveUp,

@@ -257,53 +257,55 @@ private fun ExerciseOverflowMenu(
         IconButton(onClick = { showMenu = true }) {
             Icon(Icons.Default.MoreVert, contentDescription = "More")
         }
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
-        ) {
-            if (onMoveUp != null) {
-                DropdownMenuItem(
-                    text = { Text("Move Up") },
-                    onClick = {
-                        showMenu = false
-                        onMoveUp()
-                    }
-                )
-            }
-            if (onMoveDown != null) {
-                DropdownMenuItem(
-                    text = { Text("Move Down") },
-                    onClick = {
-                        showMenu = false
-                        onMoveDown()
-                    }
-                )
-            }
-            if (onSetRestTimeForAll != null) {
-                DropdownMenuItem(
-                    text = { Text("Set Rest Time for All Sets") },
-                    onClick = {
-                        showMenu = false
-                        onSetRestTimeForAll()
-                    }
-                )
-            }
-            if (showAddSet) {
-                DropdownMenuItem(
-                    text = { Text("Add Set") },
-                    onClick = {
-                        showMenu = false
-                        onAddSetClick()
-                    }
-                )
-            }
-            DropdownMenuItem(
-                text = { Text("Remove Exercise") },
-                onClick = {
-                    showMenu = false
-                    onRemoveClick()
+        if (showMenu) {
+            DropdownMenu(
+                expanded = true,
+                onDismissRequest = { showMenu = false }
+            ) {
+                if (onMoveUp != null) {
+                    DropdownMenuItem(
+                        text = { Text("Move Up") },
+                        onClick = {
+                            showMenu = false
+                            onMoveUp()
+                        }
+                    )
                 }
-            )
+                if (onMoveDown != null) {
+                    DropdownMenuItem(
+                        text = { Text("Move Down") },
+                        onClick = {
+                            showMenu = false
+                            onMoveDown()
+                        }
+                    )
+                }
+                if (onSetRestTimeForAll != null) {
+                    DropdownMenuItem(
+                        text = { Text("Set Rest Time for All Sets") },
+                        onClick = {
+                            showMenu = false
+                            onSetRestTimeForAll()
+                        }
+                    )
+                }
+                if (showAddSet) {
+                    DropdownMenuItem(
+                        text = { Text("Add Set") },
+                        onClick = {
+                            showMenu = false
+                            onAddSetClick()
+                        }
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text("Remove Exercise") },
+                    onClick = {
+                        showMenu = false
+                        onRemoveClick()
+                    }
+                )
+            }
         }
     }
 }

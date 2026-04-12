@@ -26,3 +26,12 @@ fun formatPreviousSet(data: PreviousSetData): String {
 
 @Immutable
 data class PreviousSetData(val weightThousandths: Int, val reps: Int)
+
+@Immutable
+data class PreviousSetLookup(
+    private val map: Map<Pair<Long, Int>, PreviousSetData>
+) {
+    operator fun get(key: Pair<Long, Int>): PreviousSetData? = map[key]
+    fun isEmpty(): Boolean = map.isEmpty()
+    fun toMutableMap(): MutableMap<Pair<Long, Int>, PreviousSetData> = map.toMutableMap()
+}

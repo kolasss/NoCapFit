@@ -13,6 +13,7 @@ import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.model.PreviousSetData
+import com.example.nocapfit.ui.model.PreviousSetLookup
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,8 +55,8 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val _previousSets = MutableStateFlow<Map<Pair<Long, Int>, PreviousSetData>>(emptyMap())
-    val previousSets: StateFlow<Map<Pair<Long, Int>, PreviousSetData>> = _previousSets.asStateFlow()
+    private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
+    val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -72,7 +73,7 @@ class WorkoutInProgressViewModel @Inject constructor(
         for (exercise in currentWorkout.exercises) {
             loadPreviousForExercise(exercise.workoutExercise.exerciseId, map)
         }
-        _previousSets.value = map
+        _previousSets.value = PreviousSetLookup(map)
     }
 
     private suspend fun loadPreviousForExercise(

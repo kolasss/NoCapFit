@@ -99,6 +99,9 @@ interface WorkoutDao {
     @Query("DELETE FROM workout_exercises WHERE id = :exerciseId")
     suspend fun deleteWorkoutExercise(exerciseId: Long)
 
+    @Query("DELETE FROM workout_exercises WHERE workoutId = :workoutId")
+    suspend fun deleteExercisesForWorkout(workoutId: Long)
+
     @Query("SELECT COALESCE(MAX(orderIndex), -1) FROM workout_exercises WHERE workoutId = :workoutId")
     suspend fun getMaxOrderIndex(workoutId: Long): Int
 
@@ -118,5 +121,20 @@ interface WorkoutDao {
             }
         }
         return workoutId
+    }
+
+    @Transaction
+    suspend fun saveWorkoutEdits(
+        workout: Workout,
+        exercisesWithSets: List<Pair<WorkoutExercise, List<WorkoutSet>>>
+    ) {
+        update(workout)
+        deleteExercisesForWorkout(workout.id)
+        for ((exercise, sets) in exercisesWithSets) {
+            val weId = insertWorkoutExercise(exercise.copy(workoutId = workout.id))
+            for (set in sets) {
+                insertWorkoutSet(set.copy(workoutExerciseId = weId))
+            }
+        }
     }
 }

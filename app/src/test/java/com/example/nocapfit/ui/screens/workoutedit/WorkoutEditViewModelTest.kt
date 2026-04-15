@@ -19,6 +19,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -85,12 +88,8 @@ class WorkoutEditViewModelTest {
 
     private fun createViewModel(): WorkoutEditViewModel {
         coEvery { profileRepository.getDefault() } returns testProfile
-        every { workoutRepository.getWithExercisesFlow(10L) } returns flowOf(testData)
         coEvery { workoutRepository.getWithExercises(10L) } returns testData
         every { exerciseRepository.getAllByProfile(1L) } returns flowOf(emptyList())
-        coEvery { workoutRepository.getMaxOrderIndex(10L) } returns 1
-        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 60L
-        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 200L
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 10L))
         return WorkoutEditViewModel(
             workoutRepository,
@@ -129,153 +128,185 @@ class WorkoutEditViewModelTest {
     }
 
     @Test
-    fun saveProgramName_callsRepositoryUpdate() = runTest {
+    fun updateSet_mutatesSnapshot() = runTest {
         val viewModel = createViewModel()
-
         viewModel.workout.test { awaitItem() }
-        viewModel.programName.test { awaitItem() }
 
-        viewModel.updateProgramName("Pull Day")
-        viewModel.saveProgramName()
-
-        coVerify { workoutRepository.update(match { it.programName == "Pull Day" }) }
-    }
-
-    @Test
-    fun saveProgramName_skipsWhenUnchanged() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.workout.test { awaitItem() }
-        viewModel.programName.test { awaitItem() }
-
-        viewModel.saveProgramName()
-
-        coVerify(exactly = 0) { workoutRepository.update(any()) }
-    }
-
-    @Test
-    fun updateSet_delegatesToRepository() = runTest {
-        val viewModel = createViewModel()
         val updatedSet = testSet.copy(weightThousandths = 70000)
-
         viewModel.updateSet(updatedSet)
 
-        coVerify { workoutRepository.updateWorkoutSet(updatedSet) }
+        val set = viewModel.workout.value!!.exercises[0].sets[0]
+        assertEquals(70000, set.weightThousandths)
+        coVerify(exactly = 0) { workoutRepository.updateWorkoutSet(any()) }
     }
 
     @Test
-    fun toggleSetCompleted_flipsCompletedFlag() = runTest {
+    fun toggleSetCompleted_flipsFlag() = runTest {
         val viewModel = createViewModel()
+        viewModel.workout.test { awaitItem() }
 
         viewModel.toggleSetCompleted(testSet)
 
-        coVerify {
-            workoutRepository.updateWorkoutSet(match { it.id == 100L && !it.completed })
-        }
+        val set = viewModel.workout.value!!.exercises[0].sets[0]
+        assertFalse(set.completed)
     }
 
     @Test
-    fun addSet_copiesLastSetDefaults() = runTest {
-        coEvery { workoutRepository.getSetsForExercise(50L) } returns listOf(testSet)
+    fun addSet_appendsToExercise() = runTest {
         val viewModel = createViewModel()
+        viewModel.workout.test { awaitItem() }
 
         viewModel.addSet(50L)
 
-        coVerify {
-            workoutRepository.insertWorkoutSet(
-                match {
-                    it.workoutExerciseId == 50L &&
-                        it.setIndex == 1 &&
-                        it.weightThousandths == 60000 &&
-                        it.reps == 10 &&
-                        it.restTimeSeconds == 90 &&
-                        !it.completed
-                }
-            )
-        }
+        val sets = viewModel.workout.value!!.exercises[0].sets
+        assertEquals(2, sets.size)
+        val newSet = sets[1]
+        assertEquals(1, newSet.setIndex)
+        assertEquals(60000, newSet.weightThousandths)
+        assertEquals(10, newSet.reps)
+        assertFalse(newSet.completed)
     }
 
     @Test
     fun addSet_usesDefaultsWhenNoExistingSets() = runTest {
-        coEvery { workoutRepository.getSetsForExercise(50L) } returns emptyList()
-        val viewModel = createViewModel()
+        val emptyExercise = testExerciseWithSets.copy(sets = emptyList())
+        val data = testData.copy(exercises = listOf(emptyExercise))
+        coEvery { profileRepository.getDefault() } returns testProfile
+        coEvery { workoutRepository.getWithExercises(10L) } returns data
+        every { exerciseRepository.getAllByProfile(1L) } returns flowOf(emptyList())
+        val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 10L))
+        val viewModel = WorkoutEditViewModel(
+            workoutRepository,
+            exerciseRepository,
+            profileRepository,
+            savedStateHandle
+        )
+        viewModel.workout.test { awaitItem() }
 
         viewModel.addSet(50L)
 
-        coVerify {
-            workoutRepository.insertWorkoutSet(
-                match {
-                    it.setIndex == 0 &&
-                        it.weightThousandths == 0 &&
-                        it.reps == 0 &&
-                        it.restTimeSeconds == 60
-                }
-            )
-        }
+        val sets = viewModel.workout.value!!.exercises[0].sets
+        assertEquals(1, sets.size)
+        assertEquals(0, sets[0].setIndex)
+        assertEquals(0, sets[0].weightThousandths)
+        assertEquals(60, sets[0].restTimeSeconds)
     }
 
     @Test
-    fun removeExercise_delegatesToRepository() = runTest {
+    fun removeExercise_removesFromSnapshot() = runTest {
         val viewModel = createViewModel()
+        viewModel.workout.test { awaitItem() }
 
         viewModel.removeExercise(50L)
 
-        coVerify { workoutRepository.deleteWorkoutExercise(50L) }
+        val exercises = viewModel.workout.value!!.exercises
+        assertEquals(1, exercises.size)
+        assertEquals("Squat", exercises[0].workoutExercise.exerciseName)
     }
 
     @Test
-    fun addExercise_insertsExerciseAndDefaultSet() = runTest {
+    fun addExercise_appendsToSnapshot() = runTest {
         val viewModel = createViewModel()
-
         viewModel.workout.test { awaitItem() }
 
-        viewModel.addExercise(2L, "Squat")
+        viewModel.addExercise(3L, "Deadlift")
 
-        coVerify {
-            workoutRepository.insertWorkoutExercise(
-                match {
-                    it.workoutId == 10L &&
-                        it.exerciseName == "Squat" &&
-                        it.exerciseId == 2L &&
-                        it.orderIndex == 2
-                }
-            )
-        }
-        coVerify {
-            workoutRepository.insertWorkoutSet(
-                match {
-                    it.workoutExerciseId == 60L &&
-                        it.setIndex == 0 &&
-                        it.weightThousandths == 0
-                }
-            )
-        }
+        val exercises = viewModel.workout.value!!.exercises
+        assertEquals(3, exercises.size)
+        val added = exercises[2]
+        assertEquals("Deadlift", added.workoutExercise.exerciseName)
+        assertEquals(3L, added.workoutExercise.exerciseId)
+        assertEquals(2, added.workoutExercise.orderIndex)
+        assertEquals(1, added.sets.size)
     }
 
     @Test
     fun moveExercise_swapsOrderIndexes() = runTest {
         val viewModel = createViewModel()
-
         viewModel.workout.test { awaitItem() }
 
         viewModel.moveExercise(50L, 1)
 
-        coVerify {
-            workoutRepository.swapExerciseOrder(
-                match { it.id == 50L && it.orderIndex == 1 },
-                match { it.id == 51L && it.orderIndex == 0 }
-            )
-        }
+        val exercises = viewModel.workout.value!!.exercises
+        val bench = exercises.first { it.workoutExercise.exerciseName == "Bench Press" }
+        val squat = exercises.first { it.workoutExercise.exerciseName == "Squat" }
+        assertEquals(1, bench.workoutExercise.orderIndex)
+        assertEquals(0, squat.workoutExercise.orderIndex)
     }
 
     @Test
     fun moveExercise_outOfBounds_doesNothing() = runTest {
         val viewModel = createViewModel()
-
         viewModel.workout.test { awaitItem() }
 
         viewModel.moveExercise(50L, -1)
 
-        coVerify(exactly = 0) { workoutRepository.swapExerciseOrder(any(), any()) }
+        val bench = viewModel.workout.value!!.exercises
+            .first { it.workoutExercise.exerciseName == "Bench Press" }
+        assertEquals(0, bench.workoutExercise.orderIndex)
+    }
+
+    @Test
+    fun save_persistsSnapshotToRepository() = runTest {
+        val viewModel = createViewModel()
+        viewModel.workout.test { awaitItem() }
+
+        viewModel.updateProgramName("Pull Day")
+        viewModel.updateSet(testSet.copy(weightThousandths = 70000))
+
+        var saved = false
+        viewModel.save { saved = true }
+
+        coVerify {
+            workoutRepository.saveWorkoutEdits(
+                match { it.id == 10L && it.programName == "Pull Day" },
+                match { exercises ->
+                    exercises.size == 2 &&
+                        exercises[0].first.id == 0L &&
+                        exercises[0].second[0].id == 0L &&
+                        exercises[0].second[0].weightThousandths == 70000
+                }
+            )
+        }
+        assertTrue(saved)
+    }
+
+    @Test
+    fun editsDoNotTouchRepository() = runTest {
+        val viewModel = createViewModel()
+        viewModel.workout.test { awaitItem() }
+
+        viewModel.updateSet(testSet.copy(weightThousandths = 70000))
+        viewModel.toggleSetCompleted(testSet)
+        viewModel.addSet(50L)
+        viewModel.removeExercise(51L)
+        viewModel.addExercise(3L, "Deadlift")
+
+        coVerify(exactly = 0) { workoutRepository.updateWorkoutSet(any()) }
+        coVerify(exactly = 0) { workoutRepository.insertWorkoutSet(any()) }
+        coVerify(exactly = 0) { workoutRepository.deleteWorkoutExercise(any()) }
+        coVerify(exactly = 0) { workoutRepository.insertWorkoutExercise(any()) }
+    }
+
+    @Test
+    fun save_doesNothingWhenNoWorkout() = runTest {
+        coEvery { profileRepository.getDefault() } returns testProfile
+        coEvery { workoutRepository.getWithExercises(99L) } returns null
+        every { exerciseRepository.getAllByProfile(1L) } returns flowOf(emptyList())
+        val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 99L))
+        val viewModel = WorkoutEditViewModel(
+            workoutRepository,
+            exerciseRepository,
+            profileRepository,
+            savedStateHandle
+        )
+
+        assertNull(viewModel.workout.value)
+
+        var saved = false
+        viewModel.save { saved = true }
+
+        coVerify(exactly = 0) { workoutRepository.saveWorkoutEdits(any(), any()) }
+        assertFalse(saved)
     }
 }

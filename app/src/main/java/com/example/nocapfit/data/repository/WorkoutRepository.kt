@@ -43,4 +43,8 @@ class WorkoutRepository @Inject constructor(
         workout: Workout,
         exercisesWithSets: List<Pair<WorkoutExercise, List<WorkoutSet>>>
     ): Long = workoutDao.insertWorkoutWithExercises(workout, exercisesWithSets)
+    suspend fun saveWorkoutEdits(
+        workout: Workout,
+        exercisesWithSets: List<Pair<WorkoutExercise, List<WorkoutSet>>>
+    ) = workoutDao.saveWorkoutEdits(workout, exercisesWithSets)
 }

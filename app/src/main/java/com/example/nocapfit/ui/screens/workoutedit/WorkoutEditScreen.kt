@@ -55,11 +55,15 @@ fun WorkoutEditScreen(
             TopAppBar(
                 title = { Text("Edit Workout") },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.saveProgramName()
-                        navController.popBackStack()
-                    }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { viewModel.save { navController.popBackStack() } }
+                    ) {
+                        Text("Save")
                     }
                 }
             )

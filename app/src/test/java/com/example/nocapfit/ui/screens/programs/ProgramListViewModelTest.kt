@@ -60,4 +60,14 @@ class ProgramListViewModelTest {
 
         coVerify { programRepository.delete(testPrograms[0].program) }
     }
+
+    @Test
+    fun copyProgram_callsRepositoryCopy() = runTest {
+        coEvery { programRepository.copyProgram(1L) } returns 3L
+        val viewModel = createViewModel()
+
+        viewModel.copyProgram(1L)
+
+        coVerify { programRepository.copyProgram(1L) }
+    }
 }

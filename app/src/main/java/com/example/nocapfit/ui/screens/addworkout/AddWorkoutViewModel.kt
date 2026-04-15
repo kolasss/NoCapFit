@@ -43,8 +43,11 @@ class AddWorkoutViewModel @Inject constructor(
 
     private val unsortedPrograms = _profileId
         .flatMapLatest { profileId ->
-            if (profileId == null) flowOf(emptyList())
-            else programRepository.getAllWithExercises(profileId)
+            if (profileId == null) {
+                flowOf(emptyList())
+            } else {
+                programRepository.getAllWithExercises(profileId)
+            }
         }
 
     val programs: StateFlow<List<ProgramWithExercises>> = combine(

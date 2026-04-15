@@ -2,9 +2,9 @@ package com.example.nocapfit.ui.screens.programs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,11 +16,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -97,11 +101,12 @@ fun ProgramListScreen(
                 items(programs, key = { it.program.id }) { programWithExercises ->
                     ProgramListItem(
                         programWithExercises = programWithExercises,
-                        onClick = {
+                        onEdit = {
                             navController.navigate(
                                 Screen.ProgramForm.createRoute(programWithExercises.program.id)
                             )
                         },
+                        onCopy = { viewModel.copyProgram(programWithExercises.program.id) },
                         onDeleteRequest = { programToDelete = programWithExercises },
                         modifier = Modifier.animateItem()
                     )
@@ -139,7 +144,8 @@ fun ProgramListScreen(
 @Composable
 internal fun ProgramListItem(
     programWithExercises: ProgramWithExercises,
-    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onCopy: () -> Unit,
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -182,13 +188,30 @@ internal fun ProgramListItem(
         },
         enableDismissFromStartToEnd = false
     ) {
-        ElevatedCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clickable(onClick = onClick)
+        ProgramCardContent(
+            programWithExercises = programWithExercises,
+            onEdit = onEdit,
+            onCopy = onCopy
+        )
+    }
+}
+
+@Composable
+private fun ProgramCardContent(
+    programWithExercises: ProgramWithExercises,
+    onEdit: () -> Unit,
+    onCopy: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = programWithExercises.program.name,
                     style = MaterialTheme.typography.titleMedium
@@ -199,7 +222,9 @@ internal fun ProgramListItem(
                     .joinToString(", ") { it.exercise.name }
                 val exerciseCount = programWithExercises.exercises.size
                 Text(
-                    text = exerciseNames.ifBlank { "$exerciseCount exercise${if (exerciseCount != 1) "s" else ""}" },
+                    text = exerciseNames.ifBlank {
+                        "$exerciseCount exercise${if (exerciseCount != 1) "s" else ""}"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -208,6 +233,31 @@ internal fun ProgramListItem(
                         text = "+${exerciseCount - 3} more",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Box {
+                var showMenu by remember { mutableStateOf(false) }
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More")
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Create Copy") },
+                        onClick = {
+                            showMenu = false
+                            onCopy()
+                        }
                     )
                 }
             }

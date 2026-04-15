@@ -45,4 +45,10 @@ class ProgramListViewModel @Inject constructor(
             programRepository.delete(programWithExercises.program)
         }
     }
+
+    fun copyProgram(programId: Long) {
+        viewModelScope.launch {
+            programRepository.copyProgram(programId)
+        }
+    }
 }

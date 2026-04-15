@@ -26,4 +26,31 @@ class ProgramRepository @Inject constructor(
         isUpdate: Boolean,
         exercises: List<Pair<ProgramExercise, List<ProgramExerciseSet>>>
     ): Long = programDao.saveProgramWithExercises(program, isUpdate, exercises)
+
+    suspend fun copyProgram(programId: Long): Long {
+        val source = programDao.getProgramWithExercises(programId)
+            ?: throw IllegalArgumentException("Program not found: $programId")
+        val newProgram = Program(
+            profileId = source.program.profileId,
+            name = "${source.program.name} (Copy)"
+        )
+        val exercises = source.exercises.map { peWithSets ->
+            val exercise = ProgramExercise(
+                programId = 0L,
+                exerciseId = peWithSets.programExercise.exerciseId,
+                orderIndex = peWithSets.programExercise.orderIndex
+            )
+            val sets = peWithSets.sets.map { set ->
+                ProgramExerciseSet(
+                    programExerciseId = 0L,
+                    setIndex = set.setIndex,
+                    weightThousandths = set.weightThousandths,
+                    reps = set.reps,
+                    restTimeSeconds = set.restTimeSeconds
+                )
+            }
+            exercise to sets
+        }
+        return programDao.saveProgramWithExercises(newProgram, isUpdate = false, exercises)
+    }
 }

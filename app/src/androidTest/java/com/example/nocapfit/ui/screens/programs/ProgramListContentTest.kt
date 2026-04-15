@@ -2,6 +2,7 @@ package com.example.nocapfit.ui.screens.programs
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.nocapfit.data.db.entity.Exercise
@@ -63,7 +64,8 @@ class ProgramListContentTest {
         composeTestRule.setThemedContent {
             ProgramListItem(
                 programWithExercises = program,
-                onClick = {},
+                onEdit = {},
+                onCopy = {},
                 onDeleteRequest = {}
             )
         }
@@ -78,7 +80,8 @@ class ProgramListContentTest {
         composeTestRule.setThemedContent {
             ProgramListItem(
                 programWithExercises = program,
-                onClick = {},
+                onEdit = {},
+                onCopy = {},
                 onDeleteRequest = {}
             )
         }
@@ -95,7 +98,8 @@ class ProgramListContentTest {
         composeTestRule.setThemedContent {
             ProgramListItem(
                 programWithExercises = program,
-                onClick = {},
+                onEdit = {},
+                onCopy = {},
                 onDeleteRequest = {}
             )
         }
@@ -112,7 +116,8 @@ class ProgramListContentTest {
         composeTestRule.setThemedContent {
             ProgramListItem(
                 programWithExercises = program,
-                onClick = {},
+                onEdit = {},
+                onCopy = {},
                 onDeleteRequest = {}
             )
         }
@@ -121,19 +126,40 @@ class ProgramListContentTest {
     }
 
     @Test
-    fun clickingItem_triggersCallback() {
-        var clicked = false
+    fun menuEdit_triggersCallback() {
+        var edited = false
         val program = testProgram()
 
         composeTestRule.setThemedContent {
             ProgramListItem(
                 programWithExercises = program,
-                onClick = { clicked = true },
+                onEdit = { edited = true },
+                onCopy = {},
                 onDeleteRequest = {}
             )
         }
 
-        composeTestRule.onNodeWithText("Push Day").performClick()
-        assertTrue(clicked)
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Edit").performClick()
+        assertTrue(edited)
+    }
+
+    @Test
+    fun menuCopy_triggersCallback() {
+        var copied = false
+        val program = testProgram()
+
+        composeTestRule.setThemedContent {
+            ProgramListItem(
+                programWithExercises = program,
+                onEdit = {},
+                onCopy = { copied = true },
+                onDeleteRequest = {}
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Create Copy").performClick()
+        assertTrue(copied)
     }
 }

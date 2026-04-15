@@ -13,10 +13,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +33,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -54,6 +59,7 @@ fun WorkoutDetailScreen(
 ) {
     val workoutWithExercises by viewModel.workoutWithExercises.collectAsState()
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
+    val showSaveAsProgram by viewModel.showSaveAsProgram.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val data = workoutWithExercises
@@ -70,18 +76,15 @@ fun WorkoutDetailScreen(
                 },
                 actions = {
                     if (data != null) {
-                        IconButton(
-                            onClick = {
+                        WorkoutDetailMenu(
+                            onEdit = {
                                 navController.navigate(
                                     Screen.WorkoutEdit.createRoute(data.workout.id)
                                 )
-                            }
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit")
-                        }
-                        IconButton(onClick = { viewModel.showDeleteConfirmation() }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
+                            },
+                            onSaveAsProgram = { viewModel.showSaveAsProgram() },
+                            onDelete = { viewModel.showDeleteConfirmation() }
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -114,6 +117,88 @@ fun WorkoutDetailScreen(
                 }
             }
         )
+    }
+
+    if (showSaveAsProgram) {
+        SaveAsProgramDialog(
+            initialName = data?.workout?.programName ?: "",
+            onSave = { viewModel.saveAsProgram(it) },
+            onDismiss = { viewModel.dismissSaveAsProgram() }
+        )
+    }
+}
+
+@Composable
+private fun SaveAsProgramDialog(
+    initialName: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var programName by remember { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save as Program") },
+        text = {
+            OutlinedTextField(
+                value = programName,
+                onValueChange = { programName = it },
+                label = { Text("Program name") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(programName) },
+                enabled = programName.isNotBlank()
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun WorkoutDetailMenu(
+    onEdit: () -> Unit,
+    onSaveAsProgram: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Box {
+        var showMenu by remember { mutableStateOf(false) }
+        IconButton(onClick = { showMenu = true }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "More")
+        }
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = {
+                    showMenu = false
+                    onEdit()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Save as Program") },
+                onClick = {
+                    showMenu = false
+                    onSaveAsProgram()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = {
+                    showMenu = false
+                    onDelete()
+                }
+            )
+        }
     }
 }
 

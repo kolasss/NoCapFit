@@ -5,6 +5,7 @@ import com.example.nocapfit.data.db.entity.Program
 import com.example.nocapfit.data.db.entity.ProgramExercise
 import com.example.nocapfit.data.db.entity.ProgramExerciseSet
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
+import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,5 +53,31 @@ class ProgramRepository @Inject constructor(
             exercise to sets
         }
         return programDao.saveProgramWithExercises(newProgram, isUpdate = false, exercises)
+    }
+
+    suspend fun createProgramFromWorkout(workout: WorkoutWithExercises, programName: String): Long {
+        val program = Program(profileId = workout.workout.profileId, name = programName)
+        val exercises = workout.exercises
+            .filter { it.workoutExercise.exerciseId != null }
+            .mapNotNull { weWithSets ->
+                val completedSets = weWithSets.sets.filter { it.completed }
+                if (completedSets.isEmpty()) return@mapNotNull null
+                val pe = ProgramExercise(
+                    programId = 0L,
+                    exerciseId = weWithSets.workoutExercise.exerciseId!!,
+                    orderIndex = weWithSets.workoutExercise.orderIndex
+                )
+                val sets = completedSets.map { set ->
+                    ProgramExerciseSet(
+                        programExerciseId = 0L,
+                        setIndex = set.setIndex,
+                        weightThousandths = set.weightThousandths,
+                        reps = set.reps,
+                        restTimeSeconds = set.restTimeSeconds
+                    )
+                }
+                pe to sets
+            }
+        return programDao.saveProgramWithExercises(program, isUpdate = false, exercises)
     }
 }

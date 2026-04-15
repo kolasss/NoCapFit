@@ -5,7 +5,9 @@ import app.cash.turbine.test
 import com.example.nocapfit.MainDispatcherRule
 import com.example.nocapfit.data.db.entity.Workout
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
+import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -24,6 +26,7 @@ class WorkoutDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val workoutRepository = mockk<WorkoutRepository>(relaxUnitFun = true)
+    private val programRepository = mockk<ProgramRepository>(relaxUnitFun = true)
 
     private val testWorkout = Workout(
         id = 1L,
@@ -40,7 +43,7 @@ class WorkoutDetailViewModelTest {
     private fun createViewModel(workoutId: Long = 1L): WorkoutDetailViewModel {
         every { workoutRepository.getWithExercisesFlow(workoutId) } returns flowOf(testData)
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to workoutId))
-        return WorkoutDetailViewModel(workoutRepository, savedStateHandle)
+        return WorkoutDetailViewModel(workoutRepository, programRepository, savedStateHandle)
     }
 
     @Test
@@ -56,7 +59,7 @@ class WorkoutDetailViewModelTest {
     fun workoutWithExercises_returnsNullWhenNotFound() = runTest {
         every { workoutRepository.getWithExercisesFlow(99L) } returns flowOf(null)
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 99L))
-        val viewModel = WorkoutDetailViewModel(workoutRepository, savedStateHandle)
+        val viewModel = WorkoutDetailViewModel(workoutRepository, programRepository, savedStateHandle)
 
         assertNull(viewModel.workoutWithExercises.value)
     }
@@ -103,5 +106,21 @@ class WorkoutDetailViewModelTest {
 
         coVerify(exactly = 0) { workoutRepository.delete(any()) }
         assertFalse(callbackInvoked)
+    }
+
+    @Test
+    fun saveAsProgram_callsRepositoryAndDismissesDialog() = runTest {
+        coEvery { programRepository.createProgramFromWorkout(any(), any()) } returns 10L
+        val viewModel = createViewModel()
+
+        viewModel.workoutWithExercises.test { awaitItem() }
+
+        viewModel.showSaveAsProgram()
+        assertTrue(viewModel.showSaveAsProgram.value)
+
+        viewModel.saveAsProgram("My Program")
+
+        coVerify { programRepository.createProgramFromWorkout(testData, "My Program") }
+        assertFalse(viewModel.showSaveAsProgram.value)
     }
 }

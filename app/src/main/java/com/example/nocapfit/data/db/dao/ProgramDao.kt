@@ -27,7 +27,7 @@ interface ProgramDao {
     suspend fun getById(id: Long): Program?
 
     @Transaction
-    @Query("SELECT * FROM programs WHERE profileId = :profileId ORDER BY name ASC")
+    @Query("SELECT * FROM programs WHERE profileId = :profileId ORDER BY id DESC")
     fun getAllWithExercises(profileId: Long): Flow<List<ProgramWithExercises>>
 
     @Transaction

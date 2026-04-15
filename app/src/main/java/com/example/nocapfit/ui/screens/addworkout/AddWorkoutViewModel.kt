@@ -14,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -40,15 +41,18 @@ class AddWorkoutViewModel @Inject constructor(
         .map { list -> list.associate { it.programId to it.lastTime } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    val programs: StateFlow<List<ProgramWithExercises>> = _profileId
+    private val unsortedPrograms = _profileId
         .flatMapLatest { profileId ->
-            if (profileId == null) {
-                flowOf(emptyList())
-            } else {
-                programRepository.getAllWithExercises(profileId)
-            }
+            if (profileId == null) flowOf(emptyList())
+            else programRepository.getAllWithExercises(profileId)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val programs: StateFlow<List<ProgramWithExercises>> = combine(
+        unsortedPrograms,
+        lastWorkoutTimes
+    ) { programs, times ->
+        programs.sortedByDescending { times[it.program.id] ?: 0L }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         viewModelScope.launch {

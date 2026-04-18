@@ -125,6 +125,15 @@ class WorkoutInProgressViewModel @Inject constructor(
         }
     }
 
+    fun setRestTimeForAll(workoutExerciseId: Long, restTimeSeconds: Int) {
+        viewModelScope.launch {
+            val sets = workoutRepository.getSetsForExercise(workoutExerciseId)
+            for (set in sets) {
+                workoutRepository.updateWorkoutSet(set.copy(restTimeSeconds = restTimeSeconds))
+            }
+        }
+    }
+
     fun addSet(workoutExerciseId: Long) {
         viewModelScope.launch {
             val existingSets = workoutRepository.getSetsForExercise(workoutExerciseId)
@@ -153,7 +162,11 @@ class WorkoutInProgressViewModel @Inject constructor(
                     orderIndex = maxOrder + 1
                 )
             )
-            val prev = loadPreviousSetForExercise(exerciseId)
+            val prev = workoutRepository.getLastFinishedByExerciseId(exerciseId)
+                ?.exercises
+                ?.find { it.workoutExercise.exerciseId == exerciseId }
+                ?.sets
+                ?.find { it.setIndex == 0 && it.completed }
             workoutRepository.insertWorkoutSet(
                 WorkoutSet(
                     workoutExerciseId = weId,
@@ -165,14 +178,6 @@ class WorkoutInProgressViewModel @Inject constructor(
                 )
             )
         }
-    }
-
-    private suspend fun loadPreviousSetForExercise(exerciseId: Long): WorkoutSet? {
-        val previousWorkout = workoutRepository.getLastFinishedByExerciseId(exerciseId)
-            ?: return null
-        val exercise = previousWorkout.exercises.find { it.workoutExercise.exerciseId == exerciseId }
-            ?: return null
-        return exercise.sets.find { it.setIndex == 0 && it.completed }
     }
 
     fun removeExercise(workoutExerciseId: Long) {

@@ -176,7 +176,7 @@ private fun RowScope.RestTimeRowContent(
             }
         }
     } else if (!isCompleted && onRestTimeChange != null) {
-        RestTimeInput(restTimeSeconds, onRestTimeChange)
+        RestTimeInput(restTimeSeconds = restTimeSeconds, onRestTimeChange = onRestTimeChange)
     } else {
         Text(
             text = formatMmSs(restTimeSeconds),
@@ -187,7 +187,11 @@ private fun RowScope.RestTimeRowContent(
 }
 
 @Composable
-private fun RestTimeInput(restTimeSeconds: Int, onRestTimeChange: (Int) -> Unit) {
+fun RestTimeInput(
+    restTimeSeconds: Int,
+    onRestTimeChange: (Int) -> Unit,
+    modifier: Modifier = Modifier.width(80.dp)
+) {
     var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
     var lastExternalSeconds by remember { mutableIntStateOf(restTimeSeconds) }
     var lastSentSeconds by remember { mutableIntStateOf(restTimeSeconds) }
@@ -209,7 +213,7 @@ private fun RestTimeInput(restTimeSeconds: Int, onRestTimeChange: (Int) -> Unit)
         },
         keyboardType = KeyboardType.Number,
         visualTransformation = mmSsTransformation,
-        modifier = Modifier.width(80.dp)
+        modifier = modifier
     )
 }
 

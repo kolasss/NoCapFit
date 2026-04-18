@@ -56,6 +56,7 @@ import androidx.navigation.NavController
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
+import com.example.nocapfit.ui.components.RestTimeForAllDialog
 import com.example.nocapfit.ui.model.PreviousSetLookup
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.model.formatPreviousSet
@@ -66,6 +67,7 @@ import com.example.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutInProgressScreen(
@@ -118,6 +120,7 @@ fun WorkoutInProgressScreen(
             onRemoveExercise = viewModel::removeExercise,
             onAddSet = viewModel::addSet,
             onUpdateSet = viewModel::updateSet,
+            onSetRestTimeForAll = viewModel::setRestTimeForAll,
             onCompleteSet = viewModel::completeSet,
             onRevertSet = viewModel::revertSet,
             onCancelTimer = viewModel::cancelTimer,
@@ -215,6 +218,7 @@ private fun WorkoutContent(
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onSetRestTimeForAll: (Long, Int) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
@@ -244,6 +248,7 @@ private fun WorkoutContent(
         onRemoveExercise = onRemoveExercise,
         onAddSet = onAddSet,
         onUpdateSet = onUpdateSet,
+        onSetRestTimeForAll = onSetRestTimeForAll,
         onCompleteSet = onCompleteSet,
         onRevertSet = onRevertSet,
         onCancelTimer = onCancelTimer,
@@ -263,6 +268,7 @@ private fun WorkoutExerciseList(
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onSetRestTimeForAll: (Long, Int) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
@@ -312,6 +318,7 @@ private fun WorkoutExerciseList(
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
                 onUpdateSet = onUpdateSet,
+                onSetRestTimeForAll = onSetRestTimeForAll,
                 onCompleteSet = onCompleteSet,
                 onRevertSet = onRevertSet,
                 onCancelTimer = onCancelTimer,
@@ -346,11 +353,13 @@ private fun ExerciseCardItem(
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
     onUpdateSet: (com.example.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onSetRestTimeForAll: (Long, Int) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
+    var showRestTimeDialog by remember { mutableStateOf(false) }
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
     val sets = exerciseWithSets.sets
@@ -406,6 +415,7 @@ private fun ExerciseCardItem(
         onRestTimeChange = { model, s ->
             setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
         },
+        onSetRestTimeForAll = { showRestTimeDialog = true },
         activeTimerSetId = activeTimer?.workoutSetId,
         timerEndAtEpochMs = activeTimer?.endAtEpochMs ?: 0L,
         timerTotalMs = activeTimer?.totalMs ?: 0L,
@@ -414,6 +424,15 @@ private fun ExerciseCardItem(
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown
     )
+    if (showRestTimeDialog) {
+        RestTimeForAllDialog(
+            onDismiss = { showRestTimeDialog = false },
+            onConfirm = { seconds ->
+                onSetRestTimeForAll(id, seconds)
+                showRestTimeDialog = false
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

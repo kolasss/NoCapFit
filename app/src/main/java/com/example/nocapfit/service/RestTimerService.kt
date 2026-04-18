@@ -12,6 +12,7 @@ import android.os.IBinder
 import com.example.nocapfit.R
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.util.MILLIS_PER_SECOND
+import com.example.nocapfit.util.ceilSecondsFromMs
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,7 +95,7 @@ class RestTimerService : Service() {
     private fun buildNotification(): Notification {
         val totalSeconds = ((endAtEpochMs - startAtEpochMs) / MILLIS_PER_SECOND).toInt()
         val remainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-        val remainingSeconds = (remainingMs / MILLIS_PER_SECOND).toInt()
+        val remainingSeconds = ceilSecondsFromMs(remainingMs)
         val elapsedSeconds = (totalSeconds - remainingSeconds).coerceIn(0, totalSeconds)
 
         val cancelIntent = Intent(this, RestTimerService::class.java).apply {
@@ -117,7 +118,8 @@ class RestTimerService : Service() {
                     setRequestPromotedOngoing(true)
                 }
             }
-            .setWhen(endAtEpochMs)
+            // Chronometer formats as floor(delta/1000); offset by (1s - 1ms) so it displays ceil.
+            .setWhen(endAtEpochMs + MILLIS_PER_SECOND - 1)
             .setUsesChronometer(remainingSeconds > 0)
             .setChronometerCountDown(true)
             .addAction(

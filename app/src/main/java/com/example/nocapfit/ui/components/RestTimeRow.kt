@@ -33,6 +33,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
+import com.example.nocapfit.util.ceilSecondsFromMs
+import com.example.nocapfit.util.formatMmSs
+import com.example.nocapfit.util.restTimerFillProgress
 import kotlinx.coroutines.delay
 
 /**
@@ -77,8 +80,8 @@ fun RestTimeRow(
     onCancelTimer: (() -> Unit)? = null
 ) {
     val remainingMs = rememberTimerRemainingMs(isTimerActive, timerEndAtEpochMs)
-    val fillProgress = if (isTimerActive && timerTotalMs > 0) {
-        (1f - (remainingMs.toFloat() / timerTotalMs)).coerceIn(0f, 1f)
+    val fillProgress = if (isTimerActive) {
+        restTimerFillProgress(remainingMs, timerTotalMs)
     } else {
         0f
     }
@@ -219,18 +222,11 @@ fun RestTimeInput(
 
 @Composable
 private fun RestTimerCountdown(remainingMs: Long) {
-    val totalSecs = (remainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
     Text(
-        text = formatMmSs(totalSecs.toInt()),
+        text = formatMmSs(ceilSecondsFromMs(remainingMs)),
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.primary
     )
-}
-
-private fun formatMmSs(totalSeconds: Int): String {
-    val mins = totalSeconds / SECONDS_PER_MINUTE
-    val secs = totalSeconds % SECONDS_PER_MINUTE
-    return "%d:%02d".format(mins, secs)
 }
 
 private val mmSsTransformation = MmSsVisualTransformation()

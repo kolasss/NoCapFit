@@ -64,6 +64,9 @@ import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_HOUR
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
+import com.example.nocapfit.util.ceilSecondsFromMs
+import com.example.nocapfit.util.formatMmSs
+import com.example.nocapfit.util.restTimerFillProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
@@ -451,8 +454,8 @@ private fun WorkoutTopAppBar(
 ) {
     val elapsedText = rememberElapsedTime(startTime = startTime)
     val timerRemainingMs = rememberTimerRemainingMs(showTimer, timerEndAtEpochMs)
-    val timerProgress = if (showTimer && timerTotalMs > 0) {
-        (1f - (timerRemainingMs.toFloat() / timerTotalMs)).coerceIn(0f, 1f)
+    val timerProgress = if (showTimer) {
+        restTimerFillProgress(timerRemainingMs, timerTotalMs)
     } else {
         0f
     }
@@ -526,9 +529,6 @@ private fun TopBarTitle(showTimer: Boolean, elapsedText: String, timerRemainingM
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(elapsedText)
         if (showTimer) {
-            val timerSecs = (timerRemainingMs / MILLIS_PER_SECOND).coerceAtLeast(0)
-            val mins = timerSecs / SECONDS_PER_MINUTE
-            val secs = timerSecs % SECONDS_PER_MINUTE
             Spacer(Modifier.width(12.dp))
             Icon(
                 Icons.Default.Timer,
@@ -538,7 +538,7 @@ private fun TopBarTitle(showTimer: Boolean, elapsedText: String, timerRemainingM
             )
             Spacer(Modifier.width(4.dp))
             Text(
-                text = "%d:%02d".format(mins, secs),
+                text = formatMmSs(ceilSecondsFromMs(timerRemainingMs)),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )

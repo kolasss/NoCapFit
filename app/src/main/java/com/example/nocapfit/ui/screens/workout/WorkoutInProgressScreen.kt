@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.service.TimerCoordinator
+import com.example.nocapfit.ui.components.ConfirmDialog
 import com.example.nocapfit.ui.components.ExerciseCard
 import com.example.nocapfit.ui.components.ExercisePickerSheet
 import com.example.nocapfit.ui.components.RestTimeForAllDialog
@@ -77,7 +77,7 @@ fun WorkoutInProgressScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: WorkoutInProgressViewModel = hiltViewModel(),
-    onMinimize: ((Long) -> Unit)? = null
+    onMinimize: (() -> Unit)? = null
 ) {
     val workout by viewModel.workout.collectAsState()
     val timerState by viewModel.timerState.collectAsState()
@@ -87,7 +87,7 @@ fun WorkoutInProgressScreen(
     var showCancelDialog by remember { mutableStateOf(false) }
     var showExercisePicker by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
-    val onBack: () -> Unit = { onMinimize?.invoke(viewModel.workoutId) ?: navController.popBackStack() }
+    val onBack: () -> Unit = { onMinimize?.invoke() ?: navController.popBackStack() }
     BackHandler(onBack = onBack)
     KeepScreenOn()
     val lazyListState = rememberLazyListState()
@@ -595,38 +595,23 @@ private fun WorkoutDialogs(
     onCancelConfirm: () -> Unit
 ) {
     if (showFinishDialog) {
-        AlertDialog(
-            onDismissRequest = onFinishDismiss,
-            title = { Text("Finish Workout") },
-            text = { Text("Are you sure you want to finish this workout?") },
-            confirmButton = {
-                TextButton(onClick = onFinishConfirm) {
-                    Text("Finish")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onFinishDismiss) {
-                    Text("Cancel")
-                }
-            }
+        ConfirmDialog(
+            title = "Finish Workout",
+            message = "Are you sure you want to finish this workout?",
+            confirmLabel = "Finish",
+            onConfirm = onFinishConfirm,
+            onDismiss = onFinishDismiss
         )
     }
 
     if (showCancelDialog) {
-        AlertDialog(
-            onDismissRequest = onCancelDismiss,
-            title = { Text("Cancel Workout") },
-            text = { Text("Are you sure you want to cancel this workout? All data will be lost.") },
-            confirmButton = {
-                TextButton(onClick = onCancelConfirm) {
-                    Text("Cancel Workout")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onCancelDismiss) {
-                    Text("Keep Working Out")
-                }
-            }
+        ConfirmDialog(
+            title = "Cancel Workout",
+            message = "Are you sure you want to cancel this workout? All data will be lost.",
+            confirmLabel = "Cancel Workout",
+            dismissLabel = "Keep Working Out",
+            onConfirm = onCancelConfirm,
+            onDismiss = onCancelDismiss
         )
     }
 }

@@ -29,8 +29,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.ui.model.SetUiModel
-import com.example.nocapfit.util.WEIGHT_DIVISOR
-import com.example.nocapfit.util.WEIGHT_MULTIPLIER
+import com.example.nocapfit.ui.util.formatWeightDisplay
+import com.example.nocapfit.ui.util.parseWeight
 
 @Composable
 fun SetRow(
@@ -44,8 +44,7 @@ fun SetRow(
     onRemove: (() -> Unit)? = null
 ) {
     var weightText by remember(set.id, set.weightThousandths) {
-        val kg = set.weightThousandths / WEIGHT_DIVISOR
-        mutableStateOf(if (kg == 0.0) "" else formatWeight(kg))
+        mutableStateOf(if (set.weightThousandths == 0) "" else formatWeightDisplay(set.weightThousandths))
     }
     var repsText by remember(set.id, set.reps) {
         mutableStateOf(if (set.reps == 0) "" else set.reps.toString())
@@ -70,10 +69,11 @@ fun SetRow(
             showComplete = showComplete,
             onWeightTextChange = { newValue ->
                 weightText = newValue
-                val parsed = newValue.toDoubleOrNull()
-                if (parsed != null) {
-                    onWeightChange((parsed * WEIGHT_MULTIPLIER).toInt())
-                } else if (newValue.isEmpty()) onWeightChange(0)
+                if (newValue.isEmpty()) {
+                    onWeightChange(0)
+                } else if (newValue.toDoubleOrNull() != null) {
+                    onWeightChange(parseWeight(newValue))
+                }
             },
             onRepsTextChange = { newValue ->
                 repsText = newValue
@@ -154,13 +154,5 @@ private fun SetRowContent(
         } else {
             Spacer(modifier = Modifier.width(48.dp))
         }
-    }
-}
-
-private fun formatWeight(kg: Double): String {
-    return if (kg == kg.toLong().toDouble()) {
-        kg.toLong().toString()
-    } else {
-        kg.toBigDecimal().stripTrailingZeros().toPlainString()
     }
 }

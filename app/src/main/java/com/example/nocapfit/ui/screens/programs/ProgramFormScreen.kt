@@ -45,6 +45,8 @@ import com.example.nocapfit.ui.model.PreviousSetLookup
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.model.formatPreviousSet
 import com.example.nocapfit.ui.navigation.Screen
+import com.example.nocapfit.ui.util.formatWeightInput
+import com.example.nocapfit.ui.util.parseWeight
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -252,7 +254,7 @@ private fun ExerciseCardItem(
             SetUiModel(
                 id = setIndex.toLong(),
                 setIndex = setIndex,
-                weightThousandths = ProgramFormViewModel.parseWeight(setEntry.weight),
+                weightThousandths = parseWeight(setEntry.weight),
                 reps = setEntry.reps.toIntOrNull() ?: 0,
                 restTimeSeconds = parseMmSsToSeconds(setEntry.restTimeSeconds),
                 completed = false,
@@ -281,7 +283,7 @@ private fun ExerciseCardItem(
         onRemoveExercise = { onRemoveExercise(exerciseIndex) },
         onWeightChange = { model, w ->
             val entry = exerciseEntry.sets[model.setIndex]
-            onUpdateSet(exerciseIndex, model.setIndex, entry.copy(weight = ProgramFormViewModel.formatWeight(w)))
+            onUpdateSet(exerciseIndex, model.setIndex, entry.copy(weight = formatWeightInput(w)))
         },
         onRepsChange = { model, r ->
             val entry = exerciseEntry.sets[model.setIndex]

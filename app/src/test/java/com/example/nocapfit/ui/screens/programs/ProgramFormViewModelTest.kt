@@ -8,6 +8,7 @@ import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -46,7 +47,7 @@ class ProgramFormViewModelTest {
         return ProgramFormViewModel(
             programRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             workoutRepository,
             savedStateHandle
         )

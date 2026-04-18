@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -21,7 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -357,16 +355,12 @@ private fun RemoveExerciseDialog(
     onDismiss: () -> Unit
 ) {
     if (visible) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Remove Exercise") },
-            text = { Text("Remove $exerciseName from this workout?") },
-            confirmButton = {
-                TextButton(onClick = onConfirm) { Text("Remove") }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-            }
+        ConfirmDialog(
+            title = "Remove Exercise",
+            message = "Remove $exerciseName from this workout?",
+            confirmLabel = "Remove",
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
         )
     }
 }

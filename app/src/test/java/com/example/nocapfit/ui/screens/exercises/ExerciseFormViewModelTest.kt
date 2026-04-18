@@ -7,6 +7,7 @@ import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.db.entity.Profile
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -39,7 +40,7 @@ class ExerciseFormViewModelTest {
         coEvery { exerciseRepository.getById(any()) } returns testExercise
         coEvery { exerciseRepository.insert(any()) } returns 10L
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to exerciseId))
-        return ExerciseFormViewModel(exerciseRepository, profileRepository, savedStateHandle)
+        return ExerciseFormViewModel(exerciseRepository, CurrentProfileHolder(profileRepository), savedStateHandle)
     }
 
     @Test

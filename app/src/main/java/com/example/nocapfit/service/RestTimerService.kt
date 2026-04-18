@@ -31,6 +31,9 @@ class RestTimerService : Service() {
     @Inject
     lateinit var timerCoordinator: TimerCoordinator
 
+    @Inject
+    lateinit var timerNotifier: TimerNotifier
+
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var timerId: Long = -1L
@@ -76,9 +79,12 @@ class RestTimerService : Service() {
                 delay(remaining.coerceAtMost(MILLIS_PER_SECOND))
                 notificationManager.notify(NOTIFICATION_ID, buildNotification())
             }
-            notificationManager.notify(NOTIFICATION_ID, buildNotification())
+            // The AlarmManager alarm can be delayed by Doze / background restrictions, so the
+            // foreground service races the receiver to complete the timer. `completeIfRunning`
+            // is atomic — only the winning caller gets rowsAffected=1 and fires the side effects.
             val completed = timerRepository.completeTimer(timerId)
             if (completed) {
+                timerNotifier.notifyCompletion()
                 timerCoordinator.onTimerCompleted(timerId)
             }
             stopSelf()
@@ -134,7 +140,7 @@ class RestTimerService : Service() {
 
     companion object {
         const val EXTRA_TIMER_ID = "timer_id"
-        const val CHANNEL_ID = TimerRepository.TIMER_CHANNEL_ID
+        const val CHANNEL_ID = TimerNotifier.TIMER_CHANNEL_ID
         const val NOTIFICATION_ID = TimerCoordinator.NOTIFICATION_ID
         const val ACTION_CANCEL_TIMER = "com.example.nocapfit.CANCEL_TIMER"
     }

@@ -8,9 +8,9 @@ import com.example.nocapfit.data.db.entity.WorkoutExercise
 import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ExerciseRepository
-import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import com.example.nocapfit.service.TimerCoordinator
 import com.example.nocapfit.ui.model.PreviousSetData
 import com.example.nocapfit.ui.model.PreviousSetLookup
@@ -32,7 +32,7 @@ class WorkoutInProgressViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val timerRepository: TimerRepository,
     private val exerciseRepository: ExerciseRepository,
-    private val profileRepository: ProfileRepository,
+    currentProfileHolder: CurrentProfileHolder,
     savedStateHandle: SavedStateHandle,
     private val timerCoordinator: TimerCoordinator
 ) : ViewModel() {
@@ -45,23 +45,21 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     val timerState: StateFlow<TimerCoordinator.TimerUiState> = timerCoordinator.timerState
 
-    private val _profileId = MutableStateFlow<Long?>(null)
-
-    val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
-        if (profileId == null) {
-            flowOf(emptyList())
-        } else {
-            exerciseRepository.getAllByProfile(profileId)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val availableExercises: StateFlow<List<Exercise>> = currentProfileHolder.profileId
+        .flatMapLatest { profileId ->
+            if (profileId == null) {
+                flowOf(emptyList())
+            } else {
+                exerciseRepository.getAllByProfile(profileId)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
     val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
 
     init {
         viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
+            currentProfileHolder.ensureLoaded()
             timerCoordinator.reconstructState()
             loadPreviousWorkoutData()
         }

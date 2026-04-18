@@ -8,15 +8,15 @@ import com.example.nocapfit.data.db.entity.Program
 import com.example.nocapfit.data.db.entity.ProgramExercise
 import com.example.nocapfit.data.db.entity.ProgramExerciseSet
 import com.example.nocapfit.data.repository.ExerciseRepository
-import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import com.example.nocapfit.ui.components.parseMmSsToSeconds
 import com.example.nocapfit.ui.components.secondsToMmSsDigits
 import com.example.nocapfit.ui.model.PreviousSetData
 import com.example.nocapfit.ui.model.PreviousSetLookup
-import com.example.nocapfit.util.WEIGHT_DIVISOR
-import com.example.nocapfit.util.WEIGHT_MULTIPLIER
+import com.example.nocapfit.ui.util.formatWeightInput
+import com.example.nocapfit.ui.util.parseWeight
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.math.roundToInt
 
 @androidx.compose.runtime.Immutable
 data class SetEntry(
@@ -57,7 +56,7 @@ data class ProgramFormUiState(
 class ProgramFormViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     private val exerciseRepository: ExerciseRepository,
-    private val profileRepository: ProfileRepository,
+    private val currentProfileHolder: CurrentProfileHolder,
     private val workoutRepository: WorkoutRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -65,22 +64,20 @@ class ProgramFormViewModel @Inject constructor(
     private val programId: Long = savedStateHandle.get<Long>("programId") ?: -1L
     val isEditing: Boolean = programId > 0
 
-    private val _profileId = MutableStateFlow<Long?>(null)
-
     private val _uiState = MutableStateFlow(ProgramFormUiState())
     val uiState: StateFlow<ProgramFormUiState> = _uiState.asStateFlow()
 
-    val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
-        if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val availableExercises: StateFlow<List<Exercise>> = currentProfileHolder.profileId
+        .flatMapLatest { profileId ->
+            if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
     val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
 
     init {
         viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
+            currentProfileHolder.ensureLoaded()
 
             if (isEditing) {
                 val programWithExercises = programRepository.getProgramWithExercises(programId)
@@ -94,7 +91,7 @@ class ProgramFormViewModel @Inject constructor(
                                     .sortedBy { it.setIndex }
                                     .map { set ->
                                         SetEntry(
-                                            weight = formatWeight(set.weightThousandths),
+                                            weight = formatWeightInput(set.weightThousandths),
                                             reps = set.reps.toString(),
                                             restTimeSeconds = secondsToMmSsDigits(set.restTimeSeconds)
                                         )
@@ -220,7 +217,7 @@ class ProgramFormViewModel @Inject constructor(
 
     suspend fun save(): Boolean {
         val state = _uiState.value
-        val profileId = _profileId.value ?: return false
+        val profileId = currentProfileHolder.profileId.value ?: return false
 
         val validationError = when {
             state.name.isBlank() -> "Program name is required"
@@ -262,25 +259,6 @@ class ProgramFormViewModel @Inject constructor(
         } catch (_: Exception) {
             _uiState.value = _uiState.value.copy(isSaving = false)
             false
-        }
-    }
-
-    companion object {
-        fun formatWeight(thousandths: Int): String {
-            val value = thousandths / WEIGHT_DIVISOR
-            val formatted = if (value == value.toLong().toDouble()) {
-                "${value.toLong()}.0"
-            } else {
-                value.toBigDecimal().stripTrailingZeros().toPlainString().let { s ->
-                    if ('.' !in s) "$s.0" else s
-                }
-            }
-            return formatted
-        }
-
-        fun parseWeight(input: String): Int {
-            val value = input.toDoubleOrNull() ?: 0.0
-            return (value * WEIGHT_MULTIPLIER).roundToInt()
         }
     }
 }

@@ -3,8 +3,8 @@ package com.example.nocapfit.ui.screens.workouthistory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
-import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,15 +22,13 @@ import javax.inject.Inject
 @HiltViewModel
 class WorkoutHistoryViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val profileRepository: ProfileRepository
+    private val currentProfileHolder: CurrentProfileHolder
 ) : ViewModel() {
-
-    private val _profileId = MutableStateFlow<Long?>(null)
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    val completedWorkouts: StateFlow<List<WorkoutWithExercises>> = _profileId
+    val completedWorkouts: StateFlow<List<WorkoutWithExercises>> = currentProfileHolder.profileId
         .flatMapLatest { profileId ->
             if (profileId == null) {
                 flowOf(emptyList())
@@ -42,9 +40,6 @@ class WorkoutHistoryViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
-        }
+        viewModelScope.launch { currentProfileHolder.ensureLoaded() }
     }
 }

@@ -75,6 +75,9 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun getActiveWorkout(): Workout?
 
+    @Query("SELECT * FROM workouts WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
+    fun getActiveWorkoutFlow(): Flow<Workout?>
+
     @Insert
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long
 

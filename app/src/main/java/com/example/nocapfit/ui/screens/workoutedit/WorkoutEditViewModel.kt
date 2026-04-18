@@ -9,8 +9,8 @@ import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ExerciseRepository
-import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +28,7 @@ import javax.inject.Inject
 class WorkoutEditViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val exerciseRepository: ExerciseRepository,
-    private val profileRepository: ProfileRepository,
+    currentProfileHolder: CurrentProfileHolder,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -37,11 +37,10 @@ class WorkoutEditViewModel @Inject constructor(
     private val _workout = MutableStateFlow<WorkoutWithExercises?>(null)
     val workout: StateFlow<WorkoutWithExercises?> = _workout.asStateFlow()
 
-    private val _profileId = MutableStateFlow<Long?>(null)
-
-    val availableExercises: StateFlow<List<Exercise>> = _profileId.flatMapLatest { profileId ->
-        if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val availableExercises: StateFlow<List<Exercise>> = currentProfileHolder.profileId
+        .flatMapLatest { profileId ->
+            if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _programName = MutableStateFlow("")
     val programName: StateFlow<String> = _programName.asStateFlow()
@@ -50,8 +49,7 @@ class WorkoutEditViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
+            currentProfileHolder.ensureLoaded()
             val data = workoutRepository.getWithExercises(workoutId)
             _workout.value = data
             _programName.value = data?.workout?.programName ?: ""

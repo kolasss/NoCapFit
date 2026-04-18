@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.repository.ExerciseRepository
-import com.example.nocapfit.data.repository.ProfileRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,31 +22,27 @@ import javax.inject.Inject
 @HiltViewModel
 class ExerciseListViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
-    private val profileRepository: ProfileRepository
+    private val currentProfileHolder: CurrentProfileHolder
 ) : ViewModel() {
-
-    private val _profileId = MutableStateFlow<Long?>(null)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val exercises: StateFlow<List<Exercise>> = combine(_profileId, _searchQuery) { profileId, query ->
-        profileId to query
-    }.flatMapLatest { (profileId, query) ->
-        if (profileId == null) {
-            flowOf(emptyList())
-        } else if (query.isBlank()) {
-            exerciseRepository.getAllByProfile(profileId)
-        } else {
-            exerciseRepository.searchByName(profileId, query)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val exercises: StateFlow<List<Exercise>> =
+        combine(currentProfileHolder.profileId, _searchQuery) { profileId, query ->
+            profileId to query
+        }.flatMapLatest { (profileId, query) ->
+            if (profileId == null) {
+                flowOf(emptyList())
+            } else if (query.isBlank()) {
+                exerciseRepository.getAllByProfile(profileId)
+            } else {
+                exerciseRepository.searchByName(profileId, query)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
-        }
+        viewModelScope.launch { currentProfileHolder.ensureLoaded() }
     }
 
     fun updateSearchQuery(query: String) {

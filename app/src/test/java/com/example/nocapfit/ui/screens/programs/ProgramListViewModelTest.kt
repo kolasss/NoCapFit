@@ -7,6 +7,7 @@ import com.example.nocapfit.data.db.entity.Program
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -40,7 +41,7 @@ class ProgramListViewModelTest {
     private fun createViewModel(): ProgramListViewModel {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { programRepository.getAllWithExercises(1L) } returns flowOf(testPrograms)
-        return ProgramListViewModel(programRepository, profileRepository)
+        return ProgramListViewModel(programRepository, CurrentProfileHolder(profileRepository))
     }
 
     @Test

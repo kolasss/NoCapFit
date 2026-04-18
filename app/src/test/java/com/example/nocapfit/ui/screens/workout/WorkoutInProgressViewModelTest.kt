@@ -12,6 +12,7 @@ import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.TimerRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import com.example.nocapfit.service.TimerCoordinator
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -91,7 +92,7 @@ class WorkoutInProgressViewModelTest {
             workoutRepository,
             timerRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             savedStateHandle,
             timerCoordinator
         )
@@ -291,7 +292,7 @@ class WorkoutInProgressViewModelTest {
             workoutRepository,
             timerRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             savedStateHandle,
             timerCoordinator
         )

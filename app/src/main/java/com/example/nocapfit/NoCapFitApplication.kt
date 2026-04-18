@@ -3,7 +3,7 @@ package com.example.nocapfit
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import com.example.nocapfit.data.repository.TimerRepository
+import com.example.nocapfit.service.TimerNotifier
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -15,7 +15,7 @@ class NoCapFitApplication : Application() {
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            TimerRepository.TIMER_CHANNEL_ID,
+            TimerNotifier.TIMER_CHANNEL_ID,
             "Rest Timer",
             NotificationManager.IMPORTANCE_LOW
         ).apply {

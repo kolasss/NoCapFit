@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -25,10 +24,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,11 +41,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
+import com.example.nocapfit.ui.components.ConfirmDialog
+import com.example.nocapfit.ui.components.InputDialog
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
+import com.example.nocapfit.ui.util.formatWeightDisplay
 import com.example.nocapfit.util.MILLIS_PER_SECOND
-import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,68 +97,23 @@ fun WorkoutDetailScreen(
     }
 
     if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
-            title = { Text("Delete Workout") },
-            text = {
-                Text("Are you sure you want to delete this workout? This action cannot be undone.")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.deleteWorkout { navController.popBackStack() } }
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
-                    Text("Cancel")
-                }
-            }
+        ConfirmDialog(
+            title = "Delete Workout",
+            message = "Are you sure you want to delete this workout? This action cannot be undone.",
+            onConfirm = { viewModel.deleteWorkout { navController.popBackStack() } },
+            onDismiss = { viewModel.dismissDeleteConfirmation() }
         )
     }
 
     if (showSaveAsProgram) {
-        SaveAsProgramDialog(
-            initialName = data?.workout?.programName ?: "",
-            onSave = { viewModel.saveAsProgram(it) },
+        InputDialog(
+            title = "Save as Program",
+            initialValue = data?.workout?.programName ?: "",
+            label = "Program name",
+            onConfirm = { viewModel.saveAsProgram(it) },
             onDismiss = { viewModel.dismissSaveAsProgram() }
         )
     }
-}
-
-@Composable
-private fun SaveAsProgramDialog(
-    initialName: String,
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var programName by remember { mutableStateOf(initialName) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Save as Program") },
-        text = {
-            OutlinedTextField(
-                value = programName,
-                onValueChange = { programName = it },
-                label = { Text("Program name") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSave(programName) },
-                enabled = programName.isNotBlank()
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
 
 @Composable
@@ -353,16 +307,11 @@ private fun ExerciseDetailCard(exerciseWithSets: WorkoutExerciseWithSets) {
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "${formatWeight(set.weightThousandths)} kg x ${set.reps} reps",
+                        text = "${formatWeightDisplay(set.weightThousandths)} kg x ${set.reps} reps",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
         }
     }
-}
-
-private fun formatWeight(weightThousandths: Int): String {
-    val value = BigDecimal(weightThousandths).divide(BigDecimal(MILLIS_PER_SECOND))
-    return value.stripTrailingZeros().toPlainString()
 }

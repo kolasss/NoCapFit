@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -42,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
+import com.example.nocapfit.ui.components.ConfirmDialog
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatRelativeDate
 import kotlinx.coroutines.launch
@@ -200,16 +199,12 @@ private fun QuickStartCard(onClick: () -> Unit) {
 
 @Composable
 private fun ActiveWorkoutDialog(onResume: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Active Workout") },
-        text = { Text("You already have a workout in progress. Resume it or cancel it first.") },
-        confirmButton = {
-            TextButton(onClick = onResume) { Text("Resume") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+    ConfirmDialog(
+        title = "Active Workout",
+        message = "You already have a workout in progress. Resume it or cancel it first.",
+        confirmLabel = "Resume",
+        onConfirm = onResume,
+        onDismiss = onDismiss
     )
 }
 

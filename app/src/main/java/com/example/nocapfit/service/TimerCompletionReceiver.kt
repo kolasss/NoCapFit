@@ -20,6 +20,9 @@ class TimerCompletionReceiver : BroadcastReceiver() {
     @Inject
     lateinit var timerCoordinator: TimerCoordinator
 
+    @Inject
+    lateinit var timerNotifier: TimerNotifier
+
     override fun onReceive(context: Context, intent: Intent) {
         val timerId = intent.getLongExtra(EXTRA_TIMER_ID, -1L)
         if (timerId == -1L) return
@@ -30,8 +33,10 @@ class TimerCompletionReceiver : BroadcastReceiver() {
             try {
                 val completed = timerRepository.completeTimer(timerId)
                 if (completed) {
+                    timerNotifier.notifyCompletion()
                     timerCoordinator.onTimerCompleted(timerId)
                 }
+                context.stopService(Intent(context, RestTimerService::class.java))
             } finally {
                 pendingResult.finish()
             }

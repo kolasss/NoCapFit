@@ -17,6 +17,7 @@ import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -67,7 +68,7 @@ class AddWorkoutViewModelTest {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { programRepository.getAllWithExercises(1L) } returns flowOf(listOf(testProgram))
         every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
-        return AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
+        return AddWorkoutViewModel(programRepository, workoutRepository, CurrentProfileHolder(profileRepository))
     }
 
     @Test
@@ -101,7 +102,11 @@ class AddWorkoutViewModelTest {
         coEvery { profileRepository.getDefault() } returns null
         every { programRepository.getAllWithExercises(any()) } returns flowOf(emptyList())
         every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
-        val viewModel = AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
+        val viewModel = AddWorkoutViewModel(
+            programRepository,
+            workoutRepository,
+            CurrentProfileHolder(profileRepository)
+        )
 
         viewModel.createEmptyWorkout()
     }
@@ -111,7 +116,11 @@ class AddWorkoutViewModelTest {
         coEvery { profileRepository.getDefault() } returns null
         every { programRepository.getAllWithExercises(any()) } returns flowOf(emptyList())
         every { workoutRepository.getLastWorkoutTimeByProgram() } returns flowOf(emptyList())
-        val viewModel = AddWorkoutViewModel(programRepository, workoutRepository, profileRepository)
+        val viewModel = AddWorkoutViewModel(
+            programRepository,
+            workoutRepository,
+            CurrentProfileHolder(profileRepository)
+        )
 
         viewModel.profileLoaded.test {
             assertEquals(false, awaitItem())

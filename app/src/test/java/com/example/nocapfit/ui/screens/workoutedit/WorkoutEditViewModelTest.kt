@@ -12,6 +12,7 @@ import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -94,7 +95,7 @@ class WorkoutEditViewModelTest {
         return WorkoutEditViewModel(
             workoutRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             savedStateHandle
         )
     }
@@ -178,7 +179,7 @@ class WorkoutEditViewModelTest {
         val viewModel = WorkoutEditViewModel(
             workoutRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             savedStateHandle
         )
         viewModel.workout.test { awaitItem() }
@@ -297,7 +298,7 @@ class WorkoutEditViewModelTest {
         val viewModel = WorkoutEditViewModel(
             workoutRepository,
             exerciseRepository,
-            profileRepository,
+            CurrentProfileHolder(profileRepository),
             savedStateHandle
         )
 

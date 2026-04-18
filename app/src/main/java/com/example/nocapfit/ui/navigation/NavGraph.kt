@@ -25,7 +25,7 @@ import com.example.nocapfit.ui.screens.workouthistory.WorkoutHistoryScreen
 fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    onMinimizeWorkout: ((Long) -> Unit)? = null
+    onMinimizeWorkout: (() -> Unit)? = null
 ) {
     NavHost(
         navController = navController,

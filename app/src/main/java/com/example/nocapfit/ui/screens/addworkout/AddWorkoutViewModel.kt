@@ -6,12 +6,11 @@ import com.example.nocapfit.data.db.entity.Workout
 import com.example.nocapfit.data.db.entity.WorkoutExercise
 import com.example.nocapfit.data.db.entity.WorkoutSet
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
-import com.example.nocapfit.data.repository.ProfileRepository
 import com.example.nocapfit.data.repository.ProgramRepository
 import com.example.nocapfit.data.repository.WorkoutRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -27,12 +26,10 @@ import javax.inject.Inject
 class AddWorkoutViewModel @Inject constructor(
     private val programRepository: ProgramRepository,
     private val workoutRepository: WorkoutRepository,
-    private val profileRepository: ProfileRepository
+    private val currentProfileHolder: CurrentProfileHolder
 ) : ViewModel() {
 
-    private val _profileId = MutableStateFlow<Long?>(null)
-
-    val profileLoaded: StateFlow<Boolean> = _profileId
+    val profileLoaded: StateFlow<Boolean> = currentProfileHolder.profileId
         .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -41,7 +38,7 @@ class AddWorkoutViewModel @Inject constructor(
         .map { list -> list.associate { it.programId to it.lastTime } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    private val unsortedPrograms = _profileId
+    private val unsortedPrograms = currentProfileHolder.profileId
         .flatMapLatest { profileId ->
             if (profileId == null) {
                 flowOf(emptyList())
@@ -58,16 +55,13 @@ class AddWorkoutViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        viewModelScope.launch {
-            val profile = profileRepository.getDefault()
-            _profileId.value = profile?.id
-        }
+        viewModelScope.launch { currentProfileHolder.ensureLoaded() }
     }
 
     suspend fun getActiveWorkoutId(): Long? = workoutRepository.getActiveWorkout()?.id
 
     suspend fun createWorkoutFromProgram(programId: Long): Long {
-        val profileId = checkNotNull(_profileId.value) { "Profile not loaded" }
+        val profileId = checkNotNull(currentProfileHolder.profileId.value) { "Profile not loaded" }
         val programWithExercises = programRepository.getProgramWithExercises(programId)
             ?: throw IllegalArgumentException("Program not found: $programId")
 
@@ -118,7 +112,7 @@ class AddWorkoutViewModel @Inject constructor(
     }
 
     suspend fun createEmptyWorkout(): Long {
-        val profileId = checkNotNull(_profileId.value) { "Profile not loaded" }
+        val profileId = checkNotNull(currentProfileHolder.profileId.value) { "Profile not loaded" }
         val workout = Workout(
             profileId = profileId,
             programName = null,

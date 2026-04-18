@@ -44,6 +44,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.BuildConfig
 import com.example.nocapfit.data.preferences.ThemeMode
+import com.example.nocapfit.ui.components.ConfirmDialog
 import com.example.nocapfit.util.NOTIFICATION_SOUND_SILENT
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -172,16 +173,12 @@ private fun ImportConfirmDialog(
             append("\n\nYou have an active workout that will be lost.")
         }
     }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Import Data") },
-        text = { Text(warningText) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text("Import") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+    ConfirmDialog(
+        title = "Import Data",
+        message = warningText,
+        confirmLabel = "Import",
+        onConfirm = onConfirm,
+        onDismiss = onDismiss
     )
 }
 

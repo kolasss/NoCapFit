@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.repository.ExerciseRepository
-import com.example.nocapfit.data.repository.ProfileRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ExerciseFormViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
-    private val profileRepository: ProfileRepository,
+    private val currentProfileHolder: CurrentProfileHolder,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -32,11 +32,9 @@ class ExerciseFormViewModel @Inject constructor(
     private val _tags = MutableStateFlow("")
     val tags: StateFlow<String> = _tags.asStateFlow()
 
-    private var profileId: Long = -1L
-
     init {
         viewModelScope.launch {
-            profileId = profileRepository.getDefault()?.id ?: return@launch
+            currentProfileHolder.ensureLoaded()
             if (isEditMode) {
                 val exercise = exerciseRepository.getById(exerciseId) ?: return@launch
                 _name.value = exercise.name
@@ -64,6 +62,7 @@ class ExerciseFormViewModel @Inject constructor(
                     )
                 )
             } else {
+                val profileId = currentProfileHolder.ensureLoaded() ?: return@launch
                 exerciseRepository.insert(
                     Exercise(
                         profileId = profileId,

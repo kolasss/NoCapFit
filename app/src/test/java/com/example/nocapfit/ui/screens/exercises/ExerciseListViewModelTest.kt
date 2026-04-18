@@ -6,6 +6,7 @@ import com.example.nocapfit.data.db.entity.Exercise
 import com.example.nocapfit.data.db.entity.Profile
 import com.example.nocapfit.data.repository.ExerciseRepository
 import com.example.nocapfit.data.repository.ProfileRepository
+import com.example.nocapfit.data.session.CurrentProfileHolder
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -33,7 +34,7 @@ class ExerciseListViewModelTest {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { exerciseRepository.getAllByProfile(1L) } returns flowOf(testExercises)
         every { exerciseRepository.searchByName(any(), any()) } returns flowOf(emptyList())
-        return ExerciseListViewModel(exerciseRepository, profileRepository)
+        return ExerciseListViewModel(exerciseRepository, CurrentProfileHolder(profileRepository))
     }
 
     @Test

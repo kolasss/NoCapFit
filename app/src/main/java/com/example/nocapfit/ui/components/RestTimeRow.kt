@@ -179,7 +179,11 @@ private fun RowScope.RestTimeRowContent(
             }
         }
     } else if (!isCompleted && onRestTimeChange != null) {
-        RestTimeInput(restTimeSeconds = restTimeSeconds, onRestTimeChange = onRestTimeChange)
+        RestTimeInput(
+            restTimeSeconds = restTimeSeconds,
+            onRestTimeChange = onRestTimeChange,
+            modifier = Modifier.width(80.dp)
+        )
     } else {
         Text(
             text = formatMmSs(restTimeSeconds),
@@ -193,7 +197,7 @@ private fun RowScope.RestTimeRowContent(
 fun RestTimeInput(
     restTimeSeconds: Int,
     onRestTimeChange: (Int) -> Unit,
-    modifier: Modifier = Modifier.width(80.dp)
+    modifier: Modifier = Modifier
 ) {
     var digits by remember { mutableStateOf(secondsToMmSsDigits(restTimeSeconds)) }
     var lastExternalSeconds by remember { mutableIntStateOf(restTimeSeconds) }

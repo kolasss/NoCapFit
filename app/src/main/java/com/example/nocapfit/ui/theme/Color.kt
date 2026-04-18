@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.example.nocapfit.ui.theme
 
 import androidx.compose.ui.graphics.Color

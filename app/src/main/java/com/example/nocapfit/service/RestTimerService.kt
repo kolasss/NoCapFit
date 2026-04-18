@@ -73,12 +73,17 @@ class RestTimerService : Service() {
             )
 
             val notificationManager = getSystemService(NotificationManager::class.java)
+            // Notify-then-delay so the iteration after remaining reaches 0 always posts a final
+            // notification with elapsed == totalSeconds (progress bar fills 100%).
             while (true) {
+                notificationManager.notify(NOTIFICATION_ID, buildNotification())
                 val remaining = endAtEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) break
                 delay(remaining.coerceAtMost(MILLIS_PER_SECOND))
-                notificationManager.notify(NOTIFICATION_ID, buildNotification())
             }
+            // Detach the notification from the service before posting the completion update.
+            // Otherwise stopSelf removes the notification, wiping "Rest Complete!" with it.
+            stopForeground(STOP_FOREGROUND_DETACH)
             // The AlarmManager alarm can be delayed by Doze / background restrictions, so the
             // foreground service races the receiver to complete the timer. `completeIfRunning`
             // is atomic — only the winning caller gets rowsAffected=1 and fires the side effects.

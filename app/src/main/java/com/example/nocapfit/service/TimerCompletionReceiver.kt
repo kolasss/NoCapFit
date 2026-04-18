@@ -35,7 +35,10 @@ class TimerCompletionReceiver : BroadcastReceiver() {
                 if (completed) {
                     timerNotifier.notifyCompletion()
                     timerCoordinator.onTimerCompleted(timerId)
-                    context.stopService(Intent(context, RestTimerService::class.java))
+                    // Don't stopService here — the service's polling loop will reach
+                    // `remaining <= 0` within milliseconds and stop itself after calling
+                    // stopForeground(STOP_FOREGROUND_DETACH). Forcing a stop here would
+                    // cancel the service's coroutine mid-`delay` and wipe the notification.
                 }
             } finally {
                 pendingResult.finish()

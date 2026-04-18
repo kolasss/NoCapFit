@@ -35,8 +35,8 @@ class TimerCompletionReceiver : BroadcastReceiver() {
                 if (completed) {
                     timerNotifier.notifyCompletion()
                     timerCoordinator.onTimerCompleted(timerId)
+                    context.stopService(Intent(context, RestTimerService::class.java))
                 }
-                context.stopService(Intent(context, RestTimerService::class.java))
             } finally {
                 pendingResult.finish()
             }

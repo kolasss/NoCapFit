@@ -103,6 +103,7 @@ class TimerCoordinator @Inject constructor(
     fun onTimerCompleted(timerId: Long) {
         val current = _timerState.value
         if (current !is TimerUiState.Running || current.timerId != timerId) return
+        cancelAlarm(timerId)
         _timerState.value = TimerUiState.Finished
         scope.launch {
             delay(TIMER_FINISHED_DISPLAY_MS)
@@ -163,9 +164,13 @@ class TimerCoordinator @Inject constructor(
     }
 
     private fun cancelAlarm(timerId: Long) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = createAlarmIntent(timerId)
-        alarmManager.cancel(intent)
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            val intent = createAlarmIntent(timerId)
+            alarmManager.cancel(intent)
+        } catch (_: Exception) {
+            // Best effort — a stale alarm firing is harmless (completeTimer is idempotent).
+        }
     }
 
     private fun createAlarmIntent(timerId: Long): PendingIntent {

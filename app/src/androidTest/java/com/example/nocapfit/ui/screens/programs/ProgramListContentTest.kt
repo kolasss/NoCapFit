@@ -162,4 +162,23 @@ class ProgramListContentTest {
         composeTestRule.onNodeWithText("Create Copy").performClick()
         assertTrue(copied)
     }
+
+    @Test
+    fun menuDelete_triggersCallback() {
+        var deleteRequested = false
+        val program = testProgram()
+
+        composeTestRule.setThemedContent {
+            ProgramListItem(
+                programWithExercises = program,
+                onEdit = {},
+                onCopy = {},
+                onDeleteRequest = { deleteRequested = true }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Delete").performClick()
+        assertTrue(deleteRequested)
+    }
 }

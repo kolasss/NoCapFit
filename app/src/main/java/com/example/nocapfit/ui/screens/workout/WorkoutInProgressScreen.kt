@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -291,15 +290,12 @@ private fun WorkoutExerciseList(
         modifier = modifier,
         state = lazyListState,
         contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 8.dp,
-            bottom = 80.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            top = 0.dp,
+            bottom = 32.dp
+        )
     ) {
         item(contentType = "summary") {
-            WorkoutSummaryCard(
+            WorkoutProgressStrip(
                 exerciseCount = sortedExercises.size,
                 completedSets = completedSets,
                 totalSets = totalSets
@@ -331,7 +327,9 @@ private fun WorkoutExerciseList(
 
         item(contentType = "controls") {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -425,7 +423,8 @@ private fun ExerciseCardItem(
         onExerciseTitleClick = exId?.let { { onExerciseTitleClick(it) } },
         onCancelTimer = onCancelTimer,
         onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown
+        onMoveDown = onMoveDown,
+        showBottomDivider = index < lastIndex
     )
     if (showRestTimeDialog) {
         RestTimeForAllDialog(
@@ -494,7 +493,7 @@ private fun WorkoutTopAppBar(
             LinearProgressIndicator(
                 progress = { timerProgress },
                 modifier = Modifier.fillMaxWidth().height(3.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
+                color = MaterialTheme.colorScheme.tertiary,
                 trackColor = Color.Transparent
             )
         }
@@ -533,55 +532,55 @@ private fun TopBarTitle(showTimer: Boolean, elapsedText: String, timerRemainingM
             Icon(
                 Icons.Default.Timer,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.height(18.dp)
             )
             Spacer(Modifier.width(4.dp))
             Text(
                 text = formatMmSs(ceilSecondsFromMs(timerRemainingMs)),
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.tertiary
             )
         }
     }
 }
 
 @Composable
-private fun WorkoutSummaryCard(
+private fun WorkoutProgressStrip(
     exerciseCount: Int,
     completedSets: Int,
     totalSets: Int
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    val progress = if (totalSets > 0) completedSets.toFloat() / totalSets else 0f
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "$exerciseCount EXERCISES",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$completedSets / $totalSets sets",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        LinearProgressIndicator(
+            progress = { progress },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$exerciseCount",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Exercises",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$completedSets/$totalSets",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "Sets",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+                .height(4.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     }
 }
 

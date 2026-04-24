@@ -3,13 +3,11 @@ package com.example.nocapfit.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Icon
@@ -26,10 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.util.MILLIS_PER_SECOND
 import com.example.nocapfit.util.SECONDS_PER_MINUTE
@@ -77,7 +76,8 @@ fun RestTimeRow(
     timerEndAtEpochMs: Long = 0L,
     timerTotalMs: Long = 0L,
     isCompleted: Boolean = false,
-    onCancelTimer: (() -> Unit)? = null
+    onCancelTimer: (() -> Unit)? = null,
+    contentHorizontalPadding: Dp = 8.dp
 ) {
     val remainingMs = rememberTimerRemainingMs(isTimerActive, timerEndAtEpochMs)
     val fillProgress = if (isTimerActive) {
@@ -87,52 +87,49 @@ fun RestTimeRow(
     }
 
     val completedColor = MaterialTheme.colorScheme.primaryContainer
-    val surfaceColor = MaterialTheme.colorScheme.surface
+    val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val progressColor = MaterialTheme.colorScheme.tertiaryContainer
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .drawBehind {
+            .height(40.dp)
+            .drawBehind {
+                drawRect(
+                    if (isCompleted && !isTimerActive) completedColor else surfaceColor
+                )
+                if (fillProgress > 0f) {
                     drawRect(
-                        if (isCompleted && !isTimerActive) completedColor else surfaceColor
+                        color = progressColor,
+                        size = Size(size.width * fillProgress, size.height)
                     )
-                    if (fillProgress > 0f) {
-                        drawRect(
-                            color = progressColor,
-                            size = Size(size.width * fillProgress, size.height)
-                        )
-                    }
                 }
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Timer,
-                contentDescription = "Rest time",
-                tint = if (isTimerActive) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-
-            RestTimeRowContent(
-                isTimerActive = isTimerActive,
-                timerEndAtEpochMs = timerEndAtEpochMs,
-                remainingMs = remainingMs,
-                onCancelTimer = onCancelTimer,
-                isCompleted = isCompleted,
-                onRestTimeChange = onRestTimeChange,
-                restTimeSeconds = restTimeSeconds
-            )
+            }
+    ) {
+        val accentTint = when {
+            isTimerActive -> MaterialTheme.colorScheme.tertiary
+            isCompleted -> MaterialTheme.colorScheme.primary
+            else -> Color.Unspecified
+        }
+        RestTimeRowCenterContent(
+            isTimerActive = isTimerActive,
+            timerEndAtEpochMs = timerEndAtEpochMs,
+            remainingMs = remainingMs,
+            isCompleted = isCompleted,
+            onRestTimeChange = onRestTimeChange,
+            restTimeSeconds = restTimeSeconds,
+            accentTint = accentTint,
+            modifier = Modifier.align(Alignment.Center)
+        )
+        if (isTimerActive && onCancelTimer != null) {
+            TextButton(
+                onClick = onCancelTimer,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = contentHorizontalPadding)
+            ) {
+                Text("Skip")
+            }
         }
     }
 }
@@ -161,35 +158,50 @@ private fun rememberTimerRemainingMs(isTimerActive: Boolean, timerEndAtEpochMs: 
 }
 
 @Composable
-private fun RowScope.RestTimeRowContent(
+private fun RestTimeRowCenterContent(
     isTimerActive: Boolean,
     timerEndAtEpochMs: Long,
     remainingMs: Long,
-    onCancelTimer: (() -> Unit)?,
     isCompleted: Boolean,
     onRestTimeChange: ((Int) -> Unit)?,
-    restTimeSeconds: Int
+    restTimeSeconds: Int,
+    accentTint: Color,
+    modifier: Modifier = Modifier
 ) {
-    if (isTimerActive && timerEndAtEpochMs > 0) {
-        RestTimerCountdown(remainingMs)
-        if (onCancelTimer != null) {
-            Spacer(modifier = Modifier.weight(1f))
-            TextButton(onClick = onCancelTimer) {
-                Text("Skip")
-            }
-        }
-    } else if (!isCompleted && onRestTimeChange != null) {
-        RestTimeInput(
-            restTimeSeconds = restTimeSeconds,
-            onRestTimeChange = onRestTimeChange,
-            modifier = Modifier.width(80.dp)
-        )
+    val iconTint = if (accentTint == Color.Unspecified) {
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
-        Text(
-            text = formatMmSs(restTimeSeconds),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        accentTint
+    }
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Timer,
+            contentDescription = "Rest time",
+            tint = iconTint,
+            modifier = Modifier.size(18.dp)
         )
+        when {
+            isTimerActive && timerEndAtEpochMs > 0 ->
+                RestTimerCountdown(remainingMs, accentTint)
+
+            !isCompleted && onRestTimeChange != null ->
+                RestTimeInput(
+                    restTimeSeconds = restTimeSeconds,
+                    onRestTimeChange = onRestTimeChange,
+                    modifier = Modifier.width(60.dp)
+                )
+
+            else ->
+                Text(
+                    text = formatMmSs(restTimeSeconds),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = accentTint
+                )
+        }
     }
 }
 
@@ -225,11 +237,11 @@ fun RestTimeInput(
 }
 
 @Composable
-private fun RestTimerCountdown(remainingMs: Long) {
+private fun RestTimerCountdown(remainingMs: Long, color: Color) {
     Text(
         text = formatMmSs(ceilSecondsFromMs(remainingMs)),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.primary
+        color = color
     )
 }
 

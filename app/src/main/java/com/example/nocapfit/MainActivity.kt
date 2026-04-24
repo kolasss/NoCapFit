@@ -72,14 +72,13 @@ private fun MainContent(
     val isOnWorkoutScreen = currentRoute == Screen.WorkoutInProgress.route
     val isMinimized = activeWorkout != null && !isOnWorkoutScreen
     val showBottomBar = currentRoute in BOTTOM_NAV_ROUTES || isMinimized
-    val showMiniPanel = isMinimized
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
                 MainBottomBar(
-                    showMiniPanel = showMiniPanel,
+                    showMiniPanel = isMinimized,
                     minimizedWorkoutName = activeWorkout?.programName,
                     minimizedWorkoutStartTime = activeWorkout?.startTime ?: 0L,
                     currentRoute = currentRoute,

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -65,11 +66,14 @@ fun CompactInput(
                 )
                 .clickable { editing = true }
                 .padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.CenterStart
+            contentAlignment = Alignment.Center
         ) {
             androidx.compose.material3.Text(
                 text = displayText,
-                style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+                style = textStyle.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                ),
                 maxLines = 1
             )
         }
@@ -105,7 +109,10 @@ private fun CompactInputEditor(
             onValueChange(newValue.text)
         },
         singleLine = true,
-        textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+        textStyle = textStyle.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        ),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         visualTransformation = visualTransformation,
         modifier = modifier
@@ -126,7 +133,7 @@ private fun CompactInputEditor(
                         shape = MaterialTheme.shapes.extraSmall
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.CenterStart
+                contentAlignment = Alignment.Center
             ) {
                 innerTextField()
             }

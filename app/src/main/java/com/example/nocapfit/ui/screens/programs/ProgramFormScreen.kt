@@ -1,6 +1,5 @@
 package com.example.nocapfit.ui.screens.programs
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -134,10 +133,7 @@ internal fun ProgramFormContent(
         }
     } else {
         LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = modifier.fillMaxSize()
         ) {
             item(contentType = "name") {
                 OutlinedTextField(
@@ -151,9 +147,10 @@ internal fun ProgramFormContent(
                         }
                     },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
             if (uiState.exercises.isNotEmpty()) {
@@ -162,7 +159,7 @@ internal fun ProgramFormContent(
                         text = "Exercises",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -189,10 +186,11 @@ internal fun ProgramFormContent(
             }
 
             item(contentType = "controls") {
-                Spacer(modifier = Modifier.height(4.dp))
                 FilledTonalButton(
                     onClick = onShowExercisePicker,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -299,7 +297,8 @@ private fun ExerciseCardItem(
         showComplete = false,
         showAddSetButton = true,
         onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown
+        onMoveDown = onMoveDown,
+        showBottomDivider = exerciseIndex < lastIndex
     )
     if (showRestTimeDialog) {
         RestTimeForAllDialog(

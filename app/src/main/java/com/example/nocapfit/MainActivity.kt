@@ -47,7 +47,8 @@ class MainActivity : ComponentActivity() {
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            NoCapFitTheme(themeMode = themeMode) {
+            val dynamicColor by themePreferences.dynamicColor.collectAsState(initial = false)
+            NoCapFitTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
                 MainContent()
             }
         }

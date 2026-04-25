@@ -22,6 +22,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -40,6 +42,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -58,6 +62,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -78,6 +84,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -96,6 +104,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -114,6 +124,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.DARK,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -133,6 +145,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.LIGHT,
                 onThemeModeChange = { selectedMode = it },
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -152,6 +166,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -172,6 +188,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -191,6 +209,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = null,
                 onTimerSoundClick = {},
                 isBackupInProgress = false,
@@ -209,6 +229,8 @@ class SettingsContentTest {
             SettingsContent(
                 themeMode = ThemeMode.SYSTEM,
                 onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
                 notificationSoundUri = "",
                 onTimerSoundClick = {},
                 isBackupInProgress = false,

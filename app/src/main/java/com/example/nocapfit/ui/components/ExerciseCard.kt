@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.ui.model.SetUiModel
 
@@ -202,7 +203,7 @@ private fun ExerciseSetItem(
     timerEndAtEpochMs: Long,
     timerTotalMs: Long,
     onCancelTimer: (() -> Unit)?,
-    rowHorizontalPadding: androidx.compose.ui.unit.Dp = 8.dp
+    rowHorizontalPadding: Dp = 8.dp
 ) {
     val rememberedOnWeightChange = remember(set) {
         {
@@ -256,7 +257,7 @@ private fun ExerciseSetItem(
             timerTotalMs = if (activeTimerSetId == set.id) timerTotalMs else 0L,
             isCompleted = set.completed,
             onCancelTimer = if (activeTimerSetId == set.id) onCancelTimer else null,
-            contentHorizontalPadding = rowHorizontalPadding
+            contentHorizontalPadding = 4.dp
         )
     }
 }

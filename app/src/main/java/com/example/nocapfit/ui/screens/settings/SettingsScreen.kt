@@ -26,6 +26,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
+    val dynamicColor by viewModel.dynamicColor.collectAsState()
     val backupEvent by viewModel.backupEvent.collectAsState()
     val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -124,6 +126,8 @@ fun SettingsScreen(
         SettingsContent(
             themeMode = themeMode,
             onThemeModeChange = { viewModel.setThemeMode(it) },
+            dynamicColor = dynamicColor,
+            onDynamicColorChange = { viewModel.setDynamicColor(it) },
             notificationSoundUri = notificationSoundUri,
             onTimerSoundClick = {
                 ringtoneLauncher.launch(createRingtonePickerIntent(notificationSoundUri))
@@ -208,6 +212,8 @@ private fun RestartDialog(context: android.content.Context, onApplyAndRestart: (
 internal fun SettingsContent(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    dynamicColor: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit,
     notificationSoundUri: String?,
     onTimerSoundClick: () -> Unit,
     isBackupInProgress: Boolean,
@@ -219,7 +225,12 @@ internal fun SettingsContent(
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        ThemeSection(themeMode = themeMode, onThemeModeChange = onThemeModeChange)
+        ThemeSection(
+            themeMode = themeMode,
+            onThemeModeChange = onThemeModeChange,
+            dynamicColor = dynamicColor,
+            onDynamicColorChange = onDynamicColorChange
+        )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -333,7 +344,12 @@ private fun createRingtonePickerIntent(currentUri: String?): Intent {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ThemeSection(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) -> Unit) {
+private fun ThemeSection(
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    dynamicColor: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit
+) {
     Text(
         text = "Appearance",
         style = MaterialTheme.typography.labelLarge,
@@ -369,6 +385,18 @@ private fun ThemeSection(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) ->
                 }
             }
         }
+    )
+
+    ListItem(
+        headlineContent = { Text("Dynamic Color") },
+        supportingContent = { Text("Apply system theme colors") },
+        trailingContent = {
+            Switch(
+                checked = dynamicColor,
+                onCheckedChange = onDynamicColorChange
+            )
+        },
+        modifier = Modifier.clickable { onDynamicColorChange(!dynamicColor) }
     )
 }
 

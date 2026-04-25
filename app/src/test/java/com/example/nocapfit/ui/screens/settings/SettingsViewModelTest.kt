@@ -55,6 +55,14 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun setDynamicColor_callsPreferences() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setDynamicColor(true)
+
+        coVerify { themePreferences.setDynamicColor(true) }
+    }
+
+    @Test
     fun exportDatabase_emitsSuccessOnCompletion() = runTest {
         val uri = mockk<Uri>()
         coEvery { backupManager.exportDatabase(uri) } returns Result.success(Unit)

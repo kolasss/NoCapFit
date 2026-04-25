@@ -1,7 +1,10 @@
 package com.example.nocapfit.ui.screens.settings
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -231,6 +234,49 @@ class SettingsContentTest {
         }
 
         composeTestRule.onNodeWithText("Default").assertIsDisplayed()
+    }
+
+    @Test
+    fun dynamicColorOn_switchIsOn() {
+        composeTestRule.setThemedContent {
+            SettingsContent(
+                themeMode = ThemeMode.SYSTEM,
+                onThemeModeChange = {},
+                dynamicColor = true,
+                onDynamicColorChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {},
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
+            )
+        }
+
+        composeTestRule.onNodeWithText("Dynamic Color").assertIsDisplayed()
+        composeTestRule.onNode(isToggleable()).assertIsOn()
+    }
+
+    @Test
+    fun dynamicColorOff_switchIsOff() {
+        composeTestRule.setThemedContent {
+            SettingsContent(
+                themeMode = ThemeMode.SYSTEM,
+                onThemeModeChange = {},
+                dynamicColor = false,
+                onDynamicColorChange = {},
+                notificationSoundUri = null,
+                onTimerSoundClick = {},
+                isBackupInProgress = false,
+                onExportClick = {},
+                onImportClick = {},
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
+            )
+        }
+
+        composeTestRule.onNode(isToggleable()).assertIsOff()
     }
 
     @Test

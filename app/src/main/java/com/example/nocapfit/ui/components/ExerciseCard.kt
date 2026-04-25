@@ -67,19 +67,15 @@ fun ExerciseCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(
+            .drawBehind {
                 if (showBottomDivider) {
-                    Modifier.drawBehind {
-                        drawRect(
-                            color = dividerColor,
-                            topLeft = Offset(0f, size.height - dividerPx),
-                            size = Size(size.width, dividerPx)
-                        )
-                    }
-                } else {
-                    Modifier
+                    drawRect(
+                        color = dividerColor,
+                        topLeft = Offset(0f, size.height - dividerPx),
+                        size = Size(size.width, dividerPx)
+                    )
                 }
-            )
+            }
     ) {
         ExerciseCardHeader(
             exerciseName = exerciseName,

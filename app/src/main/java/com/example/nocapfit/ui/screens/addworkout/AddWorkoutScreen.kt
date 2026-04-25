@@ -37,11 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
 import com.example.nocapfit.ui.components.ConfirmDialog
+import com.example.nocapfit.ui.components.SubtleSectionHeader
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatRelativeDate
 import kotlinx.coroutines.launch
@@ -123,7 +123,7 @@ private fun AddWorkoutContent(
                 .padding(padding)
         ) {
             item(key = "header-quick-start") {
-                SectionHeader(label = "QUICK START")
+                SubtleSectionHeader(text = "QUICK START")
             }
 
             item(key = "quick-start") {
@@ -132,7 +132,7 @@ private fun AddWorkoutContent(
 
             if (programs.isNotEmpty()) {
                 item(key = "header-from-program") {
-                    SectionHeader(label = "FROM A PROGRAM")
+                    SubtleSectionHeader(text = "FROM A PROGRAM")
                 }
 
                 items(programs, key = { it.program.id }) { programWithExercises ->
@@ -149,17 +149,6 @@ private fun AddWorkoutContent(
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
-}
-
-@Composable
-private fun SectionHeader(label: String, modifier: Modifier = Modifier) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 0.8.sp,
-        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
-    )
 }
 
 @Composable

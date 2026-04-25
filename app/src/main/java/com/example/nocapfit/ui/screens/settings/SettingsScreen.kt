@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -49,6 +48,7 @@ import androidx.navigation.NavController
 import com.example.nocapfit.BuildConfig
 import com.example.nocapfit.data.preferences.ThemeMode
 import com.example.nocapfit.ui.components.ConfirmDialog
+import com.example.nocapfit.ui.components.SectionHeader
 import com.example.nocapfit.util.NOTIFICATION_SOUND_SILENT
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -242,12 +242,7 @@ internal fun SettingsContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Text(
-            text = "Notifications",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        SectionHeader(text = "Notifications")
 
         TimerSoundItem(
             soundUri = notificationSoundUri,
@@ -256,12 +251,7 @@ internal fun SettingsContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Text(
-            text = "Data",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        SectionHeader(text = "Data")
 
         ListItem(
             headlineContent = { Text("Export Data") },
@@ -285,12 +275,7 @@ internal fun SettingsContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Text(
-            text = "About",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        SectionHeader(text = "About")
 
         ListItem(
             headlineContent = { Text("NoCapFit") },
@@ -363,12 +348,7 @@ private fun ThemeSection(
     dynamicColor: Boolean,
     onDynamicColorChange: (Boolean) -> Unit
 ) {
-    Text(
-        text = "Appearance",
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
+    SectionHeader(text = "Appearance")
 
     ListItem(
         headlineContent = { Text("Theme") },

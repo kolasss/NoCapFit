@@ -39,11 +39,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.ui.components.EmptyState
+import com.example.nocapfit.ui.components.SubtleSectionHeader
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
@@ -143,18 +143,7 @@ internal fun WorkoutHistoryContent(
             LazyColumn(modifier = modifier.fillMaxSize()) {
                 grouped.forEach { (dateHeader, workouts) ->
                     item(key = "header-$dateHeader") {
-                        Text(
-                            text = dateHeader.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            letterSpacing = 0.8.sp,
-                            modifier = Modifier.padding(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 16.dp,
-                                bottom = 8.dp
-                            )
-                        )
+                        SubtleSectionHeader(text = dateHeader.uppercase())
                     }
                     items(workouts, key = { it.workout.id }) { workoutWithExercises ->
                         WorkoutHistoryItem(

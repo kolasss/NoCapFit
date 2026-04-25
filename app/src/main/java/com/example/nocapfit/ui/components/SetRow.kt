@@ -137,7 +137,6 @@ private fun SetRowContent(
             keyboardType = KeyboardType.Number,
             modifier = Modifier.width(56.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
         if (showComplete && onToggleComplete != null) {
             CheckmarkButton(
                 completed = completed,
@@ -177,16 +176,22 @@ private fun CheckmarkButton(
     }
     Box(
         modifier = Modifier
-            .size(34.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(bg)
+            .size(48.dp)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            Icons.Default.Check,
-            contentDescription = "Complete set",
-            tint = tint
-        )
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(bg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = "Complete set",
+                tint = tint
+            )
+        }
     }
 }

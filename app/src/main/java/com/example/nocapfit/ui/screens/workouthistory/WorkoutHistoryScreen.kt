@@ -213,7 +213,7 @@ internal fun WorkoutHistoryItem(
             Text(
                 text = dateTimeText,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (exerciseSummary.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))

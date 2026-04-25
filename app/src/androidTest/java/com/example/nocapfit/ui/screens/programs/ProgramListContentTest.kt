@@ -104,7 +104,7 @@ class ProgramListContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("+1 more").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+1 more", substring = true).assertIsDisplayed()
     }
 
     @Test

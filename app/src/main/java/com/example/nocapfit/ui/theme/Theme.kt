@@ -29,7 +29,7 @@ private val DarkColorScheme = darkColorScheme(
     onErrorContainer = Danger90,
     background = Gray05,
     onBackground = OnDarkText,
-    surface = Gray05,
+    surface = Gray15,
     onSurface = OnDarkText,
     surfaceVariant = Gray20,
     onSurfaceVariant = Gray70,
@@ -40,7 +40,7 @@ private val DarkColorScheme = darkColorScheme(
     inversePrimary = Indigo40,
     surfaceContainerLowest = Gray0,
     surfaceContainerLow = Gray10,
-    surfaceContainer = Gray15,
+    surfaceContainer = Gray05,
     surfaceContainerHigh = Gray20,
     surfaceContainerHighest = Gray25
 )
@@ -75,7 +75,7 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = Indigo80,
     surfaceContainerLowest = Gray100,
     surfaceContainerLow = Gray98,
-    surfaceContainer = Gray94,
+    surfaceContainer = Gray96,
     surfaceContainerHigh = Gray94,
     surfaceContainerHighest = Gray90
 )

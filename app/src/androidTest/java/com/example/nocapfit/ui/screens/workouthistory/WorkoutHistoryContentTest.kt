@@ -132,7 +132,7 @@ class WorkoutHistoryContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText(dateHeader).assertIsDisplayed()
+        composeTestRule.onNodeWithText(dateHeader.uppercase()).assertIsDisplayed()
     }
 
     @Test

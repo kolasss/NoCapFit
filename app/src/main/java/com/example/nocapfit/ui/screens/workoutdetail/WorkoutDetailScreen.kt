@@ -217,39 +217,39 @@ private fun WorkoutSummarySection(
     totalVolume: Long,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Column(
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        Text(
+            text = dateTimeText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = dateTimeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+            SummaryStat(
+                label = "DURATION",
+                value = durationText,
+                modifier = Modifier.weight(1f)
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                SummaryStat(
-                    label = "DURATION",
-                    value = durationText,
-                    modifier = Modifier.weight(1f)
-                )
-                SummaryStat(
-                    label = "SETS",
-                    value = totalSets.toString(),
-                    modifier = Modifier.weight(1f)
-                )
-                SummaryStat(
-                    label = "VOLUME",
-                    value = "$totalVolume kg",
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            SummaryStat(
+                label = "SETS",
+                value = totalSets.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            SummaryStat(
+                label = "VOLUME",
+                value = "$totalVolume kg",
+                modifier = Modifier.weight(1f)
+            )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }

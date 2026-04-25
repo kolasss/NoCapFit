@@ -58,6 +58,7 @@ fun WorkoutHistoryScreen(
 ) {
     val completedWorkouts by viewModel.completedWorkouts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val hasActiveWorkout by viewModel.hasActiveWorkout.collectAsState()
 
     val finished = completedWorkouts.filter { it.workout.endTime != null }
         .sortedByDescending { it.workout.startTime }
@@ -85,12 +86,14 @@ fun WorkoutHistoryScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate(Screen.AddWorkout.route) },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Workout") },
-                expanded = !isScrolled
-            )
+            if (!hasActiveWorkout) {
+                ExtendedFloatingActionButton(
+                    onClick = { navController.navigate(Screen.AddWorkout.route) },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("New Workout") },
+                    expanded = !isScrolled
+                )
+            }
         }
     ) { padding ->
         WorkoutHistoryContent(
@@ -101,7 +104,8 @@ fun WorkoutHistoryScreen(
             onWorkoutClick = { workoutId ->
                 navController.navigate(Screen.WorkoutDetail.createRoute(workoutId))
             },
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            hasActiveWorkout = hasActiveWorkout
         )
     }
 }
@@ -113,7 +117,8 @@ internal fun WorkoutHistoryContent(
     grouped: Map<String, List<WorkoutWithExercises>>,
     onStartWorkout: () -> Unit,
     onWorkoutClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hasActiveWorkout: Boolean = false
 ) {
     when {
         isLoading -> {
@@ -129,8 +134,8 @@ internal fun WorkoutHistoryContent(
                 icon = Icons.Default.History,
                 title = "No workouts yet",
                 subtitle = "Start your first workout to see it here",
-                actionLabel = "Start Workout",
-                onAction = onStartWorkout,
+                actionLabel = if (hasActiveWorkout) null else "Start Workout",
+                onAction = if (hasActiveWorkout) null else onStartWorkout,
                 modifier = modifier
             )
         }

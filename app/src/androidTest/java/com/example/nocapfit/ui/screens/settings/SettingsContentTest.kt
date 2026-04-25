@@ -29,7 +29,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -49,7 +50,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -69,7 +71,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -91,7 +94,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -111,7 +115,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -131,7 +136,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -152,7 +158,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -173,7 +180,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -195,7 +203,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -216,7 +225,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 
@@ -236,7 +246,8 @@ class SettingsContentTest {
                 isBackupInProgress = false,
                 onExportClick = {},
                 onImportClick = {},
-                versionName = "1.0"
+                versionName = "1.0",
+                osVersion = "Android 15 (SDK 36)"
             )
         }
 

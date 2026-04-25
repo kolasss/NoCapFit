@@ -3,6 +3,7 @@ package com.example.nocapfit.ui.screens.settings
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -139,6 +142,7 @@ fun SettingsScreen(
                 importLauncher.launch(arrayOf("application/octet-stream", "*/*"))
             },
             versionName = BuildConfig.VERSION_NAME,
+            osVersion = "Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT_FULL})",
             modifier = Modifier.padding(padding)
         )
     }
@@ -220,10 +224,13 @@ internal fun SettingsContent(
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
     versionName: String,
+    osVersion: String,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
     ) {
         ThemeSection(
             themeMode = themeMode,
@@ -287,6 +294,11 @@ internal fun SettingsContent(
         ListItem(
             headlineContent = { Text("NoCapFit") },
             supportingContent = { Text("Version $versionName") }
+        )
+
+        ListItem(
+            headlineContent = { Text("OS Version") },
+            supportingContent = { Text(osVersion) }
         )
     }
 }

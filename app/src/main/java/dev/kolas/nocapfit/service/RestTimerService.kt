@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
-import android.os.Build
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kolas.nocapfit.BuildConfig
@@ -125,11 +124,6 @@ class RestTimerService : Service() {
             .setContentTitle("Rest Timer")
             .setProgress(totalSeconds, elapsedSeconds, false)
             .setOngoing(true)
-            .apply {
-                if (Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1) {
-                    setRequestPromotedOngoing(true)
-                }
-            }
             // Chronometer formats as floor(delta/1000); offset by (1s - 1ms) so it displays ceil.
             .setWhen(endAtEpochMs + MILLIS_PER_SECOND - 1)
             .setUsesChronometer(remainingSeconds > 0)

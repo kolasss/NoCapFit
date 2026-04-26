@@ -33,6 +33,9 @@ class SettingsViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = themePreferences.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
 
+    val dynamicColor: StateFlow<Boolean> = themePreferences.dynamicColor
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val notificationSoundUri: StateFlow<String?> = themePreferences.notificationSoundUri
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -42,6 +45,12 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             themePreferences.setThemeMode(mode)
+        }
+    }
+
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            themePreferences.setDynamicColor(enabled)
         }
     }
 

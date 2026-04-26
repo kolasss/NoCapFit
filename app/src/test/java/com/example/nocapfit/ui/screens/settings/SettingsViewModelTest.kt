@@ -29,6 +29,7 @@ class SettingsViewModelTest {
     private fun createViewModel(): SettingsViewModel {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { themePreferences.notificationSoundUri } returns flowOf(null)
+        every { themePreferences.dynamicColor } returns flowOf(false)
         return SettingsViewModel(themePreferences, backupManager)
     }
 
@@ -36,6 +37,7 @@ class SettingsViewModelTest {
     fun themeMode_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.DARK)
         every { themePreferences.notificationSoundUri } returns flowOf(null)
+        every { themePreferences.dynamicColor } returns flowOf(false)
 
         val viewModel = SettingsViewModel(themePreferences, backupManager)
 
@@ -50,6 +52,14 @@ class SettingsViewModelTest {
         viewModel.setThemeMode(ThemeMode.LIGHT)
 
         coVerify { themePreferences.setThemeMode(ThemeMode.LIGHT) }
+    }
+
+    @Test
+    fun setDynamicColor_callsPreferences() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setDynamicColor(true)
+
+        coVerify { themePreferences.setDynamicColor(true) }
     }
 
     @Test
@@ -134,6 +144,7 @@ class SettingsViewModelTest {
     fun notificationSoundUri_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { themePreferences.notificationSoundUri } returns flowOf("content://some/sound")
+        every { themePreferences.dynamicColor } returns flowOf(false)
 
         val viewModel = SettingsViewModel(themePreferences, backupManager)
 

@@ -47,7 +47,8 @@ class MainActivity : ComponentActivity() {
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent {
             val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            NoCapFitTheme(themeMode = themeMode) {
+            val dynamicColor by themePreferences.dynamicColor.collectAsState(initial = false)
+            NoCapFitTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
                 MainContent()
             }
         }
@@ -72,14 +73,13 @@ private fun MainContent(
     val isOnWorkoutScreen = currentRoute == Screen.WorkoutInProgress.route
     val isMinimized = activeWorkout != null && !isOnWorkoutScreen
     val showBottomBar = currentRoute in BOTTOM_NAV_ROUTES || isMinimized
-    val showMiniPanel = isMinimized
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
                 MainBottomBar(
-                    showMiniPanel = showMiniPanel,
+                    showMiniPanel = isMinimized,
                     minimizedWorkoutName = activeWorkout?.programName,
                     minimizedWorkoutStartTime = activeWorkout?.startTime ?: 0L,
                     currentRoute = currentRoute,

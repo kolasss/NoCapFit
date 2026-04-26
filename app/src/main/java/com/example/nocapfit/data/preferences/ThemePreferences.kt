@@ -3,6 +3,7 @@ package com.example.nocapfit.data.preferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -21,6 +22,7 @@ class ThemePreferences @Inject constructor(
 ) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val notificationSoundUriKey = stringPreferencesKey("notification_sound_uri")
+    private val dynamicColorKey = booleanPreferencesKey("dynamic_color")
 
     val themeMode: Flow<ThemeMode> = dataStore.data.map { preferences ->
         val name = preferences[themeModeKey] ?: ThemeMode.SYSTEM.name
@@ -35,9 +37,19 @@ class ThemePreferences @Inject constructor(
         preferences[notificationSoundUriKey]
     }
 
+    val dynamicColor: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[dynamicColorKey] ?: false
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { preferences ->
             preferences[themeModeKey] = mode.name
+        }
+    }
+
+    suspend fun setDynamicColor(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[dynamicColorKey] = enabled
         }
     }
 

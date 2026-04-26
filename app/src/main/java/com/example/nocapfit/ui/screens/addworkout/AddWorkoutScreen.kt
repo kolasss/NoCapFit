@@ -1,5 +1,6 @@
 package com.example.nocapfit.ui.screens.addworkout
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,16 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +34,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.ProgramWithExercises
 import com.example.nocapfit.ui.components.ConfirmDialog
+import com.example.nocapfit.ui.components.SubtleSectionHeader
 import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatRelativeDate
 import kotlinx.coroutines.launch
@@ -120,35 +121,22 @@ private fun AddWorkoutContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Text(
-                    text = "Quick Start",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                )
+            item(key = "header-quick-start") {
+                SubtleSectionHeader(text = "QUICK START")
             }
 
-            item {
-                QuickStartCard(onClick = { onStartWorkout(onCreateEmpty) })
+            item(key = "quick-start") {
+                QuickStartItem(onClick = { onStartWorkout(onCreateEmpty) })
             }
 
             if (programs.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "From a Program",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
+                item(key = "header-from-program") {
+                    SubtleSectionHeader(text = "FROM A PROGRAM")
                 }
 
-                items(programs) { programWithExercises ->
-                    ProgramCard(
+                items(programs, key = { it.program.id }) { programWithExercises ->
+                    ProgramItem(
                         programWithExercises = programWithExercises,
                         lastWorkoutTime = lastWorkoutTimes[programWithExercises.program.id],
                         onClick = {
@@ -164,36 +152,29 @@ private fun AddWorkoutContent(
 }
 
 @Composable
-private fun QuickStartCard(onClick: () -> Unit) {
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+private fun QuickStartItem(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Text(
+                text = "Empty Workout",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = "Empty Workout",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Start from scratch",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Start from scratch",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -209,66 +190,62 @@ private fun ActiveWorkoutDialog(onResume: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ProgramCard(
+private fun ProgramItem(
     programWithExercises: ProgramWithExercises,
     lastWorkoutTime: Long?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val exerciseNames = programWithExercises.exercises
+    val sortedExercises = programWithExercises.exercises
         .sortedBy { it.programExercise.orderIndex }
-        .take(3)
-        .joinToString(", ") { it.exercise.name }
-    val moreCount = (programWithExercises.exercises.size - 3).coerceAtLeast(0)
+    val exerciseNames = sortedExercises.take(3).joinToString(", ") { it.exercise.name }
+    val moreCount = (sortedExercises.size - 3).coerceAtLeast(0)
+    val summary = exerciseNames + if (moreCount > 0) " +$moreCount more" else ""
 
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Icon(
-                Icons.Default.FitnessCenter,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            Text(
+                text = programWithExercises.program.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            if (summary.isNotBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = programWithExercises.program.name,
-                    style = MaterialTheme.typography.titleMedium
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (exerciseNames.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = exerciseNames + if (moreCount > 0) " +$moreCount more" else "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            if (lastWorkoutTime != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.History,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
-                }
-                if (lastWorkoutTime != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = formatRelativeDate(lastWorkoutTime),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = formatRelativeDate(lastWorkoutTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

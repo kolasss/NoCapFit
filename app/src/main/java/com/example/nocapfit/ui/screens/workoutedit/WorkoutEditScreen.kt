@@ -1,6 +1,5 @@
 package com.example.nocapfit.ui.screens.workoutedit
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -123,10 +122,7 @@ internal fun WorkoutEditContent(
     val sortedExercises = data.exercises.sortedBy { it.workoutExercise.orderIndex }
 
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.fillMaxSize()
     ) {
         item {
             OutlinedTextField(
@@ -134,9 +130,10 @@ internal fun WorkoutEditContent(
                 onValueChange = onProgramNameChange,
                 label = { Text("Program Name") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             )
-            Spacer(modifier = Modifier.height(4.dp))
         }
 
         itemsIndexed(
@@ -217,6 +214,7 @@ private fun WorkoutEditExerciseItem(
             { onMoveExercise(id, 1) }
         } else {
             null
-        }
+        },
+        showBottomDivider = index < lastIndex
     )
 }

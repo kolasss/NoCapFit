@@ -1,5 +1,6 @@
 package com.example.nocapfit.ui.screens.workoutdetail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,13 +19,12 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -36,8 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nocapfit.data.db.relation.WorkoutExerciseWithSets
@@ -185,32 +188,21 @@ private fun WorkoutDetailContent(
         }
     }
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
-            Text(
-                text = dateTimeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            WorkoutSummaryRow(
+            WorkoutSummarySection(
+                dateTimeText = dateTimeText,
                 durationText = durationText,
                 totalSets = totalSets,
                 totalVolume = totalVolume
             )
-            Spacer(modifier = Modifier.height(4.dp))
         }
 
         items(
             data.exercises.sortedBy { it.workoutExercise.orderIndex },
             key = { it.workoutExercise.id }
         ) { exerciseWithSets ->
-            ExerciseDetailCard(exerciseWithSets)
+            ExerciseDetailItem(exerciseWithSets)
         }
 
         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -218,100 +210,134 @@ private fun WorkoutDetailContent(
 }
 
 @Composable
-private fun WorkoutSummaryRow(
+private fun WorkoutSummarySection(
+    dateTimeText: String,
     durationText: String,
     totalSets: Int,
     totalVolume: Long,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
     ) {
-        StatCard(
-            label = "Duration",
-            value = durationText,
-            modifier = Modifier.weight(1f)
+        Text(
+            text = dateTimeText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
         )
-        StatCard(
-            label = "Sets",
-            value = totalSets.toString(),
-            modifier = Modifier.weight(1f)
-        )
-        StatCard(
-            label = "Volume",
-            value = "$totalVolume kg",
-            modifier = Modifier.weight(1f)
-        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            SummaryStat(
+                label = "DURATION",
+                value = durationText,
+                modifier = Modifier.weight(1f)
+            )
+            SummaryStat(
+                label = "SETS",
+                value = totalSets.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            SummaryStat(
+                label = "VOLUME",
+                value = "$totalVolume kg",
+                modifier = Modifier.weight(1f)
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
 @Composable
-private fun StatCard(
+private fun SummaryStat(
     label: String,
     value: String,
     modifier: Modifier = Modifier
 ) {
-    ElevatedCard(modifier = modifier) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.8.sp
+        )
     }
 }
 
 @Composable
-private fun ExerciseDetailCard(exerciseWithSets: WorkoutExerciseWithSets) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+private fun ExerciseDetailItem(
+    exerciseWithSets: WorkoutExerciseWithSets,
+    modifier: Modifier = Modifier
+) {
+    val completedSets = exerciseWithSets.sets
+        .filter { it.completed }
+        .sortedBy { it.setIndex }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
             Text(
                 text = exerciseWithSets.workoutExercise.exerciseName,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            val completedSets = exerciseWithSets.sets
-                .filter { it.completed }
-                .sortedBy { it.setIndex }
-
             if (completedSets.isEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "No completed sets",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            completedSets.forEach { set ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Set ${set.setIndex + 1}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "${formatWeightDisplay(set.weightThousandths)} kg x ${set.reps} reps",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    completedSets.forEach { set ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "${set.setIndex + 1}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(24.dp)
+                            )
+                            Text(
+                                text = "${formatWeightDisplay(set.weightThousandths)} kg",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.width(80.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = "× ${set.reps}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }

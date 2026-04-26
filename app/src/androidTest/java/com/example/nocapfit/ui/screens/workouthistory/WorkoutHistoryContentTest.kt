@@ -1,7 +1,7 @@
 package com.example.nocapfit.ui.screens.workouthistory
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.nocapfit.data.db.entity.Workout
@@ -11,6 +11,7 @@ import com.example.nocapfit.data.db.relation.WorkoutWithExercises
 import com.example.nocapfit.setThemedContent
 import com.example.nocapfit.ui.util.formatMonth
 import org.junit.Assert.assertTrue
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 
@@ -132,7 +133,7 @@ class WorkoutHistoryContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText(dateHeader).assertIsDisplayed()
+        composeTestRule.onNodeWithText(dateHeader.uppercase(Locale.ROOT)).assertIsDisplayed()
     }
 
     @Test

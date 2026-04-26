@@ -1,17 +1,19 @@
 package com.example.nocapfit.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.ui.model.SetUiModel
 import com.example.nocapfit.ui.util.formatWeightDisplay
@@ -41,7 +45,8 @@ fun SetRow(
     modifier: Modifier = Modifier,
     showComplete: Boolean = true,
     onToggleComplete: (() -> Unit)? = null,
-    onRemove: (() -> Unit)? = null
+    onRemove: (() -> Unit)? = null,
+    contentHorizontalPadding: Dp = 8.dp
 ) {
     var weightText by remember(set.id, set.weightThousandths) {
         mutableStateOf(if (set.weightThousandths == 0) "" else formatWeightDisplay(set.weightThousandths))
@@ -53,14 +58,13 @@ fun SetRow(
     val defaultColor = MaterialTheme.colorScheme.surfaceContainerLow
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+        modifier = modifier.fillMaxWidth()
     ) {
         SetRowContent(
             modifier = Modifier.drawBehind {
                 drawRect(if (set.completed) completedColor else defaultColor)
             },
+            contentHorizontalPadding = contentHorizontalPadding,
             setNumber = setNumber,
             previousText = set.previousText,
             weightText = weightText,
@@ -100,13 +104,14 @@ private fun SetRowContent(
     onRepsTextChange: (String) -> Unit,
     onToggleComplete: (() -> Unit)?,
     onRemove: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentHorizontalPadding: Dp = 8.dp
 ) {
     val focusManager = LocalFocusManager.current
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = contentHorizontalPadding, vertical = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -131,18 +136,16 @@ private fun SetRowContent(
             value = repsText,
             onValueChange = onRepsTextChange,
             keyboardType = KeyboardType.Number,
-            modifier = Modifier.padding(start = 4.dp).width(56.dp)
+            modifier = Modifier.width(56.dp)
         )
         if (showComplete && onToggleComplete != null) {
-            FilledIconToggleButton(
-                checked = completed,
-                onCheckedChange = {
+            CheckmarkButton(
+                completed = completed,
+                onClick = {
                     focusManager.clearFocus()
                     onToggleComplete()
                 }
-            ) {
-                Icon(Icons.Default.Check, contentDescription = "Complete set")
-            }
+            )
         } else if (onRemove != null) {
             IconButton(onClick = onRemove) {
                 Icon(
@@ -153,6 +156,47 @@ private fun SetRowContent(
             }
         } else {
             Spacer(modifier = Modifier.width(48.dp))
+        }
+    }
+}
+
+@Composable
+private fun CheckmarkButton(
+    completed: Boolean,
+    onClick: () -> Unit
+) {
+    val bg = if (completed) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+    val tint = if (completed) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .toggleable(
+                value = completed,
+                role = Role.Checkbox,
+                onValueChange = { onClick() }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(bg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = "Complete set",
+                tint = tint
+            )
         }
     }
 }

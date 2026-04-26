@@ -6,7 +6,7 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="All Tests">
+      <SelectionState runConfigName="Integrational tests">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>

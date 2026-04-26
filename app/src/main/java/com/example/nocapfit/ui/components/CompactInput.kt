@@ -65,7 +65,7 @@ fun CompactInput(
                 )
                 .clickable { editing = true }
                 .padding(horizontal = 8.dp, vertical = 4.dp),
-            contentAlignment = Alignment.CenterStart
+            contentAlignment = Alignment.Center
         ) {
             androidx.compose.material3.Text(
                 text = displayText,
@@ -126,7 +126,7 @@ private fun CompactInputEditor(
                         shape = MaterialTheme.shapes.extraSmall
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.CenterStart
+                contentAlignment = Alignment.Center
             ) {
                 innerTextField()
             }

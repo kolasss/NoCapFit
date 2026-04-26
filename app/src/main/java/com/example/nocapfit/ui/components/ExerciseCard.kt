@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,11 +27,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.nocapfit.ui.model.SetUiModel
 
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 fun ExerciseCard(
     exerciseName: String,
@@ -55,66 +57,77 @@ fun ExerciseCard(
     showRestTime: Boolean = true,
     showAddSetButton: Boolean = false,
     onMoveUp: (() -> Unit)? = null,
-    onMoveDown: (() -> Unit)? = null
+    onMoveDown: (() -> Unit)? = null,
+    showBottomDivider: Boolean = false
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
-    val accentColor = MaterialTheme.colorScheme.tertiaryContainer
-    val accentWidthPx = with(LocalDensity.current) { 4.dp.toPx() }
+    val dividerColor = MaterialTheme.colorScheme.outlineVariant
+    val dividerPx = with(LocalDensity.current) { 1.dp.toPx() }
 
-    ElevatedCard(
-        modifier = modifier.fillMaxWidth()
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (showBottomDivider) {
+                    drawRect(
+                        color = dividerColor,
+                        topLeft = Offset(0f, size.height - dividerPx),
+                        size = Size(size.width, dividerPx)
+                    )
+                }
+            }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .drawBehind {
-                    drawRect(accentColor, size = Size(accentWidthPx, size.height))
-                }
-                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            ExerciseCardHeader(
-                exerciseName = exerciseName,
-                onExerciseTitleClick = onExerciseTitleClick,
-                onAddSet = onAddSet,
-                onRemoveExercise = { showRemoveDialog = true },
-                onMoveUp = onMoveUp,
-                onMoveDown = onMoveDown,
-                onSetRestTimeForAll = onSetRestTimeForAll,
-                showAddSetMenuItem = !showAddSetButton
+        ExerciseCardHeader(
+            exerciseName = exerciseName,
+            onExerciseTitleClick = onExerciseTitleClick,
+            onAddSet = onAddSet,
+            onRemoveExercise = { showRemoveDialog = true },
+            onMoveUp = onMoveUp,
+            onMoveDown = onMoveDown,
+            onSetRestTimeForAll = onSetRestTimeForAll,
+            showAddSetMenuItem = !showAddSetButton,
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp)
+        )
+
+        SetHeaderRow(
+            showTrailingIcon = showComplete || onRemoveSet != null,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        val sortedSets = remember(sets) { sets.sortedBy { it.setIndex } }
+        sortedSets.forEachIndexed { index, set ->
+            ExerciseSetItem(
+                index = index,
+                set = set,
+                showComplete = showComplete,
+                canRemoveSet = onRemoveSet != null && sets.size > 1,
+                onWeightChange = onWeightChange,
+                onRepsChange = onRepsChange,
+                onToggleComplete = onToggleComplete,
+                onRestTimeChange = onRestTimeChange,
+                onRemoveSet = onRemoveSet,
+                showRestTime = showRestTime,
+                activeTimerSetId = activeTimerSetId,
+                timerEndAtEpochMs = timerEndAtEpochMs,
+                timerTotalMs = timerTotalMs,
+                onCancelTimer = onCancelTimer,
+                rowHorizontalPadding = 16.dp
             )
+        }
 
-            SetHeaderRow(showTrailingIcon = showComplete || onRemoveSet != null)
-
-            val sortedSets = remember(sets) { sets.sortedBy { it.setIndex } }
-            sortedSets.forEachIndexed { index, set ->
-                ExerciseSetItem(
-                    index = index,
-                    set = set,
-                    showComplete = showComplete,
-                    canRemoveSet = onRemoveSet != null && sets.size > 1,
-                    onWeightChange = onWeightChange,
-                    onRepsChange = onRepsChange,
-                    onToggleComplete = onToggleComplete,
-                    onRestTimeChange = onRestTimeChange,
-                    onRemoveSet = onRemoveSet,
-                    showRestTime = showRestTime,
-                    activeTimerSetId = activeTimerSetId,
-                    timerEndAtEpochMs = timerEndAtEpochMs,
-                    timerTotalMs = timerTotalMs,
-                    onCancelTimer = onCancelTimer
-                )
+        if (showAddSetButton) {
+            Spacer(modifier = Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = onAddSet,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Add Set")
             }
-
-            if (showAddSetButton) {
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedButton(
-                    onClick = onAddSet,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Add Set")
-                }
-            }
+            Spacer(modifier = Modifier.height(4.dp))
+        } else {
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 
@@ -138,10 +151,11 @@ private fun ExerciseCardHeader(
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onSetRestTimeForAll: (() -> Unit)?,
-    showAddSetMenuItem: Boolean
+    showAddSetMenuItem: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -184,7 +198,8 @@ private fun ExerciseSetItem(
     activeTimerSetId: Long?,
     timerEndAtEpochMs: Long,
     timerTotalMs: Long,
-    onCancelTimer: (() -> Unit)?
+    onCancelTimer: (() -> Unit)?,
+    rowHorizontalPadding: Dp = 8.dp
 ) {
     val rememberedOnWeightChange = remember(set) {
         {
@@ -219,7 +234,8 @@ private fun ExerciseSetItem(
         onRepsChange = rememberedOnRepsChange,
         showComplete = showComplete,
         onToggleComplete = rememberedOnToggleComplete,
-        onRemove = rememberedOnRemove
+        onRemove = rememberedOnRemove,
+        contentHorizontalPadding = rowHorizontalPadding
     )
     if (showRestTime) {
         val rememberedOnRestTimeChange = remember(set, onRestTimeChange) {
@@ -236,7 +252,8 @@ private fun ExerciseSetItem(
             timerEndAtEpochMs = if (activeTimerSetId == set.id) timerEndAtEpochMs else 0L,
             timerTotalMs = if (activeTimerSetId == set.id) timerTotalMs else 0L,
             isCompleted = set.completed,
-            onCancelTimer = if (activeTimerSetId == set.id) onCancelTimer else null
+            onCancelTimer = if (activeTimerSetId == set.id) onCancelTimer else null,
+            contentHorizontalPadding = 4.dp
         )
     }
 }
@@ -309,11 +326,14 @@ private fun ExerciseOverflowMenu(
 }
 
 @Composable
-private fun SetHeaderRow(showTrailingIcon: Boolean = true) {
+private fun SetHeaderRow(
+    modifier: Modifier = Modifier,
+    showTrailingIcon: Boolean = true
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(start = 8.dp, end = 8.dp, bottom = 3.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

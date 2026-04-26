@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.nocapfit"
+    namespace = "dev.kolas.nocapfit"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.nocapfit"
+        applicationId = "dev.kolas.nocapfit"
         minSdk = 36
         targetSdk = 36
         versionCode = 1

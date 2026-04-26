@@ -4,8 +4,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.nocapfit.data.preferences.ThemeMode
@@ -255,7 +255,7 @@ class SettingsContentTest {
         }
 
         composeTestRule.onNodeWithText("Dynamic Color").assertIsDisplayed()
-        composeTestRule.onNode(isToggleable()).assertIsOn()
+        composeTestRule.onNodeWithTag("dynamic_color_switch").assertIsOn()
     }
 
     @Test
@@ -276,7 +276,7 @@ class SettingsContentTest {
             )
         }
 
-        composeTestRule.onNode(isToggleable()).assertIsOff()
+        composeTestRule.onNodeWithTag("dynamic_color_switch").assertIsOff()
     }
 
     @Test

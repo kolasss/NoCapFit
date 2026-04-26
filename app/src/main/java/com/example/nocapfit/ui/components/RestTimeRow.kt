@@ -138,7 +138,7 @@ fun RestTimeRow(
         val accentTint = when {
             isTimerActive -> MaterialTheme.colorScheme.tertiary
             isCompleted -> MaterialTheme.colorScheme.primary
-            else -> Color.Unspecified
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
         RestTimeRowCenterContent(
             isTimerActive = isTimerActive,
@@ -199,19 +199,14 @@ private fun RestTimeRowCenterContent(
     fillParams: FillOverlayParams,
     modifier: Modifier = Modifier
 ) {
-    val iconTint = if (accentTint == Color.Unspecified) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        accentTint
-    }
     var iconWindowLeft by remember { mutableFloatStateOf(0f) }
     var iconWidthPx by remember { mutableIntStateOf(0) }
-    val iconBrush = remember(fillParams, iconWindowLeft, iconWidthPx, iconTint) {
+    val iconBrush = remember(fillParams, iconWindowLeft, iconWidthPx, accentTint) {
         buildFillGradientBrush(
             params = fillParams,
             childWindowLeft = iconWindowLeft,
             childWidthPx = iconWidthPx,
-            originalColor = iconTint
+            originalColor = accentTint
         )
     }
     val iconOverlay = if (fillParams.fillProgress > 0f) {
@@ -232,7 +227,7 @@ private fun RestTimeRowCenterContent(
         Icon(
             Icons.Default.Timer,
             contentDescription = "Rest time",
-            tint = iconTint,
+            tint = accentTint,
             modifier = Modifier
                 .size(18.dp)
                 .onGloballyPositioned { iconWindowLeft = it.positionInWindow().x }

@@ -157,7 +157,7 @@ private fun ExerciseInfoContent(exercise: Exercise?) {
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 Text(
-                    text = "MUSCLES",
+                    text = "Tags",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.8.sp

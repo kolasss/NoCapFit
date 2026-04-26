@@ -41,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -386,7 +387,8 @@ private fun ThemeSection(
         trailingContent = {
             Switch(
                 checked = dynamicColor,
-                onCheckedChange = onDynamicColorChange
+                onCheckedChange = onDynamicColorChange,
+                modifier = Modifier.testTag("dynamic_color_switch")
             )
         },
         modifier = Modifier.clickable { onDynamicColorChange(!dynamicColor) }

@@ -48,6 +48,7 @@ import com.example.nocapfit.ui.navigation.Screen
 import com.example.nocapfit.ui.util.formatDateTime
 import com.example.nocapfit.ui.util.formatDuration
 import com.example.nocapfit.ui.util.formatMonth
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,7 +144,7 @@ internal fun WorkoutHistoryContent(
             LazyColumn(modifier = modifier.fillMaxSize()) {
                 grouped.forEach { (dateHeader, workouts) ->
                     item(key = "header-$dateHeader") {
-                        SubtleSectionHeader(text = dateHeader.uppercase())
+                        SubtleSectionHeader(text = dateHeader.uppercase(Locale.ROOT))
                     }
                     items(workouts, key = { it.workout.id }) { workoutWithExercises ->
                         WorkoutHistoryItem(

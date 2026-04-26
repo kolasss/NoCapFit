@@ -17,6 +17,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,8 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -89,11 +100,29 @@ fun RestTimeRow(
     val completedColor = MaterialTheme.colorScheme.primaryContainer
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val progressColor = MaterialTheme.colorScheme.tertiaryContainer
+    val coveredColor = MaterialTheme.colorScheme.onSurface
+    val density = LocalDensity.current
+    val transitionHalfPx = remember(density) { with(density) { 4.dp.toPx() } }
+
+    var rowWindowLeft by remember { mutableFloatStateOf(0f) }
+    var rowWidthPx by remember { mutableIntStateOf(0) }
+
+    val fillParams = FillOverlayParams(
+        fillProgress = fillProgress,
+        rowWindowLeft = rowWindowLeft,
+        rowWidthPx = rowWidthPx,
+        coveredColor = coveredColor,
+        transitionHalfPx = transitionHalfPx
+    )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(40.dp)
+            .onGloballyPositioned { coords ->
+                rowWindowLeft = coords.positionInWindow().x
+                rowWidthPx = coords.size.width
+            }
             .drawBehind {
                 drawRect(
                     if (isCompleted && !isTimerActive) completedColor else surfaceColor
@@ -119,6 +148,7 @@ fun RestTimeRow(
             onRestTimeChange = onRestTimeChange,
             restTimeSeconds = restTimeSeconds,
             accentTint = accentTint,
+            fillParams = fillParams,
             modifier = Modifier.align(Alignment.Center)
         )
         if (isTimerActive && onCancelTimer != null) {
@@ -166,12 +196,33 @@ private fun RestTimeRowCenterContent(
     onRestTimeChange: ((Int) -> Unit)?,
     restTimeSeconds: Int,
     accentTint: Color,
+    fillParams: FillOverlayParams,
     modifier: Modifier = Modifier
 ) {
     val iconTint = if (accentTint == Color.Unspecified) {
         MaterialTheme.colorScheme.onSurfaceVariant
     } else {
         accentTint
+    }
+    var iconWindowLeft by remember { mutableFloatStateOf(0f) }
+    var iconWidthPx by remember { mutableIntStateOf(0) }
+    val iconBrush = remember(fillParams, iconWindowLeft, iconWidthPx, iconTint) {
+        buildFillGradientBrush(
+            params = fillParams,
+            childWindowLeft = iconWindowLeft,
+            childWidthPx = iconWidthPx,
+            originalColor = iconTint
+        )
+    }
+    val iconOverlay = if (fillParams.fillProgress > 0f) {
+        Modifier
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(brush = iconBrush, blendMode = BlendMode.SrcAtop)
+            }
+    } else {
+        Modifier
     }
     Row(
         modifier = modifier,
@@ -182,11 +233,19 @@ private fun RestTimeRowCenterContent(
             Icons.Default.Timer,
             contentDescription = "Rest time",
             tint = iconTint,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier
+                .size(18.dp)
+                .onGloballyPositioned { iconWindowLeft = it.positionInWindow().x }
+                .onSizeChanged { iconWidthPx = it.width }
+                .then(iconOverlay)
         )
         when {
             isTimerActive && timerEndAtEpochMs > 0 ->
-                RestTimerCountdown(remainingMs, accentTint)
+                RestTimerCountdown(
+                    remainingMs = remainingMs,
+                    color = accentTint,
+                    fillParams = fillParams
+                )
 
             !isCompleted && onRestTimeChange != null ->
                 RestTimeInput(
@@ -237,12 +296,63 @@ fun RestTimeInput(
 }
 
 @Composable
-private fun RestTimerCountdown(remainingMs: Long, color: Color) {
+private fun RestTimerCountdown(
+    remainingMs: Long,
+    color: Color,
+    fillParams: FillOverlayParams
+) {
+    var textWindowLeft by remember { mutableFloatStateOf(0f) }
+    var textWidthPx by remember { mutableIntStateOf(0) }
+    val brush = remember(fillParams, textWindowLeft, textWidthPx, color) {
+        buildFillGradientBrush(
+            params = fillParams,
+            childWindowLeft = textWindowLeft,
+            childWidthPx = textWidthPx,
+            originalColor = color
+        )
+    }
     Text(
         text = formatMmSs(ceilSecondsFromMs(remainingMs)),
-        style = MaterialTheme.typography.bodyLarge,
-        color = color
+        style = MaterialTheme.typography.bodyLarge.copy(brush = brush),
+        modifier = Modifier
+            .onGloballyPositioned { textWindowLeft = it.positionInWindow().x }
+            .onSizeChanged { textWidthPx = it.width }
     )
 }
 
 private val mmSsTransformation = MmSsVisualTransformation()
+
+private data class FillOverlayParams(
+    val fillProgress: Float,
+    val rowWindowLeft: Float,
+    val rowWidthPx: Int,
+    val coveredColor: Color,
+    val transitionHalfPx: Float
+)
+
+private fun buildFillGradientBrush(
+    params: FillOverlayParams,
+    childWindowLeft: Float,
+    childWidthPx: Int,
+    originalColor: Color
+): Brush {
+    if (params.fillProgress <= 0f || childWidthPx <= 0 || params.rowWidthPx <= 0) {
+        return SolidColor(originalColor)
+    }
+    val fillEndInWindow = params.rowWindowLeft + params.rowWidthPx * params.fillProgress
+    val fillEndLocal = fillEndInWindow - childWindowLeft
+    val halfFraction = params.transitionHalfPx / childWidthPx
+    val fraction = fillEndLocal / childWidthPx
+    return when {
+        fraction + halfFraction <= 0f -> SolidColor(originalColor)
+        fraction - halfFraction >= 1f -> SolidColor(params.coveredColor)
+        else -> Brush.horizontalGradient(
+            colorStops = arrayOf(
+                0f to params.coveredColor,
+                (fraction - halfFraction).coerceIn(0f, 1f) to params.coveredColor,
+                (fraction + halfFraction).coerceIn(0f, 1f) to originalColor,
+                1f to originalColor
+            )
+        )
+    }
+}

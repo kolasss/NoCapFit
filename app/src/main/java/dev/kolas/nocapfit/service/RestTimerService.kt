@@ -10,6 +10,7 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
+import dev.kolas.nocapfit.BuildConfig
 import dev.kolas.nocapfit.R
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
@@ -146,7 +147,7 @@ class RestTimerService : Service() {
     companion object {
         const val EXTRA_TIMER_ID = "timer_id"
         const val CHANNEL_ID = TimerNotifier.TIMER_CHANNEL_ID
-        const val NOTIFICATION_ID = TimerCoordinator.NOTIFICATION_ID
-        const val ACTION_CANCEL_TIMER = "dev.kolas.nocapfit.CANCEL_TIMER"
+        const val NOTIFICATION_ID = TimerNotifier.TIMER_NOTIFICATION_ID
+        const val ACTION_CANCEL_TIMER = "${BuildConfig.APPLICATION_ID}.CANCEL_TIMER"
     }
 }

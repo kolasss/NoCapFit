@@ -68,7 +68,7 @@ class TimerCoordinator @Inject constructor(
             startedAtEpochMs = now,
             endAtEpochMs = endAtEpochMs,
             status = TimerStatus.RUNNING,
-            notificationId = NOTIFICATION_ID
+            notificationId = TimerNotifier.TIMER_NOTIFICATION_ID
         )
         val timerId = timerRepository.insert(timer)
 
@@ -183,9 +183,5 @@ class TimerCoordinator @Inject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-    }
-
-    companion object {
-        const val NOTIFICATION_ID = 1001
     }
 }

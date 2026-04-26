@@ -15,6 +15,7 @@ import dev.kolas.nocapfit.data.session.CurrentProfileHolder
 import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.model.PreviousSetData
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
+import dev.kolas.nocapfit.util.DEFAULT_REST_TIME_SECONDS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -229,9 +230,5 @@ class WorkoutInProgressViewModel @Inject constructor(
         return workout.value?.exercises
             ?.flatMap { it.sets }
             ?.find { it.id == workoutSetId }
-    }
-
-    companion object {
-        private const val DEFAULT_REST_TIME_SECONDS = 60
     }
 }

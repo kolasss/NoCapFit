@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.kolas.nocapfit.util.DEFAULT_REST_TIME_SECONDS
 
 @Composable
 fun RestTimeForAllDialog(
@@ -48,5 +49,3 @@ fun RestTimeForAllDialog(
         }
     )
 }
-
-private const val DEFAULT_REST_TIME_SECONDS = 60

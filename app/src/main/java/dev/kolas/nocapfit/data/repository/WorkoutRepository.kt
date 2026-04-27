@@ -33,6 +33,8 @@ class WorkoutRepository @Inject constructor(
     suspend fun getActiveWorkout(): Workout? = workoutDao.getActiveWorkout()
     fun getActiveWorkoutFlow(): Flow<Workout?> = workoutDao.getActiveWorkoutFlow()
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(exercise)
+    suspend fun updateWorkoutExerciseNote(id: Long, note: String?) =
+        workoutDao.updateWorkoutExerciseNote(id, note)
     suspend fun swapExerciseOrder(first: WorkoutExercise, second: WorkoutExercise) =
         workoutDao.swapExerciseOrder(first, second)
     suspend fun insertWorkoutSet(set: WorkoutSet): Long = workoutDao.insertWorkoutSet(set)

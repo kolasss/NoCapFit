@@ -55,6 +55,7 @@ import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
+import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.SetUiModel
@@ -123,6 +124,7 @@ fun WorkoutInProgressScreen(
             onAddSet = viewModel::addSet,
             onUpdateSet = viewModel::updateSet,
             onSetRestTimeForAll = viewModel::setRestTimeForAll,
+            onUpdateNote = viewModel::updateExerciseNote,
             onCompleteSet = viewModel::completeSet,
             onRevertSet = viewModel::revertSet,
             onCancelTimer = viewModel::cancelTimer,
@@ -209,6 +211,7 @@ private fun rememberShowTopBarTimer(
     return timerState is TimerCoordinator.TimerUiState.Running && !isVisible
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun WorkoutContent(
     padding: PaddingValues,
@@ -221,6 +224,7 @@ private fun WorkoutContent(
     onAddSet: (Long) -> Unit,
     onUpdateSet: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onSetRestTimeForAll: (Long, Int) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
@@ -251,6 +255,7 @@ private fun WorkoutContent(
         onAddSet = onAddSet,
         onUpdateSet = onUpdateSet,
         onSetRestTimeForAll = onSetRestTimeForAll,
+        onUpdateNote = onUpdateNote,
         onCompleteSet = onCompleteSet,
         onRevertSet = onRevertSet,
         onCancelTimer = onCancelTimer,
@@ -260,6 +265,7 @@ private fun WorkoutContent(
     )
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun WorkoutExerciseList(
     sortedExercises: List<dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
@@ -271,6 +277,7 @@ private fun WorkoutExerciseList(
     onAddSet: (Long) -> Unit,
     onUpdateSet: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onSetRestTimeForAll: (Long, Int) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
@@ -318,6 +325,7 @@ private fun WorkoutExerciseList(
                 onAddSet = onAddSet,
                 onUpdateSet = onUpdateSet,
                 onSetRestTimeForAll = onSetRestTimeForAll,
+                onUpdateNote = onUpdateNote,
                 onCompleteSet = onCompleteSet,
                 onRevertSet = onRevertSet,
                 onCancelTimer = onCancelTimer,
@@ -343,6 +351,7 @@ private fun WorkoutExerciseList(
     }
 }
 
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun ExerciseCardItem(
     exerciseWithSets: dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets,
@@ -355,12 +364,14 @@ private fun ExerciseCardItem(
     onAddSet: (Long) -> Unit,
     onUpdateSet: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onSetRestTimeForAll: (Long, Int) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit,
     onCompleteSet: (Long, Int) -> Unit,
     onRevertSet: (Long) -> Unit,
     onCancelTimer: () -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
     var showRestTimeDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
     val sets = exerciseWithSets.sets
@@ -424,7 +435,9 @@ private fun ExerciseCardItem(
         onCancelTimer = onCancelTimer,
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown,
-        showBottomDivider = index < lastIndex
+        showBottomDivider = index < lastIndex,
+        note = exerciseWithSets.workoutExercise.note,
+        onEditNote = { showNoteDialog = true }
     )
     if (showRestTimeDialog) {
         RestTimeForAllDialog(
@@ -433,6 +446,20 @@ private fun ExerciseCardItem(
                 onSetRestTimeForAll(id, seconds)
                 showRestTimeDialog = false
             }
+        )
+    }
+    if (showNoteDialog) {
+        InputDialog(
+            title = "Note",
+            initialValue = exerciseWithSets.workoutExercise.note.orEmpty(),
+            label = "Note",
+            singleLine = false,
+            allowEmpty = true,
+            onConfirm = { value ->
+                onUpdateNote(id, value.ifBlank { null })
+                showNoteDialog = false
+            },
+            onDismiss = { showNoteDialog = false }
         )
     }
 }

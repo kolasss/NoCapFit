@@ -34,6 +34,7 @@ import androidx.navigation.NavController
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
+import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.model.SetUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,6 +79,7 @@ fun WorkoutEditScreen(
             onUpdateSet = { ws, w -> viewModel.updateSet(ws.copy(weightThousandths = w)) },
             onUpdateReps = { ws, r -> viewModel.updateSet(ws.copy(reps = r)) },
             onToggleComplete = viewModel::toggleSetCompleted,
+            onUpdateNote = viewModel::updateExerciseNote,
             onAddExerciseClick = { showExercisePicker = true },
             modifier = Modifier.padding(padding)
         )
@@ -95,6 +97,7 @@ fun WorkoutEditScreen(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 internal fun WorkoutEditContent(
     data: WorkoutWithExercises?,
@@ -106,6 +109,7 @@ internal fun WorkoutEditContent(
     onUpdateSet: (dev.kolas.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
     onUpdateReps: (dev.kolas.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
     onToggleComplete: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit,
     onAddExerciseClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -149,7 +153,8 @@ internal fun WorkoutEditContent(
                 onAddSet = onAddSet,
                 onUpdateSet = onUpdateSet,
                 onUpdateReps = onUpdateReps,
-                onToggleComplete = onToggleComplete
+                onToggleComplete = onToggleComplete,
+                onUpdateNote = onUpdateNote
             )
         }
 
@@ -167,6 +172,7 @@ internal fun WorkoutEditContent(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun WorkoutEditExerciseItem(
     exerciseWithSets: dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets,
@@ -177,11 +183,13 @@ private fun WorkoutEditExerciseItem(
     onAddSet: (Long) -> Unit,
     onUpdateSet: (dev.kolas.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
     onUpdateReps: (dev.kolas.nocapfit.data.db.entity.WorkoutSet, Int) -> Unit,
-    onToggleComplete: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit
+    onToggleComplete: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit
 ) {
     val id = exerciseWithSets.workoutExercise.id
     val sets = exerciseWithSets.sets
     val setsById = remember(sets) { sets.associateBy { it.id } }
+    var showNoteDialog by remember { mutableStateOf(false) }
     val setUiModels = remember(sets) {
         sets.map { ws ->
             SetUiModel(
@@ -215,6 +223,22 @@ private fun WorkoutEditExerciseItem(
         } else {
             null
         },
-        showBottomDivider = index < lastIndex
+        showBottomDivider = index < lastIndex,
+        note = exerciseWithSets.workoutExercise.note,
+        onEditNote = { showNoteDialog = true }
     )
+    if (showNoteDialog) {
+        InputDialog(
+            title = "Note",
+            initialValue = exerciseWithSets.workoutExercise.note.orEmpty(),
+            label = "Note",
+            singleLine = false,
+            allowEmpty = true,
+            onConfirm = { value ->
+                onUpdateNote(id, value.ifBlank { null })
+                showNoteDialog = false
+            },
+            onDismiss = { showNoteDialog = false }
+        )
+    }
 }

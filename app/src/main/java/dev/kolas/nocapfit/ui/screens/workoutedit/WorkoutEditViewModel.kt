@@ -74,6 +74,20 @@ class WorkoutEditViewModel @Inject constructor(
         updateSet(workoutSet.copy(completed = !workoutSet.completed))
     }
 
+    fun updateExerciseNote(workoutExerciseId: Long, note: String?) {
+        updateSnapshot { data ->
+            data.copy(
+                exercises = data.exercises.map { ex ->
+                    if (ex.workoutExercise.id != workoutExerciseId) {
+                        ex
+                    } else {
+                        ex.copy(workoutExercise = ex.workoutExercise.copy(note = note))
+                    }
+                }
+            )
+        }
+    }
+
     fun addSet(workoutExerciseId: Long) {
         updateSnapshot { data ->
             data.copy(

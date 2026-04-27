@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kolas.nocapfit.ui.model.SetUiModel
@@ -58,7 +59,9 @@ fun ExerciseCard(
     showAddSetButton: Boolean = false,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null,
-    showBottomDivider: Boolean = false
+    showBottomDivider: Boolean = false,
+    note: String? = null,
+    onEditNote: (() -> Unit)? = null
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
     val dividerColor = MaterialTheme.colorScheme.outlineVariant
@@ -85,9 +88,21 @@ fun ExerciseCard(
             onMoveUp = onMoveUp,
             onMoveDown = onMoveDown,
             onSetRestTimeForAll = onSetRestTimeForAll,
+            onEditNote = onEditNote,
+            hasNote = !note.isNullOrBlank(),
             showAddSetMenuItem = !showAddSetButton,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp)
         )
+
+        if (!note.isNullOrBlank()) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = FontStyle.Italic,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 6.dp)
+            )
+        }
 
         SetHeaderRow(
             showTrailingIcon = showComplete || onRemoveSet != null,
@@ -151,6 +166,8 @@ private fun ExerciseCardHeader(
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onSetRestTimeForAll: (() -> Unit)?,
+    onEditNote: (() -> Unit)?,
+    hasNote: Boolean,
     showAddSetMenuItem: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -178,6 +195,8 @@ private fun ExerciseCardHeader(
             onMoveUp = onMoveUp,
             onMoveDown = onMoveDown,
             onSetRestTimeForAll = onSetRestTimeForAll,
+            onEditNote = onEditNote,
+            hasNote = hasNote,
             showAddSet = showAddSetMenuItem
         )
     }
@@ -265,6 +284,8 @@ private fun ExerciseOverflowMenu(
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onSetRestTimeForAll: (() -> Unit)?,
+    onEditNote: (() -> Unit)?,
+    hasNote: Boolean,
     showAddSet: Boolean
 ) {
     Box {
@@ -301,6 +322,15 @@ private fun ExerciseOverflowMenu(
                         onClick = {
                             showMenu = false
                             onSetRestTimeForAll()
+                        }
+                    )
+                }
+                if (onEditNote != null) {
+                    DropdownMenuItem(
+                        text = { Text(if (hasNote) "Edit Note" else "Add Note") },
+                        onClick = {
+                            showMenu = false
+                            onEditNote()
                         }
                     )
                 }

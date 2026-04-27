@@ -39,7 +39,8 @@ class ProgramRepository @Inject constructor(
             val exercise = ProgramExercise(
                 programId = 0L,
                 exerciseId = peWithSets.programExercise.exerciseId,
-                orderIndex = peWithSets.programExercise.orderIndex
+                orderIndex = peWithSets.programExercise.orderIndex,
+                note = peWithSets.programExercise.note
             )
             val sets = peWithSets.sets.map { set ->
                 ProgramExerciseSet(
@@ -65,7 +66,8 @@ class ProgramRepository @Inject constructor(
                 val pe = ProgramExercise(
                     programId = 0L,
                     exerciseId = weWithSets.workoutExercise.exerciseId!!,
-                    orderIndex = weWithSets.workoutExercise.orderIndex
+                    orderIndex = weWithSets.workoutExercise.orderIndex,
+                    note = weWithSets.workoutExercise.note
                 )
                 val sets = completedSets.map { set ->
                     ProgramExerciseSet(

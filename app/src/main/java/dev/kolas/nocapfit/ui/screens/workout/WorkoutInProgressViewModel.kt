@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Suppress("TooManyFunctions")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WorkoutInProgressViewModel @Inject constructor(
@@ -121,6 +122,12 @@ class WorkoutInProgressViewModel @Inject constructor(
     fun updateSet(workoutSet: WorkoutSet) {
         viewModelScope.launch {
             workoutRepository.updateWorkoutSet(workoutSet)
+        }
+    }
+
+    fun updateExerciseNote(workoutExerciseId: Long, note: String?) {
+        viewModelScope.launch {
+            workoutRepository.updateWorkoutExerciseNote(workoutExerciseId, note)
         }
     }
 

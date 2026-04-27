@@ -18,7 +18,9 @@ fun InputDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
     confirmLabel: String = "Save",
-    dismissLabel: String = "Cancel"
+    dismissLabel: String = "Cancel",
+    singleLine: Boolean = true,
+    allowEmpty: Boolean = false
 ) {
     var value by remember { mutableStateOf(initialValue) }
     AlertDialog(
@@ -29,13 +31,13 @@ fun InputDialog(
                 value = value,
                 onValueChange = { value = it },
                 label = { Text(label) },
-                singleLine = true
+                singleLine = singleLine
             )
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(value) },
-                enabled = value.isNotBlank()
+                enabled = allowEmpty || value.isNotBlank()
             ) {
                 Text(confirmLabel)
             }

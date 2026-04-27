@@ -37,6 +37,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
+import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.components.parseMmSsToSeconds
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
@@ -89,6 +90,7 @@ fun ProgramFormScreen(
             onRemoveSet = viewModel::removeSet,
             onUpdateSet = viewModel::updateSet,
             onSetRestTimeForAll = viewModel::setRestTimeForAll,
+            onUpdateNote = viewModel::updateExerciseNote,
             onExerciseTitleClick = { exerciseId ->
                 navController.navigate(Screen.ExerciseDetail.createRoute(exerciseId))
             },
@@ -109,6 +111,7 @@ fun ProgramFormScreen(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 internal fun ProgramFormContent(
     uiState: ProgramFormUiState,
@@ -120,6 +123,7 @@ internal fun ProgramFormContent(
     onRemoveSet: (Int, Int) -> Unit,
     onUpdateSet: (Int, Int, SetEntry) -> Unit,
     onSetRestTimeForAll: (Int, String) -> Unit,
+    onUpdateNote: (Int, String?) -> Unit,
     onExerciseTitleClick: (Long) -> Unit,
     onShowExercisePicker: () -> Unit,
     modifier: Modifier = Modifier
@@ -181,6 +185,7 @@ internal fun ProgramFormContent(
                     onRemoveSet = onRemoveSet,
                     onUpdateSet = onUpdateSet,
                     onSetRestTimeForAll = onSetRestTimeForAll,
+                    onUpdateNote = onUpdateNote,
                     onExerciseTitleClick = onExerciseTitleClick
                 )
             }
@@ -230,6 +235,7 @@ internal fun ProgramFormTopBar(
     )
 }
 
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun ExerciseCardItem(
     exerciseIndex: Int,
@@ -243,9 +249,11 @@ private fun ExerciseCardItem(
     onRemoveSet: (Int, Int) -> Unit,
     onUpdateSet: (Int, Int, SetEntry) -> Unit,
     onSetRestTimeForAll: (Int, String) -> Unit,
+    onUpdateNote: (Int, String?) -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
     var showRestTimeDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
     val exId = exerciseEntry.exercise.id
     val setUiModels = remember(exerciseEntry.sets, exId, previousSets) {
         exerciseEntry.sets.mapIndexed { setIndex, setEntry ->
@@ -298,7 +306,9 @@ private fun ExerciseCardItem(
         showAddSetButton = true,
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown,
-        showBottomDivider = exerciseIndex < lastIndex
+        showBottomDivider = exerciseIndex < lastIndex,
+        note = exerciseEntry.note,
+        onEditNote = { showNoteDialog = true }
     )
     if (showRestTimeDialog) {
         RestTimeForAllDialog(
@@ -307,6 +317,20 @@ private fun ExerciseCardItem(
                 onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds))
                 showRestTimeDialog = false
             }
+        )
+    }
+    if (showNoteDialog) {
+        InputDialog(
+            title = "Note",
+            initialValue = exerciseEntry.note.orEmpty(),
+            label = "Note",
+            singleLine = false,
+            allowEmpty = true,
+            onConfirm = { value ->
+                onUpdateNote(exerciseIndex, value.ifBlank { null })
+                showNoteDialog = false
+            },
+            onDismiss = { showNoteDialog = false }
         )
     }
 }

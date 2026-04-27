@@ -39,7 +39,8 @@ data class SetEntry(
 @androidx.compose.runtime.Immutable
 data class ExerciseEntry(
     val exercise: Exercise,
-    val sets: List<SetEntry> = listOf(SetEntry())
+    val sets: List<SetEntry> = listOf(SetEntry()),
+    val note: String? = null
 )
 
 @androidx.compose.runtime.Immutable
@@ -96,7 +97,8 @@ class ProgramFormViewModel @Inject constructor(
                                             restTimeSeconds = secondsToMmSsDigits(set.restTimeSeconds)
                                         )
                                     }
-                                    .ifEmpty { listOf(SetEntry()) }
+                                    .ifEmpty { listOf(SetEntry()) },
+                                note = peWithSets.programExercise.note
                             )
                         }
                     _uiState.value = ProgramFormUiState(
@@ -178,6 +180,14 @@ class ProgramFormViewModel @Inject constructor(
         _uiState.value = current.copy(exercises = exercises)
     }
 
+    fun updateExerciseNote(exerciseIndex: Int, note: String?) {
+        val current = _uiState.value
+        val exercises = current.exercises.toMutableList()
+        val entry = exercises[exerciseIndex]
+        exercises[exerciseIndex] = entry.copy(note = note)
+        _uiState.value = current.copy(exercises = exercises)
+    }
+
     fun setRestTimeForAll(exerciseIndex: Int, restTimeDigits: String) {
         val current = _uiState.value
         val exercises = current.exercises.toMutableList()
@@ -241,7 +251,8 @@ class ProgramFormViewModel @Inject constructor(
                 val pe = ProgramExercise(
                     programId = 0L,
                     exerciseId = exerciseEntry.exercise.id,
-                    orderIndex = exerciseIndex
+                    orderIndex = exerciseIndex,
+                    note = exerciseEntry.note
                 )
                 val sets = exerciseEntry.sets.mapIndexed { setIndex, setEntry ->
                     ProgramExerciseSet(

@@ -24,5 +24,6 @@ data class WorkoutExercise(
     val workoutId: Long,
     val exerciseName: String,
     val exerciseId: Long? = null,
-    val orderIndex: Int
+    val orderIndex: Int,
+    val note: String? = null
 )

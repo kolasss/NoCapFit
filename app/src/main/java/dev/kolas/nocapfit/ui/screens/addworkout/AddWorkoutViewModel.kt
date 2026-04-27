@@ -78,7 +78,8 @@ class AddWorkoutViewModel @Inject constructor(
                 workoutId = 0L,
                 exerciseName = peWithSets.exercise.name,
                 exerciseId = peWithSets.exercise.id,
-                orderIndex = peWithSets.programExercise.orderIndex
+                orderIndex = peWithSets.programExercise.orderIndex,
+                note = peWithSets.programExercise.note
             )
             val sets = peWithSets.sets.map { programSet ->
                 val prev = previousSets[peWithSets.exercise.id to programSet.setIndex]

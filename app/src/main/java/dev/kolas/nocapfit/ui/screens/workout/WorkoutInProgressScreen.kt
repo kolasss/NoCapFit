@@ -54,8 +54,8 @@ import androidx.navigation.NavController
 import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.ExerciseCard
+import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.SetUiModel
@@ -449,14 +449,10 @@ private fun ExerciseCardItem(
         )
     }
     if (showNoteDialog) {
-        InputDialog(
-            title = "Note",
-            initialValue = exerciseWithSets.workoutExercise.note.orEmpty(),
-            label = "Note",
-            singleLine = false,
-            allowEmpty = true,
-            onConfirm = { value ->
-                onUpdateNote(id, value.ifBlank { null })
+        ExerciseNoteDialog(
+            initialValue = exerciseWithSets.workoutExercise.note,
+            onConfirm = { note ->
+                onUpdateNote(id, note)
                 showNoteDialog = false
             },
             onDismiss = { showNoteDialog = false }

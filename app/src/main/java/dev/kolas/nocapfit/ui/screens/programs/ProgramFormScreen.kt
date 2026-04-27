@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.ui.components.ExerciseCard
+import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.components.parseMmSsToSeconds
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
@@ -320,14 +320,10 @@ private fun ExerciseCardItem(
         )
     }
     if (showNoteDialog) {
-        InputDialog(
-            title = "Note",
-            initialValue = exerciseEntry.note.orEmpty(),
-            label = "Note",
-            singleLine = false,
-            allowEmpty = true,
-            onConfirm = { value ->
-                onUpdateNote(exerciseIndex, value.ifBlank { null })
+        ExerciseNoteDialog(
+            initialValue = exerciseEntry.note,
+            onConfirm = { note ->
+                onUpdateNote(exerciseIndex, note)
                 showNoteDialog = false
             },
             onDismiss = { showNoteDialog = false }

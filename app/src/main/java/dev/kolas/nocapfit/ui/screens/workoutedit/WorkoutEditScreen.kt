@@ -33,8 +33,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ExerciseCard
+import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.components.InputDialog
 import dev.kolas.nocapfit.ui.model.SetUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,14 +228,10 @@ private fun WorkoutEditExerciseItem(
         onEditNote = { showNoteDialog = true }
     )
     if (showNoteDialog) {
-        InputDialog(
-            title = "Note",
-            initialValue = exerciseWithSets.workoutExercise.note.orEmpty(),
-            label = "Note",
-            singleLine = false,
-            allowEmpty = true,
-            onConfirm = { value ->
-                onUpdateNote(id, value.ifBlank { null })
+        ExerciseNoteDialog(
+            initialValue = exerciseWithSets.workoutExercise.note,
+            onConfirm = { note ->
+                onUpdateNote(id, note)
                 showNoteDialog = false
             },
             onDismiss = { showNoteDialog = false }

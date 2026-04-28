@@ -1,9 +1,7 @@
 package dev.kolas.nocapfit.ui.components
 
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -150,11 +148,11 @@ class ExerciseCardTest {
                 onWeightChange = { _, _ -> },
                 onRepsChange = { _, _ -> },
                 onToggleComplete = {},
-                note = ""
+                note = "   "
             )
         }
 
-        composeTestRule.onAllNodesWithText("").assertCountEquals(0)
+        composeTestRule.onNodeWithText("   ").assertDoesNotExist()
     }
 
     @Test

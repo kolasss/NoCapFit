@@ -118,4 +118,107 @@ class ExerciseCardTest {
 
         composeTestRule.onNodeWithContentDescription("More").assertIsDisplayed()
     }
+
+    @Test
+    fun note_isDisplayed_whenNonBlank() {
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = "keep elbows tucked"
+            )
+        }
+
+        composeTestRule.onNodeWithText("keep elbows tucked").assertIsDisplayed()
+    }
+
+    @Test
+    fun note_isHidden_whenBlank() {
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = "   "
+            )
+        }
+
+        composeTestRule.onNodeWithText("   ").assertDoesNotExist()
+    }
+
+    @Test
+    fun overflowMenu_showsAddNote_whenNoteBlank() {
+        var noteClicked = false
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = null,
+                onEditNote = { noteClicked = true }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Edit Note").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Add Note").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Add Note").performClick()
+        assertTrue(noteClicked)
+    }
+
+    @Test
+    fun overflowMenu_showsEditNote_whenNoteSet() {
+        var noteClicked = false
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = "keep elbows tucked",
+                onEditNote = { noteClicked = true }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Add Note").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Edit Note").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Edit Note").performClick()
+        assertTrue(noteClicked)
+    }
+
+    @Test
+    fun overflowMenu_hidesNoteItem_whenOnEditNoteNull() {
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {}
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Add Note").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Edit Note").assertDoesNotExist()
+    }
 }

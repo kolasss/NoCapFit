@@ -87,6 +87,9 @@ interface WorkoutDao {
     @Update
     suspend fun updateWorkoutExercise(exercise: WorkoutExercise)
 
+    @Query("UPDATE workout_exercises SET note = :note WHERE id = :id")
+    suspend fun updateWorkoutExerciseNote(id: Long, note: String?)
+
     @Transaction
     suspend fun swapExerciseOrder(first: WorkoutExercise, second: WorkoutExercise) {
         updateWorkoutExercise(first)

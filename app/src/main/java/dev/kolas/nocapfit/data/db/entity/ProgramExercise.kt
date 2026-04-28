@@ -29,5 +29,6 @@ data class ProgramExercise(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val programId: Long,
     val exerciseId: Long,
-    val orderIndex: Int
+    val orderIndex: Int,
+    val note: String? = null
 )

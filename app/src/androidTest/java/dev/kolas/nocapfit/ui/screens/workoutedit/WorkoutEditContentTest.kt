@@ -61,6 +61,7 @@ class WorkoutEditContentTest {
                 onUpdateSet = { _, _ -> },
                 onUpdateReps = { _, _ -> },
                 onToggleComplete = {},
+                onUpdateNote = { _, _ -> },
                 onAddExerciseClick = {}
             )
         }
@@ -81,6 +82,7 @@ class WorkoutEditContentTest {
                 onUpdateSet = { _, _ -> },
                 onUpdateReps = { _, _ -> },
                 onToggleComplete = {},
+                onUpdateNote = { _, _ -> },
                 onAddExerciseClick = {}
             )
         }
@@ -102,6 +104,7 @@ class WorkoutEditContentTest {
                 onUpdateSet = { _, _ -> },
                 onUpdateReps = { _, _ -> },
                 onToggleComplete = {},
+                onUpdateNote = { _, _ -> },
                 onAddExerciseClick = {}
             )
         }
@@ -122,6 +125,7 @@ class WorkoutEditContentTest {
                 onUpdateSet = { _, _ -> },
                 onUpdateReps = { _, _ -> },
                 onToggleComplete = {},
+                onUpdateNote = { _, _ -> },
                 onAddExerciseClick = {}
             )
         }

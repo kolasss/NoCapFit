@@ -30,7 +30,7 @@ import dev.kolas.nocapfit.data.db.entity.WorkoutSet
         WorkoutSet::class,
         ActiveTimer::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

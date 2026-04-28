@@ -40,7 +40,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,6 +56,7 @@ import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
 import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
+import dev.kolas.nocapfit.ui.components.rememberTimerRemainingMs
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.SetUiModel
 import dev.kolas.nocapfit.ui.model.formatPreviousSet
@@ -521,29 +521,6 @@ private fun WorkoutTopAppBar(
             )
         }
     }
-}
-
-@Composable
-private fun rememberTimerRemainingMs(showTimer: Boolean, timerEndAtEpochMs: Long): Long {
-    var timerRemainingMs by remember(timerEndAtEpochMs) {
-        mutableLongStateOf(
-            if (showTimer && timerEndAtEpochMs > 0) {
-                (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-            } else {
-                0L
-            }
-        )
-    }
-    if (showTimer && timerEndAtEpochMs > 0) {
-        LaunchedEffect(timerEndAtEpochMs) {
-            while (true) {
-                timerRemainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-                if (timerRemainingMs <= 0) break
-                delay(MILLIS_PER_SECOND)
-            }
-        }
-    }
-    return timerRemainingMs
 }
 
 @Composable

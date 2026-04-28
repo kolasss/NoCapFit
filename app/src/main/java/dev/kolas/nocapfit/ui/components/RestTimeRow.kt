@@ -15,11 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,12 +39,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
 import dev.kolas.nocapfit.util.SECONDS_PER_MINUTE
 import dev.kolas.nocapfit.util.ceilSecondsFromMs
 import dev.kolas.nocapfit.util.formatMmSs
 import dev.kolas.nocapfit.util.restTimerFillProgress
-import kotlinx.coroutines.delay
 
 /**
  * Parse mm:ss digit string to total seconds.
@@ -162,29 +158,6 @@ fun RestTimeRow(
             }
         }
     }
-}
-
-@Composable
-private fun rememberTimerRemainingMs(isTimerActive: Boolean, timerEndAtEpochMs: Long): Long {
-    var remainingMs by remember(timerEndAtEpochMs) {
-        mutableLongStateOf(
-            if (isTimerActive && timerEndAtEpochMs > 0) {
-                (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-            } else {
-                0L
-            }
-        )
-    }
-    if (isTimerActive && timerEndAtEpochMs > 0) {
-        LaunchedEffect(timerEndAtEpochMs) {
-            while (true) {
-                remainingMs = (timerEndAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
-                if (remainingMs <= 0) break
-                delay(MILLIS_PER_SECOND)
-            }
-        }
-    }
-    return remainingMs
 }
 
 @Composable

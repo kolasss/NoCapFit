@@ -4,6 +4,7 @@ import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
 import dev.kolas.nocapfit.util.SECONDS_PER_HOUR
 import dev.kolas.nocapfit.util.SECONDS_PER_MINUTE
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.daysUntil
 import kotlinx.datetime.toLocalDateTime
 import java.util.Locale
 import kotlin.time.Instant
@@ -36,12 +37,16 @@ fun formatDateTime(epochMs: Long): String {
     return "${formatDate(epochMs)} · ${formatTime(epochMs)}"
 }
 
-private const val MS_PER_DAY = 86_400_000L
 private const val DAYS_THRESHOLD = 30
 
-fun formatRelativeDate(epochMs: Long): String {
-    val now = System.currentTimeMillis()
-    val daysAgo = (now - epochMs) / MS_PER_DAY
+fun formatRelativeDate(
+    epochMs: Long,
+    now: Long = System.currentTimeMillis()
+): String {
+    val tz = TimeZone.currentSystemDefault()
+    val nowDate = Instant.fromEpochMilliseconds(now).toLocalDateTime(tz).date
+    val pastDate = Instant.fromEpochMilliseconds(epochMs).toLocalDateTime(tz).date
+    val daysAgo = pastDate.daysUntil(nowDate)
     return when {
         daysAgo < 1 -> "Today"
         daysAgo < 2 -> "Yesterday"

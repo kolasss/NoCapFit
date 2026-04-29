@@ -1,6 +1,8 @@
 package dev.kolas.nocapfit.ui.util
 
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -114,40 +116,57 @@ class DateTimeFormattingTest {
 
     // formatRelativeDate tests
 
+    private fun localMs(year: Int, month: Int, day: Int, hour: Int = 12, minute: Int = 0): Long =
+        LocalDateTime(year, month, day, hour, minute)
+            .toInstant(TimeZone.currentSystemDefault())
+            .toEpochMilliseconds()
+
     @Test
     fun formatRelativeDate_today() {
-        val now = System.currentTimeMillis()
-        assertEquals("Today", formatRelativeDate(now))
+        val now = localMs(2026, 4, 29, 12, 0)
+        assertEquals("Today", formatRelativeDate(now, now))
     }
 
     @Test
     fun formatRelativeDate_fewHoursAgo_isToday() {
-        val fewHoursAgo = System.currentTimeMillis() - 3 * 3600 * 1000L
-        assertEquals("Today", formatRelativeDate(fewHoursAgo))
+        val now = localMs(2026, 4, 29, 15, 0)
+        val past = localMs(2026, 4, 29, 12, 0)
+        assertEquals("Today", formatRelativeDate(past, now))
     }
 
     @Test
     fun formatRelativeDate_yesterday() {
-        val yesterday = System.currentTimeMillis() - 36 * 3600 * 1000L
-        assertEquals("Yesterday", formatRelativeDate(yesterday))
+        val now = localMs(2026, 4, 29, 12, 0)
+        val past = localMs(2026, 4, 28, 0, 0)
+        assertEquals("Yesterday", formatRelativeDate(past, now))
+    }
+
+    @Test
+    fun formatRelativeDate_lateYesterdayLessThan24hAgo_isYesterday() {
+        // Past at 23:34 local, now at 22:12 the next local day → < 24 h elapsed but a calendar day apart.
+        val past = localMs(2026, 4, 28, 23, 34)
+        val now = localMs(2026, 4, 29, 22, 12)
+        assertEquals("Yesterday", formatRelativeDate(past, now))
     }
 
     @Test
     fun formatRelativeDate_daysAgo() {
-        val fiveDaysAgo = System.currentTimeMillis() - 5 * 86_400_000L
-        assertEquals("5 days ago", formatRelativeDate(fiveDaysAgo))
+        val now = localMs(2026, 4, 29, 12, 0)
+        val past = localMs(2026, 4, 24, 12, 0)
+        assertEquals("5 days ago", formatRelativeDate(past, now))
     }
 
     @Test
     fun formatRelativeDate_29DaysAgo() {
-        val twentyNineDaysAgo = System.currentTimeMillis() - 29 * 86_400_000L
-        assertEquals("29 days ago", formatRelativeDate(twentyNineDaysAgo))
+        val now = localMs(2026, 4, 30, 12, 0)
+        val past = localMs(2026, 4, 1, 12, 0)
+        assertEquals("29 days ago", formatRelativeDate(past, now))
     }
 
     @Test
     fun formatRelativeDate_30DaysAgo_showsFullDate() {
-        val thirtyDaysAgo = System.currentTimeMillis() - 30 * 86_400_000L
-        val result = formatRelativeDate(thirtyDaysAgo)
-        assertEquals(formatDate(thirtyDaysAgo), result)
+        val now = localMs(2026, 5, 1, 12, 0)
+        val past = localMs(2026, 4, 1, 12, 0)
+        assertEquals(formatDate(past), formatRelativeDate(past, now))
     }
 }

@@ -516,8 +516,9 @@ private fun WorkoutTopAppBar(
             LinearProgressIndicator(
                 progress = { timerProgress },
                 modifier = Modifier.fillMaxWidth().height(3.dp),
-                color = MaterialTheme.colorScheme.tertiary,
-                trackColor = Color.Transparent
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                trackColor = Color.Transparent,
+                drawStopIndicator = {}
             )
         }
     }
@@ -579,7 +580,8 @@ private fun WorkoutProgressStrip(
                 .fillMaxWidth()
                 .height(4.dp),
             color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceContainer
+            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+            drawStopIndicator = {}
         )
     }
 }

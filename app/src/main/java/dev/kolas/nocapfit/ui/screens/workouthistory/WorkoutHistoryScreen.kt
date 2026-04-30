@@ -172,12 +172,9 @@ internal fun WorkoutHistoryItem(
     val durationMs = (workout.endTime ?: workout.startTime) - workout.startTime
     val durationText = formatDuration(durationMs)
 
-    val sortedExercises = workoutWithExercises.exercises
+    val exerciseSummary = workoutWithExercises.exercises
         .sortedBy { it.workoutExercise.orderIndex }
-    val exerciseNames = sortedExercises.take(3)
         .joinToString(", ") { it.workoutExercise.exerciseName }
-    val moreCount = (sortedExercises.size - 3).coerceAtLeast(0)
-    val exerciseSummary = exerciseNames + if (moreCount > 0) " +$moreCount more" else ""
 
     Column(modifier = modifier.fillMaxWidth()) {
         Column(

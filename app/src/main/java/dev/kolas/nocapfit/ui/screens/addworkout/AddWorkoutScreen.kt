@@ -196,11 +196,9 @@ private fun ProgramItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val sortedExercises = programWithExercises.exercises
+    val exerciseSummary = programWithExercises.exercises
         .sortedBy { it.programExercise.orderIndex }
-    val exerciseNames = sortedExercises.take(3).joinToString(", ") { it.exercise.name }
-    val moreCount = (sortedExercises.size - 3).coerceAtLeast(0)
-    val summary = exerciseNames + if (moreCount > 0) " +$moreCount more" else ""
+        .joinToString(", ") { it.exercise.name }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -218,10 +216,10 @@ private fun ProgramItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (summary.isNotBlank()) {
+            if (exerciseSummary.isNotBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = summary,
+                    text = exerciseSummary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

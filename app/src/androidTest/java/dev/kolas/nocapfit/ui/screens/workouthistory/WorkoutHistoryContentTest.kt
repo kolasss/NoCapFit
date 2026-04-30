@@ -173,7 +173,7 @@ class WorkoutHistoryContentTest {
     }
 
     @Test
-    fun moreThanThreeExercises_showsMoreCount() {
+    fun moreThanThreeExercises_showsAllNames() {
         val workout = testWorkout(
             exerciseNames = listOf("Bench", "OHP", "Flyes", "Dips")
         )
@@ -189,6 +189,7 @@ class WorkoutHistoryContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Bench, OHP, Flyes +1 more").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Bench, OHP, Flyes, Dips").assertIsDisplayed()
+        composeTestRule.onNodeWithText("more", substring = true).assertDoesNotExist()
     }
 }

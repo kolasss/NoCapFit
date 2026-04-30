@@ -131,16 +131,9 @@ internal fun ProgramListItem(
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val sortedExercises = programWithExercises.exercises
+    val exerciseSummary = programWithExercises.exercises
         .sortedBy { it.programExercise.orderIndex }
-    val exerciseCount = sortedExercises.size
-    val exerciseNames = sortedExercises.take(3).joinToString(", ") { it.exercise.name }
-    val moreSuffix = if (exerciseCount > 3) " +${exerciseCount - 3} more" else ""
-    val exerciseSummary = if (exerciseNames.isBlank()) {
-        "$exerciseCount exercise${if (exerciseCount != 1) "s" else ""}"
-    } else {
-        exerciseNames + moreSuffix
-    }
+        .joinToString(", ") { it.exercise.name }
 
     Column(
         modifier = modifier
@@ -160,12 +153,14 @@ internal fun ProgramListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = exerciseSummary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (exerciseSummary.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = exerciseSummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Box {
                 var showMenu by remember { mutableStateOf(false) }

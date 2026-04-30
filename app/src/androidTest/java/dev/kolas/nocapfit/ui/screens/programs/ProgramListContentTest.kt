@@ -90,7 +90,7 @@ class ProgramListContentTest {
     }
 
     @Test
-    fun moreThanThreeExercises_showsMoreCount() {
+    fun moreThanThreeExercises_showsAllNames() {
         val program = testProgram(
             exerciseNames = listOf("Bench Press", "OHP", "Flyes", "Dips")
         )
@@ -104,25 +104,8 @@ class ProgramListContentTest {
             )
         }
 
-        composeTestRule.onNodeWithText("+1 more", substring = true).assertIsDisplayed()
-    }
-
-    @Test
-    fun threeOrFewerExercises_doesNotShowMoreCount() {
-        val program = testProgram(
-            exerciseNames = listOf("Bench Press", "OHP", "Flyes")
-        )
-
-        composeTestRule.setThemedContent {
-            ProgramListItem(
-                programWithExercises = program,
-                onEdit = {},
-                onCopy = {},
-                onDeleteRequest = {}
-            )
-        }
-
-        composeTestRule.onNodeWithText("+", substring = true).assertDoesNotExist()
+        composeTestRule.onNodeWithText("Bench Press, OHP, Flyes, Dips").assertIsDisplayed()
+        composeTestRule.onNodeWithText("more", substring = true).assertDoesNotExist()
     }
 
     @Test

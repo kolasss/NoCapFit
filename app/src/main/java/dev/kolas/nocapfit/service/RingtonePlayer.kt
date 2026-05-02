@@ -5,7 +5,7 @@ import android.media.AudioAttributes
 import android.media.RingtoneManager
 import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.kolas.nocapfit.util.NOTIFICATION_SOUND_SILENT
+import dev.kolas.nocapfit.util.SOUND_URI_SILENT
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +15,7 @@ class RingtonePlayer @Inject constructor(
 ) {
     fun play(savedUri: String?) {
         try {
-            if (savedUri == NOTIFICATION_SOUND_SILENT) return
+            if (savedUri == SOUND_URI_SILENT) return
             val uri = savedUri?.toUri() ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val ringtone = uri?.let { RingtoneManager.getRingtone(context, it) } ?: return
             ringtone.audioAttributes = AudioAttributes.Builder()

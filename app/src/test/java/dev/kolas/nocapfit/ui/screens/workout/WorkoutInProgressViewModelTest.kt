@@ -47,7 +47,7 @@ class WorkoutInProgressViewModelTest {
     }
     private val ringtonePlayer = mockk<RingtonePlayer>(relaxUnitFun = true)
     private val themePreferences = mockk<ThemePreferences> {
-        every { setCompletionSoundUri } returns flowOf(null)
+        every { completionSoundUri } returns flowOf(null)
     }
 
     private val testWorkout = Workout(id = 1L, profileId = 1L, startTime = 1000L)
@@ -125,7 +125,7 @@ class WorkoutInProgressViewModelTest {
     @Test
     fun completeSet_playsConfiguredSoundOnce() = runTest {
         val pickedUri = "content://media/internal/audio/media/42"
-        every { themePreferences.setCompletionSoundUri } returns flowOf(pickedUri)
+        every { themePreferences.completionSoundUri } returns flowOf(pickedUri)
 
         val viewModel = createViewModel()
 
@@ -143,6 +143,36 @@ class WorkoutInProgressViewModelTest {
         viewModel.revertSet(10L)
 
         coVerify(exactly = 0) { ringtonePlayer.play(any()) }
+    }
+
+    @Test
+    fun completeSet_isNoOpWhenAlreadyCompleted() = runTest {
+        val completedWorkout = testWorkoutWithExercises.copy(
+            exercises = listOf(
+                testExercise1.copy(sets = listOf(testSet.copy(completed = true))),
+                testExercise2
+            )
+        )
+        coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(completedWorkout)
+        coEvery { workoutRepository.getWithExercises(1L) } returns completedWorkout
+        val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
+        val viewModel = WorkoutInProgressViewModel(
+            workoutRepository,
+            timerRepository,
+            exerciseRepository,
+            CurrentProfileHolder(profileRepository),
+            savedStateHandle,
+            timerCoordinator,
+            ringtonePlayer,
+            themePreferences
+        )
+
+        viewModel.workout.test { awaitItem() }
+        viewModel.completeSet(10L, 60)
+
+        coVerify(exactly = 0) { workoutRepository.updateWorkoutSet(any()) }
+        coVerify(exactly = 0) { ringtonePlayer.play(any()) }
+        coVerify(exactly = 0) { timerCoordinator.startTimer(any(), any(), any()) }
     }
 
     @Test

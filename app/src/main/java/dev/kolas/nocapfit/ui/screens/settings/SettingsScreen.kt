@@ -50,7 +50,7 @@ import dev.kolas.nocapfit.BuildConfig
 import dev.kolas.nocapfit.data.preferences.ThemeMode
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.SectionHeader
-import dev.kolas.nocapfit.util.NOTIFICATION_SOUND_SILENT
+import dev.kolas.nocapfit.util.SOUND_URI_SILENT
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -68,7 +68,7 @@ fun SettingsScreen(
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val backupEvent by viewModel.backupEvent.collectAsState()
     val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
-    val setCompletionSoundUri by viewModel.setCompletionSoundUri.collectAsState()
+    val completionSoundUri by viewModel.completionSoundUri.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -98,17 +98,17 @@ fun SettingsScreen(
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val pickedUri = result.data
                 ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-            viewModel.setNotificationSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
+            viewModel.setNotificationSoundUri(pickedUri?.toString() ?: SOUND_URI_SILENT)
         }
     }
 
-    val setCompletionRingtoneLauncher = rememberLauncherForActivityResult(
+    val completionRingtoneLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             val pickedUri = result.data
                 ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-            viewModel.setSetCompletionSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
+            viewModel.setCompletionSoundUri(pickedUri?.toString() ?: SOUND_URI_SILENT)
         }
     }
 
@@ -148,9 +148,9 @@ fun SettingsScreen(
             onTimerSoundClick = {
                 ringtoneLauncher.launch(createRingtonePickerIntent(notificationSoundUri))
             },
-            setCompletionSoundUri = setCompletionSoundUri,
-            onSetCompletionSoundClick = {
-                setCompletionRingtoneLauncher.launch(createRingtonePickerIntent(setCompletionSoundUri))
+            completionSoundUri = completionSoundUri,
+            onCompletionSoundClick = {
+                completionRingtoneLauncher.launch(createRingtonePickerIntent(completionSoundUri))
             },
             isBackupInProgress = backupEvent is BackupEvent.Exporting ||
                 backupEvent is BackupEvent.Importing,
@@ -237,8 +237,8 @@ internal fun SettingsContent(
     onDynamicColorChange: (Boolean) -> Unit,
     notificationSoundUri: String?,
     onTimerSoundClick: () -> Unit,
-    setCompletionSoundUri: String?,
-    onSetCompletionSoundClick: () -> Unit,
+    completionSoundUri: String?,
+    onCompletionSoundClick: () -> Unit,
     isBackupInProgress: Boolean,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -270,8 +270,8 @@ internal fun SettingsContent(
 
         SoundPickerItem(
             headline = "Set Completion Sound",
-            soundUri = setCompletionSoundUri,
-            onClick = onSetCompletionSoundClick
+            soundUri = completionSoundUri,
+            onClick = onCompletionSoundClick
         )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -358,7 +358,7 @@ private fun createRingtonePickerIntent(currentUri: String?): Intent {
         putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
         val existingUri = when (currentUri) {
             null -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            NOTIFICATION_SOUND_SILENT -> null
+            SOUND_URI_SILENT -> null
             else -> currentUri.toUri()
         }
         putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existingUri)
@@ -425,7 +425,7 @@ private fun SoundPickerItem(headline: String, soundUri: String?, onClick: () -> 
     val soundName = remember(soundUri) {
         when (soundUri) {
             null -> "Default"
-            NOTIFICATION_SOUND_SILENT -> "Silent"
+            SOUND_URI_SILENT -> "Silent"
             else -> try {
                 val uri = soundUri.toUri()
                 RingtoneManager.getRingtone(context, uri)?.getTitle(context) ?: "Unknown"

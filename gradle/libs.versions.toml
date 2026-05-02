@@ -16,7 +16,7 @@ coroutinesTest = "1.10.2"
 turbine = "1.2.1"
 mockk = "1.14.9"
 detekt = "1.23.8"
-detektComposeRules = "0.5.7"
+detektComposeRules = "0.5.8"
 markdownRenderer = "0.40.2"
 
 [libraries]

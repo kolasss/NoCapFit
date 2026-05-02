@@ -39,7 +39,7 @@ class SettingsViewModel @Inject constructor(
     val notificationSoundUri: StateFlow<String?> = themePreferences.notificationSoundUri
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val setCompletionSoundUri: StateFlow<String?> = themePreferences.setCompletionSoundUri
+    val completionSoundUri: StateFlow<String?> = themePreferences.completionSoundUri
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _backupEvent = MutableStateFlow<BackupEvent>(BackupEvent.Idle)
@@ -63,9 +63,9 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setSetCompletionSoundUri(uri: String?) {
+    fun setCompletionSoundUri(uri: String?) {
         viewModelScope.launch {
-            themePreferences.setSetCompletionSoundUri(uri)
+            themePreferences.setCompletionSoundUri(uri)
         }
     }
 

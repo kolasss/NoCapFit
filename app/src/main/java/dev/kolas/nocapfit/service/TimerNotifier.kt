@@ -3,15 +3,11 @@ package dev.kolas.nocapfit.service
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
-import android.media.AudioAttributes
-import android.media.RingtoneManager
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kolas.nocapfit.R
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
-import dev.kolas.nocapfit.util.NOTIFICATION_SOUND_SILENT
 import dev.kolas.nocapfit.util.VIBRATION_DURATION_MS
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -20,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class TimerNotifier @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val themePreferences: ThemePreferences
+    private val themePreferences: ThemePreferences,
+    private val ringtonePlayer: RingtonePlayer
 ) {
     suspend fun notifyCompletion() {
         playSound()
@@ -29,17 +26,7 @@ class TimerNotifier @Inject constructor(
     }
 
     private suspend fun playSound() {
-        try {
-            val savedUri = themePreferences.notificationSoundUri.first()
-            if (savedUri == NOTIFICATION_SOUND_SILENT) return
-            val uri = savedUri?.toUri() ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = uri?.let { RingtoneManager.getRingtone(context, it) }
-            ringtone?.audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-            ringtone?.play()
-        } catch (_: Exception) { }
+        ringtonePlayer.play(themePreferences.notificationSoundUri.first())
     }
 
     private fun vibrate() {

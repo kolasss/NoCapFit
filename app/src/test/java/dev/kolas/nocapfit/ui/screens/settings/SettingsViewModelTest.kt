@@ -29,6 +29,7 @@ class SettingsViewModelTest {
     private fun createViewModel(): SettingsViewModel {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { themePreferences.notificationSoundUri } returns flowOf(null)
+        every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
         return SettingsViewModel(themePreferences, backupManager)
     }
@@ -37,6 +38,7 @@ class SettingsViewModelTest {
     fun themeMode_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.DARK)
         every { themePreferences.notificationSoundUri } returns flowOf(null)
+        every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
 
         val viewModel = SettingsViewModel(themePreferences, backupManager)
@@ -144,6 +146,7 @@ class SettingsViewModelTest {
     fun notificationSoundUri_emitsValueFromPreferences() = runTest {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { themePreferences.notificationSoundUri } returns flowOf("content://some/sound")
+        every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
 
         val viewModel = SettingsViewModel(themePreferences, backupManager)
@@ -159,5 +162,27 @@ class SettingsViewModelTest {
         viewModel.setNotificationSoundUri("content://new/sound")
 
         coVerify { themePreferences.setNotificationSoundUri("content://new/sound") }
+    }
+
+    @Test
+    fun completionSoundUri_emitsValueFromPreferences() = runTest {
+        every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
+        every { themePreferences.notificationSoundUri } returns flowOf(null)
+        every { themePreferences.completionSoundUri } returns flowOf("content://set/sound")
+        every { themePreferences.dynamicColor } returns flowOf(false)
+
+        val viewModel = SettingsViewModel(themePreferences, backupManager)
+
+        viewModel.completionSoundUri.test {
+            assertEquals("content://set/sound", awaitItem())
+        }
+    }
+
+    @Test
+    fun setCompletionSoundUri_callsPreferences() = runTest {
+        val viewModel = createViewModel()
+        viewModel.setCompletionSoundUri("content://new/set/sound")
+
+        coVerify { themePreferences.setCompletionSoundUri("content://new/set/sound") }
     }
 }

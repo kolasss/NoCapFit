@@ -68,6 +68,7 @@ fun SettingsScreen(
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val backupEvent by viewModel.backupEvent.collectAsState()
     val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
+    val setCompletionSoundUri by viewModel.setCompletionSoundUri.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -98,6 +99,16 @@ fun SettingsScreen(
             val pickedUri = result.data
                 ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
             viewModel.setNotificationSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
+        }
+    }
+
+    val setCompletionRingtoneLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val pickedUri = result.data
+                ?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+            viewModel.setSetCompletionSoundUri(pickedUri?.toString() ?: NOTIFICATION_SOUND_SILENT)
         }
     }
 
@@ -136,6 +147,10 @@ fun SettingsScreen(
             notificationSoundUri = notificationSoundUri,
             onTimerSoundClick = {
                 ringtoneLauncher.launch(createRingtonePickerIntent(notificationSoundUri))
+            },
+            setCompletionSoundUri = setCompletionSoundUri,
+            onSetCompletionSoundClick = {
+                setCompletionRingtoneLauncher.launch(createRingtonePickerIntent(setCompletionSoundUri))
             },
             isBackupInProgress = backupEvent is BackupEvent.Exporting ||
                 backupEvent is BackupEvent.Importing,
@@ -222,6 +237,8 @@ internal fun SettingsContent(
     onDynamicColorChange: (Boolean) -> Unit,
     notificationSoundUri: String?,
     onTimerSoundClick: () -> Unit,
+    setCompletionSoundUri: String?,
+    onSetCompletionSoundClick: () -> Unit,
     isBackupInProgress: Boolean,
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
@@ -245,9 +262,16 @@ internal fun SettingsContent(
 
         SectionHeader(text = "Notifications")
 
-        TimerSoundItem(
+        SoundPickerItem(
+            headline = "Timer Sound",
             soundUri = notificationSoundUri,
             onClick = onTimerSoundClick
+        )
+
+        SoundPickerItem(
+            headline = "Set Completion Sound",
+            soundUri = setCompletionSoundUri,
+            onClick = onSetCompletionSoundClick
         )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -396,7 +420,7 @@ private fun ThemeSection(
 }
 
 @Composable
-private fun TimerSoundItem(soundUri: String?, onClick: () -> Unit) {
+private fun SoundPickerItem(headline: String, soundUri: String?, onClick: () -> Unit) {
     val context = LocalContext.current
     val soundName = remember(soundUri) {
         when (soundUri) {
@@ -412,7 +436,7 @@ private fun TimerSoundItem(soundUri: String?, onClick: () -> Unit) {
     }
 
     ListItem(
-        headlineContent = { Text("Timer Sound") },
+        headlineContent = { Text(headline) },
         supportingContent = { Text(soundName) },
         modifier = Modifier.clickable(onClick = onClick)
     )

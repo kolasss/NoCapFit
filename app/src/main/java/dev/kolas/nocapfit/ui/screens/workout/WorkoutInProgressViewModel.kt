@@ -8,10 +8,12 @@ import dev.kolas.nocapfit.data.db.entity.Exercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutSet
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
+import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import dev.kolas.nocapfit.data.session.CurrentProfileHolder
+import dev.kolas.nocapfit.service.RingtonePlayer
 import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.model.PreviousSetData
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
@@ -21,13 +23,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WorkoutInProgressViewModel @Inject constructor(
@@ -36,7 +39,9 @@ class WorkoutInProgressViewModel @Inject constructor(
     private val exerciseRepository: ExerciseRepository,
     currentProfileHolder: CurrentProfileHolder,
     savedStateHandle: SavedStateHandle,
-    private val timerCoordinator: TimerCoordinator
+    private val timerCoordinator: TimerCoordinator,
+    private val ringtonePlayer: RingtonePlayer,
+    private val themePreferences: ThemePreferences
 ) : ViewModel() {
 
     val workoutId: Long = savedStateHandle.get<Long>("workoutId") ?: -1L
@@ -95,6 +100,7 @@ class WorkoutInProgressViewModel @Inject constructor(
             val workoutData = workout.value ?: return@launch
             val set = findSet(workoutSetId) ?: return@launch
             workoutRepository.updateWorkoutSet(set.copy(completed = true))
+            ringtonePlayer.play(themePreferences.setCompletionSoundUri.first())
             if (restTimeSeconds > 0) {
                 timerCoordinator.startTimer(
                     workoutId = workoutData.workout.id,

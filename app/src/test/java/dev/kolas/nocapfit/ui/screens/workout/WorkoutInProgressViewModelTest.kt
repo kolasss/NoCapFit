@@ -8,14 +8,17 @@ import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutSet
 import dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
+import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
 import dev.kolas.nocapfit.data.repository.ProfileRepository
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import dev.kolas.nocapfit.data.session.CurrentProfileHolder
+import dev.kolas.nocapfit.service.RingtonePlayer
 import dev.kolas.nocapfit.service.TimerCoordinator
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -41,6 +44,10 @@ class WorkoutInProgressViewModelTest {
     private val timerCoordinator = mockk<TimerCoordinator>(relaxUnitFun = true) {
         coEvery { timerState } returns MutableStateFlow(TimerCoordinator.TimerUiState.Idle)
         coEvery { reconstructState() } returns Unit
+    }
+    private val ringtonePlayer = mockk<RingtonePlayer>(relaxUnitFun = true)
+    private val themePreferences = mockk<ThemePreferences> {
+        every { setCompletionSoundUri } returns flowOf(null)
     }
 
     private val testWorkout = Workout(id = 1L, profileId = 1L, startTime = 1000L)
@@ -94,7 +101,9 @@ class WorkoutInProgressViewModelTest {
             exerciseRepository,
             CurrentProfileHolder(profileRepository),
             savedStateHandle,
-            timerCoordinator
+            timerCoordinator,
+            ringtonePlayer,
+            themePreferences
         )
     }
 
@@ -111,6 +120,29 @@ class WorkoutInProgressViewModelTest {
         coVerify {
             timerCoordinator.startTimer(workoutId = 1L, workoutSetId = 10L, durationSeconds = 60)
         }
+    }
+
+    @Test
+    fun completeSet_playsConfiguredSoundOnce() = runTest {
+        val pickedUri = "content://media/internal/audio/media/42"
+        every { themePreferences.setCompletionSoundUri } returns flowOf(pickedUri)
+
+        val viewModel = createViewModel()
+
+        viewModel.workout.test { awaitItem() }
+        viewModel.completeSet(10L, 60)
+
+        coVerify(exactly = 1) { ringtonePlayer.play(pickedUri) }
+    }
+
+    @Test
+    fun revertSet_doesNotPlaySound() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.workout.test { awaitItem() }
+        viewModel.revertSet(10L)
+
+        coVerify(exactly = 0) { ringtonePlayer.play(any()) }
     }
 
     @Test
@@ -294,7 +326,9 @@ class WorkoutInProgressViewModelTest {
             exerciseRepository,
             CurrentProfileHolder(profileRepository),
             savedStateHandle,
-            timerCoordinator
+            timerCoordinator,
+            ringtonePlayer,
+            themePreferences
         )
 
         val prev = viewModel.previousSets.value

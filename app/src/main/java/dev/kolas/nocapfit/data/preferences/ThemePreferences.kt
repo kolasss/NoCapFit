@@ -22,6 +22,7 @@ class ThemePreferences @Inject constructor(
 ) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val notificationSoundUriKey = stringPreferencesKey("notification_sound_uri")
+    private val setCompletionSoundUriKey = stringPreferencesKey("set_completion_sound_uri")
     private val dynamicColorKey = booleanPreferencesKey("dynamic_color")
 
     val themeMode: Flow<ThemeMode> = dataStore.data.map { preferences ->
@@ -35,6 +36,10 @@ class ThemePreferences @Inject constructor(
 
     val notificationSoundUri: Flow<String?> = dataStore.data.map { preferences ->
         preferences[notificationSoundUriKey]
+    }
+
+    val setCompletionSoundUri: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[setCompletionSoundUriKey]
     }
 
     val dynamicColor: Flow<Boolean> = dataStore.data.map { preferences ->
@@ -59,6 +64,16 @@ class ThemePreferences @Inject constructor(
                 preferences[notificationSoundUriKey] = uri
             } else {
                 preferences.remove(notificationSoundUriKey)
+            }
+        }
+    }
+
+    suspend fun setSetCompletionSoundUri(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri != null) {
+                preferences[setCompletionSoundUriKey] = uri
+            } else {
+                preferences.remove(setCompletionSoundUriKey)
             }
         }
     }

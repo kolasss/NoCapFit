@@ -33,7 +33,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ExerciseCard
-import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
 import dev.kolas.nocapfit.ui.model.SetUiModel
 
@@ -189,7 +188,6 @@ private fun WorkoutEditExerciseItem(
     val id = exerciseWithSets.workoutExercise.id
     val sets = exerciseWithSets.sets
     val setsById = remember(sets) { sets.associateBy { it.id } }
-    var showNoteDialog by remember { mutableStateOf(false) }
     val setUiModels = remember(sets) {
         sets.map { ws ->
             SetUiModel(
@@ -225,16 +223,6 @@ private fun WorkoutEditExerciseItem(
         },
         showBottomDivider = index < lastIndex,
         note = exerciseWithSets.workoutExercise.note,
-        onEditNote = { showNoteDialog = true }
+        onUpdateNote = { note -> onUpdateNote(id, note) }
     )
-    if (showNoteDialog) {
-        ExerciseNoteDialog(
-            initialValue = exerciseWithSets.workoutExercise.note,
-            onConfirm = { note ->
-                onUpdateNote(id, note)
-                showNoteDialog = false
-            },
-            onDismiss = { showNoteDialog = false }
-        )
-    }
 }

@@ -53,9 +53,7 @@ import androidx.navigation.NavController
 import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.ExerciseCard
-import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.components.rememberTimerRemainingMs
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.SetUiModel
@@ -370,8 +368,6 @@ private fun ExerciseCardItem(
     onCancelTimer: () -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
-    var showRestTimeDialog by remember { mutableStateOf(false) }
-    var showNoteDialog by remember { mutableStateOf(false) }
     val id = exerciseWithSets.workoutExercise.id
     val exId = exerciseWithSets.workoutExercise.exerciseId
     val sets = exerciseWithSets.sets
@@ -427,7 +423,7 @@ private fun ExerciseCardItem(
         onRestTimeChange = { model, s ->
             setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
         },
-        onSetRestTimeForAll = { showRestTimeDialog = true },
+        onSetRestTimeForAll = { seconds -> onSetRestTimeForAll(id, seconds) },
         activeTimerSetId = activeTimer?.workoutSetId,
         timerEndAtEpochMs = activeTimer?.endAtEpochMs ?: 0L,
         timerTotalMs = activeTimer?.totalMs ?: 0L,
@@ -437,27 +433,8 @@ private fun ExerciseCardItem(
         onMoveDown = onMoveDown,
         showBottomDivider = index < lastIndex,
         note = exerciseWithSets.workoutExercise.note,
-        onEditNote = { showNoteDialog = true }
+        onUpdateNote = { note -> onUpdateNote(id, note) }
     )
-    if (showRestTimeDialog) {
-        RestTimeForAllDialog(
-            onDismiss = { showRestTimeDialog = false },
-            onConfirm = { seconds ->
-                onSetRestTimeForAll(id, seconds)
-                showRestTimeDialog = false
-            }
-        )
-    }
-    if (showNoteDialog) {
-        ExerciseNoteDialog(
-            initialValue = exerciseWithSets.workoutExercise.note,
-            onConfirm = { note ->
-                onUpdateNote(id, note)
-                showNoteDialog = false
-            },
-            onDismiss = { showNoteDialog = false }
-        )
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

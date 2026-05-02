@@ -36,9 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.ui.components.ExerciseCard
-import dev.kolas.nocapfit.ui.components.ExerciseNoteDialog
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.components.RestTimeForAllDialog
 import dev.kolas.nocapfit.ui.components.parseMmSsToSeconds
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
@@ -252,8 +250,6 @@ private fun ExerciseCardItem(
     onUpdateNote: (Int, String?) -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
-    var showRestTimeDialog by remember { mutableStateOf(false) }
-    var showNoteDialog by remember { mutableStateOf(false) }
     val exId = exerciseEntry.exercise.id
     val setUiModels = remember(exerciseEntry.sets, exId, previousSets) {
         exerciseEntry.sets.mapIndexed { setIndex, setEntry ->
@@ -300,7 +296,7 @@ private fun ExerciseCardItem(
             onUpdateSet(exerciseIndex, model.setIndex, entry.copy(restTimeSeconds = secondsToMmSsDigits(s)))
         },
         onRemoveSet = { model -> onRemoveSet(exerciseIndex, model.setIndex) },
-        onSetRestTimeForAll = { showRestTimeDialog = true },
+        onSetRestTimeForAll = { seconds -> onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds)) },
         onExerciseTitleClick = { onExerciseTitleClick(exId) },
         showComplete = false,
         showAddSetButton = true,
@@ -308,25 +304,6 @@ private fun ExerciseCardItem(
         onMoveDown = onMoveDown,
         showBottomDivider = exerciseIndex < lastIndex,
         note = exerciseEntry.note,
-        onEditNote = { showNoteDialog = true }
+        onUpdateNote = { note -> onUpdateNote(exerciseIndex, note) }
     )
-    if (showRestTimeDialog) {
-        RestTimeForAllDialog(
-            onDismiss = { showRestTimeDialog = false },
-            onConfirm = { seconds ->
-                onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds))
-                showRestTimeDialog = false
-            }
-        )
-    }
-    if (showNoteDialog) {
-        ExerciseNoteDialog(
-            initialValue = exerciseEntry.note,
-            onConfirm = { note ->
-                onUpdateNote(exerciseIndex, note)
-                showNoteDialog = false
-            },
-            onDismiss = { showNoteDialog = false }
-        )
-    }
 }

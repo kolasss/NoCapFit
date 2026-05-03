@@ -5,13 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -37,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -47,9 +44,9 @@ import com.mikepenz.markdown.model.markdownPadding
 import dev.kolas.nocapfit.data.db.entity.Exercise
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
+import dev.kolas.nocapfit.ui.components.SetSummaryRow
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatDateTime
-import dev.kolas.nocapfit.ui.util.formatWeightDisplay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -256,27 +253,11 @@ private fun ExerciseHistoryItem(
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     completedSets.forEach { set ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "${set.setIndex + 1}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(24.dp)
-                            )
-                            Text(
-                                text = "${formatWeightDisplay(set.weightThousandths)} kg",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.End,
-                                modifier = Modifier.width(80.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = "× ${set.reps}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        SetSummaryRow(
+                            setNumber = set.setIndex + 1,
+                            weightThousandths = set.weightThousandths,
+                            reps = set.reps
+                        )
                     }
                 }
             }

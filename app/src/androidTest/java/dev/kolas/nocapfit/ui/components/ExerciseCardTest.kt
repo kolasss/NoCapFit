@@ -7,6 +7,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import dev.kolas.nocapfit.setThemedContent
 import dev.kolas.nocapfit.ui.model.SetUiModel
+import dev.kolas.nocapfit.util.DEFAULT_REST_TIME_SECONDS
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -157,7 +160,6 @@ class ExerciseCardTest {
 
     @Test
     fun overflowMenu_showsAddNote_whenNoteBlank() {
-        var noteClicked = false
         composeTestRule.setThemedContent {
             ExerciseCard(
                 exerciseName = "Bench Press",
@@ -168,20 +170,17 @@ class ExerciseCardTest {
                 onRepsChange = { _, _ -> },
                 onToggleComplete = {},
                 note = null,
-                onEditNote = { noteClicked = true }
+                onUpdateNote = {}
             )
         }
 
         composeTestRule.onNodeWithContentDescription("More").performClick()
         composeTestRule.onNodeWithText("Edit Note").assertDoesNotExist()
         composeTestRule.onNodeWithText("Add Note").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Add Note").performClick()
-        assertTrue(noteClicked)
     }
 
     @Test
     fun overflowMenu_showsEditNote_whenNoteSet() {
-        var noteClicked = false
         composeTestRule.setThemedContent {
             ExerciseCard(
                 exerciseName = "Bench Press",
@@ -192,19 +191,17 @@ class ExerciseCardTest {
                 onRepsChange = { _, _ -> },
                 onToggleComplete = {},
                 note = "keep elbows tucked",
-                onEditNote = { noteClicked = true }
+                onUpdateNote = {}
             )
         }
 
         composeTestRule.onNodeWithContentDescription("More").performClick()
         composeTestRule.onNodeWithText("Add Note").assertDoesNotExist()
         composeTestRule.onNodeWithText("Edit Note").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Edit Note").performClick()
-        assertTrue(noteClicked)
     }
 
     @Test
-    fun overflowMenu_hidesNoteItem_whenOnEditNoteNull() {
+    fun overflowMenu_hidesNoteItem_whenOnUpdateNoteNull() {
         composeTestRule.setThemedContent {
             ExerciseCard(
                 exerciseName = "Bench Press",
@@ -220,5 +217,73 @@ class ExerciseCardTest {
         composeTestRule.onNodeWithContentDescription("More").performClick()
         composeTestRule.onNodeWithText("Add Note").assertDoesNotExist()
         composeTestRule.onNodeWithText("Edit Note").assertDoesNotExist()
+    }
+
+    @Test
+    fun editNoteMenuItem_opensDialog_andSavingInvokesCallback() {
+        var savedNote: String? = "unset"
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = "keep elbows tucked",
+                onUpdateNote = { savedNote = it }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Edit Note").performClick()
+        composeTestRule.onNodeWithText("Save").performClick()
+        assertEquals("keep elbows tucked", savedNote)
+    }
+
+    @Test
+    fun addNoteMenuItem_opensDialog_andSavingBlankInvokesNullCallback() {
+        var savedNote: String? = "unset"
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                note = null,
+                onUpdateNote = { savedNote = it }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Add Note").performClick()
+        composeTestRule.onNodeWithText("Save").performClick()
+        assertNull(savedNote)
+    }
+
+    @Test
+    fun setRestTimeForAllMenuItem_opensDialog_andApplyInvokesCallback() {
+        var seconds: Int? = null
+        composeTestRule.setThemedContent {
+            ExerciseCard(
+                exerciseName = "Bench Press",
+                sets = listOf(testSet(0)),
+                onRemoveExercise = {},
+                onAddSet = {},
+                onWeightChange = { _, _ -> },
+                onRepsChange = { _, _ -> },
+                onToggleComplete = {},
+                onSetRestTimeForAll = { seconds = it }
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("More").performClick()
+        composeTestRule.onNodeWithText("Set Rest Time for All Sets").performClick()
+        composeTestRule.onNodeWithText("Apply").performClick()
+        assertEquals(DEFAULT_REST_TIME_SECONDS, seconds)
     }
 }

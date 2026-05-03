@@ -49,7 +49,7 @@ fun ExerciseCard(
     onToggleComplete: ((SetUiModel) -> Unit)? = null,
     onRestTimeChange: ((SetUiModel, Int) -> Unit)? = null,
     onRemoveSet: ((SetUiModel) -> Unit)? = null,
-    onSetRestTimeForAll: (() -> Unit)? = null,
+    onSetRestTimeForAll: ((Int) -> Unit)? = null,
     onExerciseTitleClick: (() -> Unit)? = null,
     activeTimerSetId: Long? = null,
     timerEndAtEpochMs: Long = 0L,
@@ -61,9 +61,11 @@ fun ExerciseCard(
     onMoveDown: (() -> Unit)? = null,
     showBottomDivider: Boolean = false,
     note: String? = null,
-    onEditNote: (() -> Unit)? = null
+    onUpdateNote: ((String?) -> Unit)? = null
 ) {
     var showRemoveDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
+    var showRestTimeDialog by remember { mutableStateOf(false) }
     val dividerColor = MaterialTheme.colorScheme.outlineVariant
     val dividerPx = with(LocalDensity.current) { 1.dp.toPx() }
 
@@ -87,8 +89,16 @@ fun ExerciseCard(
             onRemoveExercise = { showRemoveDialog = true },
             onMoveUp = onMoveUp,
             onMoveDown = onMoveDown,
-            onSetRestTimeForAll = onSetRestTimeForAll,
-            onEditNote = onEditNote,
+            onSetRestTimeForAll = if (onSetRestTimeForAll != null) {
+                { showRestTimeDialog = true }
+            } else {
+                null
+            },
+            onEditNote = if (onUpdateNote != null) {
+                { showNoteDialog = true }
+            } else {
+                null
+            },
             hasNote = !note.isNullOrBlank(),
             showAddSetMenuItem = !showAddSetButton,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp)
@@ -158,6 +168,27 @@ fun ExerciseCard(
         },
         onDismiss = { showRemoveDialog = false }
     )
+
+    if (showNoteDialog && onUpdateNote != null) {
+        ExerciseNoteDialog(
+            initialValue = note,
+            onConfirm = { newNote ->
+                showNoteDialog = false
+                onUpdateNote(newNote)
+            },
+            onDismiss = { showNoteDialog = false }
+        )
+    }
+
+    if (showRestTimeDialog && onSetRestTimeForAll != null) {
+        RestTimeForAllDialog(
+            onDismiss = { showRestTimeDialog = false },
+            onConfirm = { seconds ->
+                showRestTimeDialog = false
+                onSetRestTimeForAll(seconds)
+            }
+        )
+    }
 }
 
 @Composable

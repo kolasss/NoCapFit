@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +41,9 @@ import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
 import dev.kolas.nocapfit.ui.components.parseMmSsToSeconds
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
+import dev.kolas.nocapfit.ui.model.PreviousTextsForExercise
 import dev.kolas.nocapfit.ui.model.SetUiModel
-import dev.kolas.nocapfit.ui.model.formatPreviousSet
+import dev.kolas.nocapfit.ui.model.buildPreviousTextsByExercise
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatWeightInput
 import dev.kolas.nocapfit.ui.util.parseWeight
@@ -134,6 +136,9 @@ internal fun ProgramFormContent(
             CircularProgressIndicator()
         }
     } else {
+        val previousTextsByExercise = remember(previousSets) {
+            buildPreviousTextsByExercise(previousSets)
+        }
         LazyColumn(
             modifier = modifier.fillMaxSize()
         ) {
@@ -175,8 +180,7 @@ internal fun ProgramFormContent(
                     exerciseIndex = exerciseIndex,
                     exerciseEntry = exerciseEntry,
                     lastIndex = uiState.exercises.lastIndex,
-                    exerciseCount = uiState.exercises.size,
-                    previousSets = previousSets,
+                    previousTexts = previousTextsByExercise.forExercise(exerciseEntry.exercise.id),
                     onMoveExercise = onMoveExercise,
                     onRemoveExercise = onRemoveExercise,
                     onAddSet = onAddSet,
@@ -239,8 +243,7 @@ private fun ExerciseCardItem(
     exerciseIndex: Int,
     exerciseEntry: ExerciseEntry,
     lastIndex: Int,
-    exerciseCount: Int,
-    previousSets: PreviousSetLookup,
+    previousTexts: PreviousTextsForExercise,
     onMoveExercise: (Int, Int) -> Unit,
     onRemoveExercise: (Int) -> Unit,
     onAddSet: (Int) -> Unit,
@@ -251,7 +254,7 @@ private fun ExerciseCardItem(
     onExerciseTitleClick: (Long) -> Unit
 ) {
     val exId = exerciseEntry.exercise.id
-    val setUiModels = remember(exerciseEntry.sets, exId, previousSets) {
+    val setUiModels = remember(exerciseEntry.sets, previousTexts) {
         exerciseEntry.sets.mapIndexed { setIndex, setEntry ->
             SetUiModel(
                 id = setIndex.toLong(),
@@ -260,50 +263,107 @@ private fun ExerciseCardItem(
                 reps = setEntry.reps.toIntOrNull() ?: 0,
                 restTimeSeconds = parseMmSsToSeconds(setEntry.restTimeSeconds),
                 completed = false,
-                previousText = previousSets[exId to setIndex]?.let { formatPreviousSet(it) }
+                previousText = previousTexts[setIndex]
             )
         }
     }
-    val onMoveUp = remember(exerciseIndex) {
-        if (exerciseIndex > 0) {
-            { onMoveExercise(exerciseIndex, exerciseIndex - 1) }
+
+    val currentIndex by rememberUpdatedState(exerciseIndex)
+    val currentEntry by rememberUpdatedState(exerciseEntry)
+    val currentOnMoveExercise by rememberUpdatedState(onMoveExercise)
+    val currentOnRemoveExercise by rememberUpdatedState(onRemoveExercise)
+    val currentOnAddSet by rememberUpdatedState(onAddSet)
+    val currentOnRemoveSet by rememberUpdatedState(onRemoveSet)
+    val currentOnUpdateSet by rememberUpdatedState(onUpdateSet)
+    val currentOnSetRestTimeForAll by rememberUpdatedState(onSetRestTimeForAll)
+    val currentOnUpdateNote by rememberUpdatedState(onUpdateNote)
+    val currentOnExerciseTitleClick by rememberUpdatedState(onExerciseTitleClick)
+
+    val onAddSetCb = remember { { currentOnAddSet(currentIndex) } }
+    val onRemoveExerciseCb = remember { { currentOnRemoveExercise(currentIndex) } }
+    val onWeightChangeCb = remember<(SetUiModel, Int) -> Unit> {
+        {
+                model, w ->
+            val entry = currentEntry.sets[model.setIndex]
+            currentOnUpdateSet(currentIndex, model.setIndex, entry.copy(weight = formatWeightInput(w)))
+        }
+    }
+    val onRepsChangeCb = remember<(SetUiModel, Int) -> Unit> {
+        {
+                model, r ->
+            val entry = currentEntry.sets[model.setIndex]
+            currentOnUpdateSet(
+                currentIndex,
+                model.setIndex,
+                entry.copy(reps = if (r == 0) "" else r.toString())
+            )
+        }
+    }
+    val onRestTimeChangeCb = remember<(SetUiModel, Int) -> Unit> {
+        {
+                model, s ->
+            val entry = currentEntry.sets[model.setIndex]
+            currentOnUpdateSet(
+                currentIndex,
+                model.setIndex,
+                entry.copy(restTimeSeconds = secondsToMmSsDigits(s))
+            )
+        }
+    }
+    val onRemoveSetCb = remember<(SetUiModel) -> Unit> {
+        {
+                model ->
+            currentOnRemoveSet(currentIndex, model.setIndex)
+        }
+    }
+    val onSetRestTimeForAllCb = remember<(Int) -> Unit> {
+        {
+                seconds ->
+            currentOnSetRestTimeForAll(currentIndex, secondsToMmSsDigits(seconds))
+        }
+    }
+    val onExerciseTitleClickCb = remember { { currentOnExerciseTitleClick(exId) } }
+    val onUpdateNoteCb = remember<(String?) -> Unit> {
+        {
+                note ->
+            currentOnUpdateNote(currentIndex, note)
+        }
+    }
+
+    val canMoveUp = exerciseIndex > 0
+    val canMoveDown = exerciseIndex < lastIndex
+    val onMoveUp = remember(canMoveUp) {
+        if (canMoveUp) {
+            { currentOnMoveExercise(currentIndex, currentIndex - 1) }
         } else {
             null
         }
     }
-    val onMoveDown = remember(exerciseIndex, exerciseCount) {
-        if (exerciseIndex < lastIndex) {
-            { onMoveExercise(exerciseIndex, exerciseIndex + 1) }
+    val onMoveDown = remember(canMoveDown) {
+        if (canMoveDown) {
+            { currentOnMoveExercise(currentIndex, currentIndex + 1) }
         } else {
             null
         }
     }
+
     ExerciseCard(
         exerciseName = exerciseEntry.exercise.name,
         sets = setUiModels,
-        onAddSet = { onAddSet(exerciseIndex) },
-        onRemoveExercise = { onRemoveExercise(exerciseIndex) },
-        onWeightChange = { model, w ->
-            val entry = exerciseEntry.sets[model.setIndex]
-            onUpdateSet(exerciseIndex, model.setIndex, entry.copy(weight = formatWeightInput(w)))
-        },
-        onRepsChange = { model, r ->
-            val entry = exerciseEntry.sets[model.setIndex]
-            onUpdateSet(exerciseIndex, model.setIndex, entry.copy(reps = if (r == 0) "" else r.toString()))
-        },
-        onRestTimeChange = { model, s ->
-            val entry = exerciseEntry.sets[model.setIndex]
-            onUpdateSet(exerciseIndex, model.setIndex, entry.copy(restTimeSeconds = secondsToMmSsDigits(s)))
-        },
-        onRemoveSet = { model -> onRemoveSet(exerciseIndex, model.setIndex) },
-        onSetRestTimeForAll = { seconds -> onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds)) },
-        onExerciseTitleClick = { onExerciseTitleClick(exId) },
+        onAddSet = onAddSetCb,
+        onRemoveExercise = onRemoveExerciseCb,
+        onWeightChange = onWeightChangeCb,
+        onRepsChange = onRepsChangeCb,
+        onRestTimeChange = onRestTimeChangeCb,
+        onRemoveSet = onRemoveSetCb,
+        onSetRestTimeForAll = onSetRestTimeForAllCb,
+        onExerciseTitleClick = onExerciseTitleClickCb,
         showComplete = false,
         showAddSetButton = true,
         onMoveUp = onMoveUp,
         onMoveDown = onMoveDown,
-        showBottomDivider = exerciseIndex < lastIndex,
+        showBottomDivider = canMoveDown,
         note = exerciseEntry.note,
-        onUpdateNote = { note -> onUpdateNote(exerciseIndex, note) }
+        onUpdateNote = onUpdateNoteCb
     )
 }

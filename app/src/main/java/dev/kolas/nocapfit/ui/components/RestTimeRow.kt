@@ -96,29 +96,23 @@ fun RestTimeRow(
     val completedColor = MaterialTheme.colorScheme.primaryContainer
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val progressColor = MaterialTheme.colorScheme.tertiaryContainer
-    val coveredColor = MaterialTheme.colorScheme.onSurface
-    val density = LocalDensity.current
-    val transitionHalfPx = remember(density) { with(density) { 4.dp.toPx() } }
 
     var rowWindowLeft by remember { mutableFloatStateOf(0f) }
     var rowWidthPx by remember { mutableIntStateOf(0) }
-
-    val fillParams = FillOverlayParams(
-        fillProgress = fillProgress,
-        rowWindowLeft = rowWindowLeft,
-        rowWidthPx = rowWidthPx,
-        coveredColor = coveredColor,
-        transitionHalfPx = transitionHalfPx
-    )
+    val positionTracker = if (isTimerActive) {
+        Modifier.onGloballyPositioned { coords ->
+            rowWindowLeft = coords.positionInWindow().x
+            rowWidthPx = coords.size.width
+        }
+    } else {
+        Modifier
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(40.dp)
-            .onGloballyPositioned { coords ->
-                rowWindowLeft = coords.positionInWindow().x
-                rowWidthPx = coords.size.width
-            }
+            .then(positionTracker)
             .drawBehind {
                 drawRect(
                     if (isCompleted && !isTimerActive) completedColor else surfaceColor
@@ -136,17 +130,25 @@ fun RestTimeRow(
             isCompleted -> MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
-        RestTimeRowCenterContent(
-            isTimerActive = isTimerActive,
-            timerEndAtEpochMs = timerEndAtEpochMs,
-            remainingMs = remainingMs,
-            isCompleted = isCompleted,
-            onRestTimeChange = onRestTimeChange,
-            restTimeSeconds = restTimeSeconds,
-            accentTint = accentTint,
-            fillParams = fillParams,
-            modifier = Modifier.align(Alignment.Center)
-        )
+        if (isTimerActive) {
+            ActiveFillCenterContent(
+                timerEndAtEpochMs = timerEndAtEpochMs,
+                remainingMs = remainingMs,
+                fillProgress = fillProgress,
+                rowWindowLeft = rowWindowLeft,
+                rowWidthPx = rowWidthPx,
+                accentTint = accentTint,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else {
+            StaticCenterContent(
+                isCompleted = isCompleted,
+                onRestTimeChange = onRestTimeChange,
+                restTimeSeconds = restTimeSeconds,
+                accentTint = accentTint,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
         if (isTimerActive && onCancelTimer != null) {
             TextButton(
                 onClick = onCancelTimer,
@@ -161,19 +163,65 @@ fun RestTimeRow(
 }
 
 @Composable
-private fun RestTimeRowCenterContent(
-    isTimerActive: Boolean,
-    timerEndAtEpochMs: Long,
-    remainingMs: Long,
+private fun StaticCenterContent(
     isCompleted: Boolean,
     onRestTimeChange: ((Int) -> Unit)?,
     restTimeSeconds: Int,
     accentTint: Color,
-    fillParams: FillOverlayParams,
     modifier: Modifier = Modifier
 ) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Timer,
+            contentDescription = "Rest time",
+            tint = accentTint,
+            modifier = Modifier.size(18.dp)
+        )
+        if (!isCompleted && onRestTimeChange != null) {
+            RestTimeInput(
+                restTimeSeconds = restTimeSeconds,
+                onRestTimeChange = onRestTimeChange,
+                modifier = Modifier.width(60.dp)
+            )
+        } else {
+            Text(
+                text = formatMmSs(restTimeSeconds),
+                style = MaterialTheme.typography.bodyMedium,
+                color = accentTint
+            )
+        }
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun ActiveFillCenterContent(
+    timerEndAtEpochMs: Long,
+    remainingMs: Long,
+    fillProgress: Float,
+    rowWindowLeft: Float,
+    rowWidthPx: Int,
+    accentTint: Color,
+    modifier: Modifier = Modifier
+) {
+    val coveredColor = MaterialTheme.colorScheme.onSurface
+    val density = LocalDensity.current
+    val transitionHalfPx = remember(density) { with(density) { 4.dp.toPx() } }
+
     var iconWindowLeft by remember { mutableFloatStateOf(0f) }
     var iconWidthPx by remember { mutableIntStateOf(0) }
+
+    val fillParams = FillOverlayParams(
+        fillProgress = fillProgress,
+        rowWindowLeft = rowWindowLeft,
+        rowWidthPx = rowWidthPx,
+        coveredColor = coveredColor,
+        transitionHalfPx = transitionHalfPx
+    )
     val iconBrush = remember(fillParams, iconWindowLeft, iconWidthPx, accentTint) {
         buildFillGradientBrush(
             params = fillParams,
@@ -181,16 +229,6 @@ private fun RestTimeRowCenterContent(
             childWidthPx = iconWidthPx,
             originalColor = accentTint
         )
-    }
-    val iconOverlay = if (fillParams.fillProgress > 0f) {
-        Modifier
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithContent {
-                drawContent()
-                drawRect(brush = iconBrush, blendMode = BlendMode.SrcAtop)
-            }
-    } else {
-        Modifier
     }
     Row(
         modifier = modifier,
@@ -205,29 +243,18 @@ private fun RestTimeRowCenterContent(
                 .size(18.dp)
                 .onGloballyPositioned { iconWindowLeft = it.positionInWindow().x }
                 .onSizeChanged { iconWidthPx = it.width }
-                .then(iconOverlay)
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(brush = iconBrush, blendMode = BlendMode.SrcAtop)
+                }
         )
-        when {
-            isTimerActive && timerEndAtEpochMs > 0 ->
-                RestTimerCountdown(
-                    remainingMs = remainingMs,
-                    color = accentTint,
-                    fillParams = fillParams
-                )
-
-            !isCompleted && onRestTimeChange != null ->
-                RestTimeInput(
-                    restTimeSeconds = restTimeSeconds,
-                    onRestTimeChange = onRestTimeChange,
-                    modifier = Modifier.width(60.dp)
-                )
-
-            else ->
-                Text(
-                    text = formatMmSs(restTimeSeconds),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = accentTint
-                )
+        if (timerEndAtEpochMs > 0) {
+            RestTimerCountdown(
+                remainingMs = remainingMs,
+                color = accentTint,
+                fillParams = fillParams
+            )
         }
     }
 }

@@ -22,7 +22,7 @@ fun InputDialog(
     singleLine: Boolean = true,
     allowEmpty: Boolean = false
 ) {
-    var value by remember { mutableStateOf(initialValue) }
+    var value by remember(initialValue) { mutableStateOf(initialValue) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },

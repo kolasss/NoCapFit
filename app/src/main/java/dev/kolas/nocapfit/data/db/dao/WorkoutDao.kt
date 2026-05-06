@@ -63,14 +63,22 @@ interface WorkoutDao {
     )
     suspend fun getLastFinishedByProgramId(programId: Long, excludeWorkoutId: Long): WorkoutWithExercises?
 
-    @Transaction
     @Query(
-        "SELECT * FROM workouts w " +
-            "INNER JOIN workout_exercises we ON w.id = we.workoutId " +
-            "WHERE we.exerciseId = :exerciseId AND w.endTime IS NOT NULL " +
-            "ORDER BY w.startTime DESC LIMIT 1"
+        "SELECT we.exerciseId AS exerciseId, ws.setIndex AS setIndex, " +
+            "ws.weightThousandths AS weightThousandths, ws.reps AS reps " +
+            "FROM workouts w " +
+            "INNER JOIN workout_exercises we ON we.workoutId = w.id " +
+            "INNER JOIN workout_sets ws ON ws.workoutExerciseId = we.id " +
+            "WHERE we.exerciseId IN (:exerciseIds) " +
+            "AND w.endTime IS NOT NULL " +
+            "AND ws.completed = 1 " +
+            "AND w.startTime = (" +
+            "  SELECT MAX(w2.startTime) FROM workouts w2 " +
+            "  INNER JOIN workout_exercises we2 ON we2.workoutId = w2.id " +
+            "  WHERE we2.exerciseId = we.exerciseId AND w2.endTime IS NOT NULL" +
+            ")"
     )
-    suspend fun getLastFinishedByExerciseId(exerciseId: Long): WorkoutWithExercises?
+    suspend fun getPreviousCompletedSets(exerciseIds: List<Long>): List<PreviousCompletedSet>
 
     @Query("SELECT * FROM workouts WHERE endTime IS NULL ORDER BY startTime DESC LIMIT 1")
     suspend fun getActiveWorkout(): Workout?

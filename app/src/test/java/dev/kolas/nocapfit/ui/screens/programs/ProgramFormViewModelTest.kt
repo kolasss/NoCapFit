@@ -39,7 +39,7 @@ class ProgramFormViewModelTest {
     private fun createViewModel(programId: Long = -1L): ProgramFormViewModel {
         coEvery { profileRepository.getDefault() } returns testProfile
         every { exerciseRepository.getAllByProfile(1L) } returns flowOf(listOf(testExercise))
-        coEvery { workoutRepository.getLastFinishedByExerciseId(any()) } returns null
+        coEvery { workoutRepository.getPreviousCompletedSets(any()) } returns emptyList()
 
         val savedStateHandle = SavedStateHandle(
             if (programId > 0) mapOf("programId" to programId) else emptyMap()

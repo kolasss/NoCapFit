@@ -74,25 +74,12 @@ class WorkoutInProgressViewModel @Inject constructor(
 
     private suspend fun loadPreviousWorkoutData() {
         val currentWorkout = workoutRepository.getWithExercises(workoutId) ?: return
-        val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
-        for (exercise in currentWorkout.exercises) {
-            loadPreviousForExercise(exercise.workoutExercise.exerciseId, map)
-        }
-        _previousSets.value = PreviousSetLookup(map)
-    }
-
-    private suspend fun loadPreviousForExercise(
-        exId: Long?,
-        map: MutableMap<Pair<Long, Int>, PreviousSetData>
-    ) {
-        exId ?: return
-        val previous = workoutRepository.getLastFinishedByExerciseId(exId) ?: return
-        val prevExercise = previous.exercises.find {
-            it.workoutExercise.exerciseId == exId
-        } ?: return
-        for (set in prevExercise.sets.filter { it.completed }) {
-            map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
-        }
+        val exerciseIds = currentWorkout.exercises.mapNotNull { it.workoutExercise.exerciseId }
+        if (exerciseIds.isEmpty()) return
+        val rows = workoutRepository.getPreviousCompletedSets(exerciseIds)
+        _previousSets.value = PreviousSetLookup(
+            rows.associate { it.exerciseId to it.setIndex to PreviousSetData(it.weightThousandths, it.reps) }
+        )
     }
 
     fun completeSet(workoutSetId: Long, restTimeSeconds: Int) {
@@ -175,11 +162,8 @@ class WorkoutInProgressViewModel @Inject constructor(
                     orderIndex = maxOrder + 1
                 )
             )
-            val prev = workoutRepository.getLastFinishedByExerciseId(exerciseId)
-                ?.exercises
-                ?.find { it.workoutExercise.exerciseId == exerciseId }
-                ?.sets
-                ?.find { it.setIndex == 0 && it.completed }
+            val prev = workoutRepository.getPreviousCompletedSets(listOf(exerciseId))
+                .find { it.setIndex == 0 }
             workoutRepository.insertWorkoutSet(
                 WorkoutSet(
                     workoutExerciseId = weId,

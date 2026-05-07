@@ -61,11 +61,10 @@ fun WorkoutHistoryScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val hasActiveWorkout by viewModel.hasActiveWorkout.collectAsState()
 
-    val finished = completedWorkouts.filter { it.workout.endTime != null }
-        .sortedByDescending { it.workout.startTime }
-
-    val grouped = remember(finished) {
-        finished.groupBy { formatMonth(it.workout.startTime) }
+    val grouped = remember(completedWorkouts) {
+        completedWorkouts
+            .filter { it.workout.endTime != null }
+            .groupBy { formatMonth(it.workout.startTime) }
     }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -99,7 +98,6 @@ fun WorkoutHistoryScreen(
     ) { padding ->
         WorkoutHistoryContent(
             isLoading = isLoading,
-            finished = finished,
             grouped = grouped,
             onStartWorkout = { navController.navigate(Screen.AddWorkout.route) },
             onWorkoutClick = { workoutId ->
@@ -114,7 +112,6 @@ fun WorkoutHistoryScreen(
 @Composable
 internal fun WorkoutHistoryContent(
     isLoading: Boolean,
-    finished: List<WorkoutWithExercises>,
     grouped: Map<String, List<WorkoutWithExercises>>,
     onStartWorkout: () -> Unit,
     onWorkoutClick: (Long) -> Unit,
@@ -130,7 +127,7 @@ internal fun WorkoutHistoryContent(
                 CircularProgressIndicator()
             }
         }
-        finished.isEmpty() -> {
+        grouped.isEmpty() -> {
             EmptyState(
                 icon = Icons.Default.History,
                 title = "No workouts yet",

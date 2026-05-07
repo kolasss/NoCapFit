@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
@@ -85,18 +86,10 @@ private fun MainContent(
                     currentRoute = currentRoute,
                     onResume = {
                         val id = activeWorkout?.id ?: return@MainBottomBar
-                        navController.navigate(Screen.WorkoutInProgress.createRoute(id)) {
-                            popUpTo(Screen.WorkoutHistory.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.navigateBottomNav(Screen.WorkoutInProgress.createRoute(id))
                     },
                     onNavigate = { screen ->
-                        navController.navigate(screen.route) {
-                            popUpTo(Screen.WorkoutHistory.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.navigateBottomNav(screen.route)
                     }
                 )
             }
@@ -111,6 +104,14 @@ private fun MainContent(
                 }
             }
         )
+    }
+}
+
+private fun NavController.navigateBottomNav(route: String) {
+    navigate(route) {
+        popUpTo(Screen.WorkoutHistory.route) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 

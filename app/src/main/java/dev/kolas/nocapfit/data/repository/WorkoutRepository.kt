@@ -1,5 +1,6 @@
 package dev.kolas.nocapfit.data.repository
 
+import dev.kolas.nocapfit.data.db.dao.PreviousCompletedSet
 import dev.kolas.nocapfit.data.db.dao.WorkoutDao
 import dev.kolas.nocapfit.data.db.entity.Workout
 import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
@@ -28,8 +29,8 @@ class WorkoutRepository @Inject constructor(
     fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>> = workoutDao.getAllWithExercises(
         profileId
     )
-    suspend fun getLastFinishedByExerciseId(exerciseId: Long): WorkoutWithExercises? =
-        workoutDao.getLastFinishedByExerciseId(exerciseId)
+    suspend fun getPreviousCompletedSets(exerciseIds: List<Long>): List<PreviousCompletedSet> =
+        if (exerciseIds.isEmpty()) emptyList() else workoutDao.getPreviousCompletedSets(exerciseIds)
     suspend fun getActiveWorkout(): Workout? = workoutDao.getActiveWorkout()
     fun getActiveWorkoutFlow(): Flow<Workout?> = workoutDao.getActiveWorkoutFlow()
     suspend fun insertWorkoutExercise(exercise: WorkoutExercise): Long = workoutDao.insertWorkoutExercise(exercise)

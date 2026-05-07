@@ -11,3 +11,11 @@ val MIGRATION_2_3 = Migration(2, 3) { db: SupportSQLiteDatabase ->
     db.execSQL("ALTER TABLE program_exercises ADD COLUMN note TEXT DEFAULT NULL")
     db.execSQL("ALTER TABLE workout_exercises ADD COLUMN note TEXT DEFAULT NULL")
 }
+
+val MIGRATION_3_4 = Migration(3, 4) { db: SupportSQLiteDatabase ->
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_workouts_programId ON workouts(programId)")
+    db.execSQL(
+        "CREATE INDEX IF NOT EXISTS index_workout_exercises_exerciseId " +
+            "ON workout_exercises(exerciseId)"
+    )
+}

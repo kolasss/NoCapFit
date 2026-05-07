@@ -58,7 +58,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = true,
-                finished = emptyList(),
                 grouped = emptyMap(),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -73,7 +72,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = emptyList(),
                 grouped = emptyMap(),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -89,7 +87,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = emptyList(),
                 grouped = emptyMap(),
                 onStartWorkout = { startClicked = true },
                 onWorkoutClick = {}
@@ -108,7 +105,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = listOf(workout),
                 grouped = mapOf(dateHeader to listOf(workout)),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -126,7 +122,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = listOf(workout),
                 grouped = mapOf(dateHeader to listOf(workout)),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -144,7 +139,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = listOf(workout),
                 grouped = mapOf(dateHeader to listOf(workout)),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -162,7 +156,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = listOf(workout),
                 grouped = mapOf(dateHeader to listOf(workout)),
                 onStartWorkout = {},
                 onWorkoutClick = {}
@@ -182,7 +175,6 @@ class WorkoutHistoryContentTest {
         composeTestRule.setThemedContent {
             WorkoutHistoryContent(
                 isLoading = false,
-                finished = listOf(workout),
                 grouped = mapOf(dateHeader to listOf(workout)),
                 onStartWorkout = {},
                 onWorkoutClick = {}

@@ -13,6 +13,7 @@ import dev.kolas.nocapfit.data.db.DEFAULT_EXERCISES
 import dev.kolas.nocapfit.data.db.DEFAULT_PROGRAMS
 import dev.kolas.nocapfit.data.db.MIGRATION_1_2
 import dev.kolas.nocapfit.data.db.MIGRATION_2_3
+import dev.kolas.nocapfit.data.db.MIGRATION_3_4
 import dev.kolas.nocapfit.data.db.NoCapFitDatabase
 import dev.kolas.nocapfit.data.db.dao.ActiveTimerDao
 import dev.kolas.nocapfit.data.db.dao.ExerciseDao
@@ -48,7 +49,7 @@ object DatabaseModule {
                     seedDefaultPrograms(db)
                 }
             })
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigration(false)
             .build()
     }

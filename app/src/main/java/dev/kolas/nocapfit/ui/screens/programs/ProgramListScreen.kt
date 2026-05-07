@@ -131,9 +131,11 @@ internal fun ProgramListItem(
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val exerciseSummary = programWithExercises.exercises
-        .sortedBy { it.programExercise.orderIndex }
-        .joinToString(", ") { it.exercise.name }
+    val exerciseSummary = remember(programWithExercises.exercises) {
+        programWithExercises.exercises
+            .sortedBy { it.programExercise.orderIndex }
+            .joinToString(", ") { it.exercise.name }
+    }
 
     Column(
         modifier = modifier

@@ -4,6 +4,7 @@ import dev.kolas.nocapfit.data.db.dao.ProgramDao
 import dev.kolas.nocapfit.data.db.entity.Program
 import dev.kolas.nocapfit.data.db.entity.ProgramExercise
 import dev.kolas.nocapfit.data.db.entity.ProgramExerciseSet
+import dev.kolas.nocapfit.data.db.entity.WorkoutSet
 import dev.kolas.nocapfit.data.db.relation.ProgramWithExercises
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import kotlinx.coroutines.flow.Flow
@@ -36,22 +37,11 @@ class ProgramRepository @Inject constructor(
             name = "${source.program.name} (Copy)"
         )
         val exercises = source.exercises.map { peWithSets ->
-            val exercise = ProgramExercise(
-                programId = 0L,
+            newProgramExercise(
                 exerciseId = peWithSets.programExercise.exerciseId,
                 orderIndex = peWithSets.programExercise.orderIndex,
                 note = peWithSets.programExercise.note
-            )
-            val sets = peWithSets.sets.map { set ->
-                ProgramExerciseSet(
-                    programExerciseId = 0L,
-                    setIndex = set.setIndex,
-                    weightThousandths = set.weightThousandths,
-                    reps = set.reps,
-                    restTimeSeconds = set.restTimeSeconds
-                )
-            }
-            exercise to sets
+            ) to peWithSets.sets.map { it.copy(id = 0L, programExerciseId = 0L) }
         }
         return programDao.saveProgramWithExercises(newProgram, isUpdate = false, exercises)
     }
@@ -63,23 +53,23 @@ class ProgramRepository @Inject constructor(
             .mapNotNull { weWithSets ->
                 val completedSets = weWithSets.sets.filter { it.completed }
                 if (completedSets.isEmpty()) return@mapNotNull null
-                val pe = ProgramExercise(
-                    programId = 0L,
+                newProgramExercise(
                     exerciseId = weWithSets.workoutExercise.exerciseId!!,
                     orderIndex = weWithSets.workoutExercise.orderIndex,
                     note = weWithSets.workoutExercise.note
-                )
-                val sets = completedSets.map { set ->
-                    ProgramExerciseSet(
-                        programExerciseId = 0L,
-                        setIndex = set.setIndex,
-                        weightThousandths = set.weightThousandths,
-                        reps = set.reps,
-                        restTimeSeconds = set.restTimeSeconds
-                    )
-                }
-                pe to sets
+                ) to completedSets.map { it.toProgramSet() }
             }
         return programDao.saveProgramWithExercises(program, isUpdate = false, exercises)
     }
+
+    private fun newProgramExercise(exerciseId: Long, orderIndex: Int, note: String?) =
+        ProgramExercise(programId = 0L, exerciseId = exerciseId, orderIndex = orderIndex, note = note)
+
+    private fun WorkoutSet.toProgramSet() = ProgramExerciseSet(
+        programExerciseId = 0L,
+        setIndex = setIndex,
+        weightThousandths = weightThousandths,
+        reps = reps,
+        restTimeSeconds = restTimeSeconds
+    )
 }

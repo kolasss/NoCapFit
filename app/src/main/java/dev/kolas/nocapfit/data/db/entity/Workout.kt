@@ -17,7 +17,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["profileId"])]
+    indices = [
+        Index(value = ["profileId"]),
+        Index(value = ["programId"])
+    ]
 )
 data class Workout(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

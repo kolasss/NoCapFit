@@ -199,29 +199,21 @@ class ProgramFormViewModel @Inject constructor(
     }
 
     private suspend fun loadPreviousData(exercises: List<ExerciseEntry>) {
-        val map = mutableMapOf<Pair<Long, Int>, PreviousSetData>()
-        for (entry in exercises) {
-            loadPreviousForExercise(entry.exercise.id, map)
-        }
-        _previousSets.value = PreviousSetLookup(map)
-    }
-
-    private suspend fun loadPreviousForExercise(
-        exId: Long,
-        map: MutableMap<Pair<Long, Int>, PreviousSetData>
-    ) {
-        val previous = workoutRepository.getLastFinishedByExerciseId(exId) ?: return
-        val prevExercise = previous.exercises.find {
-            it.workoutExercise.exerciseId == exId
-        } ?: return
-        for (set in prevExercise.sets.filter { it.completed }) {
-            map[exId to set.setIndex] = PreviousSetData(set.weightThousandths, set.reps)
-        }
+        val exerciseIds = exercises.map { it.exercise.id }
+        if (exerciseIds.isEmpty()) return
+        val rows = workoutRepository.getPreviousCompletedSets(exerciseIds)
+        _previousSets.value = PreviousSetLookup(
+            rows.associate { it.exerciseId to it.setIndex to PreviousSetData(it.weightThousandths, it.reps) }
+        )
     }
 
     private suspend fun loadPreviousDataForExercise(exerciseId: Long) {
+        val rows = workoutRepository.getPreviousCompletedSets(listOf(exerciseId))
+        if (rows.isEmpty()) return
         val map = _previousSets.value.toMutableMap()
-        loadPreviousForExercise(exerciseId, map)
+        for (row in rows) {
+            map[row.exerciseId to row.setIndex] = PreviousSetData(row.weightThousandths, row.reps)
+        }
         _previousSets.value = PreviousSetLookup(map)
     }
 

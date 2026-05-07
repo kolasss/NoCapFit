@@ -3,6 +3,7 @@ package dev.kolas.nocapfit.ui.screens.workout
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.kolas.nocapfit.MainDispatcherRule
+import dev.kolas.nocapfit.data.db.dao.PreviousCompletedSet
 import dev.kolas.nocapfit.data.db.entity.Workout
 import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutSet
@@ -94,6 +95,7 @@ class WorkoutInProgressViewModelTest {
     private fun createViewModel(): WorkoutInProgressViewModel {
         coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(testWorkoutWithExercises)
         coEvery { workoutRepository.getWithExercises(1L) } returns testWorkoutWithExercises
+        coEvery { workoutRepository.getPreviousCompletedSets(any()) } returns emptyList()
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         return WorkoutInProgressViewModel(
             workoutRepository,
@@ -321,34 +323,11 @@ class WorkoutInProgressViewModelTest {
                 )
             )
         )
-        val previousWorkout = WorkoutWithExercises(
-            workout = Workout(id = 99L, profileId = 1L, startTime = 500L, endTime = 900L),
-            exercises = listOf(
-                WorkoutExerciseWithSets(
-                    workoutExercise = WorkoutExercise(
-                        id = 300L,
-                        workoutId = 99L,
-                        exerciseName = "Bench Press",
-                        exerciseId = 1L,
-                        orderIndex = 0
-                    ),
-                    sets = listOf(
-                        WorkoutSet(
-                            id = 30L,
-                            workoutExerciseId = 300L,
-                            setIndex = 0,
-                            weightThousandths = 60000,
-                            reps = 10,
-                            restTimeSeconds = 60,
-                            completed = true
-                        )
-                    )
-                )
-            )
-        )
         coEvery { workoutRepository.getWithExercisesFlow(1L) } returns MutableStateFlow(workoutWithExerciseIds)
         coEvery { workoutRepository.getWithExercises(1L) } returns workoutWithExerciseIds
-        coEvery { workoutRepository.getLastFinishedByExerciseId(1L) } returns previousWorkout
+        coEvery { workoutRepository.getPreviousCompletedSets(listOf(1L)) } returns listOf(
+            PreviousCompletedSet(exerciseId = 1L, setIndex = 0, weightThousandths = 60000, reps = 10)
+        )
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         val viewModel = WorkoutInProgressViewModel(
             workoutRepository,
@@ -376,37 +355,15 @@ class WorkoutInProgressViewModelTest {
 
     @Test
     fun addExerciseFromDb_prefillsFromPreviousWorkout() = runTest {
-        val previousWorkout = WorkoutWithExercises(
-            workout = Workout(id = 50L, profileId = 1L, startTime = 100L, endTime = 200L),
-            exercises = listOf(
-                WorkoutExerciseWithSets(
-                    workoutExercise = WorkoutExercise(
-                        id = 500L,
-                        workoutId = 50L,
-                        exerciseName = "OHP",
-                        exerciseId = 5L,
-                        orderIndex = 0
-                    ),
-                    sets = listOf(
-                        WorkoutSet(
-                            id = 50L,
-                            workoutExerciseId = 500L,
-                            setIndex = 0,
-                            weightThousandths = 40000,
-                            reps = 10,
-                            restTimeSeconds = 90,
-                            completed = true
-                        )
-                    )
-                )
-            )
-        )
         coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
         coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
         coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
-        coEvery { workoutRepository.getLastFinishedByExerciseId(5L) } returns previousWorkout
 
         val viewModel = createViewModel()
+        // Override the createViewModel `any()` default with a more specific stub
+        coEvery { workoutRepository.getPreviousCompletedSets(listOf(5L)) } returns listOf(
+            PreviousCompletedSet(exerciseId = 5L, setIndex = 0, weightThousandths = 40000, reps = 10)
+        )
         viewModel.addExerciseFromDb(5L, "OHP")
 
         coVerify {
@@ -421,7 +378,7 @@ class WorkoutInProgressViewModelTest {
         coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
         coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
         coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
-        coEvery { workoutRepository.getLastFinishedByExerciseId(5L) } returns null
+        coEvery { workoutRepository.getPreviousCompletedSets(listOf(5L)) } returns emptyList()
 
         val viewModel = createViewModel()
         viewModel.addExerciseFromDb(5L, "OHP")

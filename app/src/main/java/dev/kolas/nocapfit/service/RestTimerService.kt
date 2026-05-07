@@ -32,7 +32,7 @@ class RestTimerService : Service() {
     lateinit var timerCoordinator: TimerCoordinator
 
     @Inject
-    lateinit var timerNotifier: TimerNotifier
+    lateinit var timerCompletionHandler: TimerCompletionHandler
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -84,14 +84,7 @@ class RestTimerService : Service() {
             // Detach the notification from the service before posting the completion update.
             // Otherwise stopSelf removes the notification, wiping "Rest Complete!" with it.
             stopForeground(STOP_FOREGROUND_DETACH)
-            // The AlarmManager alarm can be delayed by Doze / background restrictions, so the
-            // foreground service races the receiver to complete the timer. `completeIfRunning`
-            // is atomic — only the winning caller gets rowsAffected=1 and fires the side effects.
-            val completed = timerRepository.completeTimer(timerId)
-            if (completed) {
-                timerNotifier.notifyCompletion()
-                timerCoordinator.onTimerCompleted(timerId)
-            }
+            timerCompletionHandler.completeIfRunning(timerId)
             stopSelf()
         }
 

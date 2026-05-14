@@ -20,10 +20,11 @@ data class WorkoutExerciseRow(
  * [PreviousTextsForExercise]. On hit, the returned `WorkoutExerciseRow` is reference-equal to the
  * one returned previously — important for Compose item-skipping in `LazyColumn`.
  *
- * **Not thread-safe.** Designed to be called from the `combine { ... }` operator running on
- * `viewModelScope` (`Dispatchers.Main.immediate`). If a future change moves the upstream flow
- * off the main thread (e.g. `flowOn(IO)`), confine access with a `Mutex` or revert via `flowOn`
- * back to a single dispatcher.
+ * **Not thread-safe.** Designed to be called from a single-dispatcher flow operator
+ * (`map { ... }` or `combine { ... }`) running on `viewModelScope`
+ * (`Dispatchers.Main.immediate`). If a future change moves the upstream flow off the main
+ * thread (e.g. `flowOn(IO)`), confine access with a `Mutex` or revert via `flowOn` back to a
+ * single dispatcher.
  */
 class WorkoutExerciseRowBuilder {
     private var lastPreviousSets: PreviousSetLookup? = null

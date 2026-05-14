@@ -16,9 +16,9 @@ data class ProgramExerciseRow(
  * does not re-parse strings for every other exercise in the program. Hold one instance per
  * ViewModel.
  *
- * **Not thread-safe.** Called from the `combine { ... }` operator on `viewModelScope`
- * (`Dispatchers.Main.immediate`). Moving the upstream flow off the main thread requires
- * adding a `Mutex` or `flowOn` confinement.
+ * **Not thread-safe.** Called from a single-dispatcher flow operator (`map`/`combine`) on
+ * `viewModelScope` (`Dispatchers.Main.immediate`). Moving the upstream flow off the main
+ * thread requires adding a `Mutex` or `flowOn` confinement.
  */
 class ProgramExerciseRowBuilder {
     private var lastPreviousSets: PreviousSetLookup? = null

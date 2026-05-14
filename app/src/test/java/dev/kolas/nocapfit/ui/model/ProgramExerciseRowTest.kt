@@ -4,6 +4,7 @@ import dev.kolas.nocapfit.data.db.entity.Exercise
 import dev.kolas.nocapfit.ui.screens.programs.ExerciseEntry
 import dev.kolas.nocapfit.ui.screens.programs.SetEntry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,6 +13,12 @@ class ProgramExerciseRowTest {
 
     private fun exercise(id: Long, name: String = "Ex $id") =
         Exercise(id = id, profileId = 1L, name = name)
+
+    private fun entry(
+        entryId: Long,
+        exerciseId: Long = entryId,
+        sets: List<SetEntry> = listOf(SetEntry())
+    ): ExerciseEntry = ExerciseEntry(entryId = entryId, exercise = exercise(exerciseId), sets = sets)
 
     @Test
     fun emptyExercises_returnsEmpty() {
@@ -22,12 +29,7 @@ class ProgramExerciseRowTest {
     @Test
     fun parsesWeightFromString() {
         val rows = buildProgramExerciseRows(
-            listOf(
-                ExerciseEntry(
-                    exercise = exercise(1L),
-                    sets = listOf(SetEntry(weight = "60.5", reps = "8", restTimeSeconds = "130"))
-                )
-            ),
+            listOf(entry(1L, sets = listOf(SetEntry(weight = "60.5", reps = "8", restTimeSeconds = "130")))),
             PreviousSetLookup(emptyMap())
         )
         val set = rows.single().sets.single()
@@ -39,12 +41,7 @@ class ProgramExerciseRowTest {
     @Test
     fun blankInputsProduceZeros() {
         val rows = buildProgramExerciseRows(
-            listOf(
-                ExerciseEntry(
-                    exercise = exercise(1L),
-                    sets = listOf(SetEntry(weight = "", reps = "", restTimeSeconds = ""))
-                )
-            ),
+            listOf(entry(1L, sets = listOf(SetEntry(weight = "", reps = "", restTimeSeconds = "")))),
             PreviousSetLookup(emptyMap())
         )
         val set = rows.single().sets.single()
@@ -54,14 +51,9 @@ class ProgramExerciseRowTest {
     }
 
     @Test
-    fun partialWeightStringParsesToZero() {
+    fun trailingDotInWeightParsesAsWholeNumber() {
         val rows = buildProgramExerciseRows(
-            listOf(
-                ExerciseEntry(
-                    exercise = exercise(1L),
-                    sets = listOf(SetEntry(weight = "1.", reps = "5", restTimeSeconds = "0"))
-                )
-            ),
+            listOf(entry(1L, sets = listOf(SetEntry(weight = "1.", reps = "5", restTimeSeconds = "0")))),
             PreviousSetLookup(emptyMap())
         )
         val set = rows.single().sets.single()
@@ -79,12 +71,7 @@ class ProgramExerciseRowTest {
             )
         )
         val rows = buildProgramExerciseRows(
-            listOf(
-                ExerciseEntry(
-                    exercise = exercise(1L),
-                    sets = listOf(SetEntry(), SetEntry(), SetEntry())
-                )
-            ),
+            listOf(entry(1L, sets = listOf(SetEntry(), SetEntry(), SetEntry()))),
             previous
         )
         val sets = rows.single().sets
@@ -96,8 +83,8 @@ class ProgramExerciseRowTest {
     @Test
     fun builderReusesUnchangedRowAcrossEmissions() {
         val builder = ProgramExerciseRowBuilder()
-        val a = ExerciseEntry(exercise = exercise(1L), sets = listOf(SetEntry(weight = "10")))
-        val b = ExerciseEntry(exercise = exercise(2L), sets = listOf(SetEntry(weight = "20")))
+        val a = entry(entryId = 1L, sets = listOf(SetEntry(weight = "10")))
+        val b = entry(entryId = 2L, sets = listOf(SetEntry(weight = "20")))
         val first = builder.build(listOf(a, b), PreviousSetLookup(emptyMap()))
 
         // Only b's weight string changes (simulating a keystroke in exercise b's weight field)
@@ -113,11 +100,33 @@ class ProgramExerciseRowTest {
     fun preservesExerciseOrder() {
         val rows = buildProgramExerciseRows(
             listOf(
-                ExerciseEntry(exercise = exercise(2L, "B"), sets = listOf(SetEntry())),
-                ExerciseEntry(exercise = exercise(1L, "A"), sets = listOf(SetEntry()))
+                entry(entryId = 1L, exerciseId = 2L, sets = listOf(SetEntry())),
+                entry(entryId = 2L, exerciseId = 1L, sets = listOf(SetEntry()))
             ),
             PreviousSetLookup(emptyMap())
         )
-        assertEquals(listOf("B", "A"), rows.map { it.exerciseEntry.exercise.name })
+        assertEquals(listOf(1L, 2L), rows.map { it.exerciseEntry.entryId })
+    }
+
+    @Test
+    fun duplicateExerciseIdsCacheIndependently() {
+        // Same Exercise can be added twice (e.g. supersets). Distinct entryIds keep their rows
+        // separate in the cache.
+        val builder = ProgramExerciseRowBuilder()
+        val a = entry(entryId = 1L, exerciseId = 5L, sets = listOf(SetEntry(weight = "10")))
+        val b = entry(entryId = 2L, exerciseId = 5L, sets = listOf(SetEntry(weight = "20")))
+        val first = builder.build(listOf(a, b), PreviousSetLookup(emptyMap()))
+
+        assertEquals(2, first.size)
+        assertEquals(10000, first[0].sets[0].weightThousandths)
+        assertEquals(20000, first[1].sets[0].weightThousandths)
+
+        // Edit only a; b's row must stay reference-equal even though they share exercise.id.
+        val aChanged = a.copy(sets = listOf(SetEntry(weight = "12")))
+        val second = builder.build(listOf(aChanged, b), PreviousSetLookup(emptyMap()))
+
+        assertTrue(first[1] === second[1])
+        assertEquals(12000, second[0].sets[0].weightThousandths)
+        assertNotNull(second[0])
     }
 }

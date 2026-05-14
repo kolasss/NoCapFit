@@ -46,7 +46,7 @@ class ProgramExerciseRowBuilder {
         val newEntries = mutableMapOf<Long, CacheEntry>()
         val result = exercises.map { entry ->
             val previousTexts = previousTextsByExercise.forExercise(entry.exercise.id)
-            val key = entry.exercise.id
+            val key = entry.entryId
             val cached = lastEntries[key]
             val row = if (cached != null &&
                 cached.source == entry &&

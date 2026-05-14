@@ -41,6 +41,9 @@ data class SetEntry(
 
 @androidx.compose.runtime.Immutable
 data class ExerciseEntry(
+    /** Stable per-entry id assigned at create time. Lets the program list contain the same
+     * exercise multiple times — used as both `LazyColumn` key and row-cache key. */
+    val entryId: Long,
     val exercise: Exercise,
     val sets: List<SetEntry> = listOf(SetEntry()),
     val note: String? = null
@@ -71,6 +74,9 @@ class ProgramFormViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProgramFormUiState())
     val uiState: StateFlow<ProgramFormUiState> = _uiState.asStateFlow()
 
+    private var nextEntryId: Long = 0L
+    private fun newEntryId(): Long = nextEntryId++
+
     val availableExercises: StateFlow<List<Exercise>> = currentProfileHolder.profileId
         .flatMapLatest { profileId ->
             if (profileId == null) flowOf(emptyList()) else exerciseRepository.getAllByProfile(profileId)
@@ -95,6 +101,7 @@ class ProgramFormViewModel @Inject constructor(
                         .sortedBy { it.programExercise.orderIndex }
                         .map { peWithSets ->
                             ExerciseEntry(
+                                entryId = newEntryId(),
                                 exercise = peWithSets.exercise,
                                 sets = peWithSets.sets
                                     .sortedBy { it.setIndex }
@@ -131,7 +138,7 @@ class ProgramFormViewModel @Inject constructor(
     fun addExercise(exercise: Exercise) {
         val current = _uiState.value
         _uiState.value = current.copy(
-            exercises = current.exercises + ExerciseEntry(exercise = exercise)
+            exercises = current.exercises + ExerciseEntry(entryId = newEntryId(), exercise = exercise)
         )
         viewModelScope.launch {
             loadPreviousDataForExercise(exercise.id)

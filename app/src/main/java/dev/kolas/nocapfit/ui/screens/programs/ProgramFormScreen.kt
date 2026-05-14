@@ -165,7 +165,7 @@ internal fun ProgramFormContent(
 
             itemsIndexed(
                 rows,
-                key = { _, row -> row.exerciseEntry.exercise.id },
+                key = { _, row -> row.exerciseEntry.entryId },
                 contentType = { _, _ -> "exercise" }
             ) { exerciseIndex, row ->
                 ExerciseCardItem(

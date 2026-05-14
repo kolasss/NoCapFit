@@ -374,6 +374,22 @@ class WorkoutInProgressViewModelTest {
     }
 
     @Test
+    fun exerciseRows_emitsBuiltRowsFromCurrentWorkout() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.exerciseRows.test {
+            val rows = awaitItem()
+            assertEquals(listOf(100L, 200L), rows.map { it.workoutExercise.id })
+            val firstRow = rows.first()
+            assertEquals(1, firstRow.sets.size)
+            assertEquals(50000, firstRow.sets[0].weightThousandths)
+            assertEquals(8, firstRow.sets[0].reps)
+            assertEquals(60, firstRow.sets[0].restTimeSeconds)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun addExerciseFromDb_defaultsWhenNoPreviousWorkout() = runTest {
         coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
         coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L

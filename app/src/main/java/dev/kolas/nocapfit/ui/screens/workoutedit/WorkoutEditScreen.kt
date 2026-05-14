@@ -25,17 +25,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
 import dev.kolas.nocapfit.ui.model.SetUiModel
+import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +44,7 @@ fun WorkoutEditScreen(
     viewModel: WorkoutEditViewModel = hiltViewModel()
 ) {
     val workout by viewModel.workout.collectAsState()
+    val rows by viewModel.exerciseRows.collectAsState()
     val programName by viewModel.programName.collectAsState()
     val availableExercises by viewModel.availableExercises.collectAsState()
     var showExercisePicker by remember { mutableStateOf(false) }
@@ -70,7 +70,8 @@ fun WorkoutEditScreen(
         }
     ) { padding ->
         WorkoutEditContent(
-            data = workout,
+            dataLoaded = workout != null,
+            rows = rows,
             programName = programName,
             onProgramNameChange = viewModel::updateProgramName,
             onMoveExercise = viewModel::moveExercise,
@@ -100,7 +101,8 @@ fun WorkoutEditScreen(
 @Suppress("LongParameterList")
 @Composable
 internal fun WorkoutEditContent(
-    data: WorkoutWithExercises?,
+    dataLoaded: Boolean,
+    rows: List<WorkoutExerciseRow>,
     programName: String,
     onProgramNameChange: (String) -> Unit,
     onMoveExercise: (Long, Int) -> Unit,
@@ -113,7 +115,7 @@ internal fun WorkoutEditContent(
     onAddExerciseClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (data == null) {
+    if (!dataLoaded) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -122,8 +124,6 @@ internal fun WorkoutEditContent(
         }
         return
     }
-
-    val sortedExercises = data.exercises.sortedBy { it.workoutExercise.orderIndex }
 
     LazyColumn(
         modifier = modifier.fillMaxSize()
@@ -141,13 +141,13 @@ internal fun WorkoutEditContent(
         }
 
         itemsIndexed(
-            sortedExercises,
+            rows,
             key = { _, item -> item.workoutExercise.id }
-        ) { index, exerciseWithSets ->
+        ) { index, row ->
             WorkoutEditExerciseItem(
-                exerciseWithSets = exerciseWithSets,
+                row = row,
                 index = index,
-                lastIndex = sortedExercises.lastIndex,
+                lastIndex = rows.lastIndex,
                 onMoveExercise = onMoveExercise,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
@@ -175,7 +175,7 @@ internal fun WorkoutEditContent(
 @Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun WorkoutEditExerciseItem(
-    exerciseWithSets: dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets,
+    row: WorkoutExerciseRow,
     index: Int,
     lastIndex: Int,
     onMoveExercise: (Long, Int) -> Unit,
@@ -186,88 +186,58 @@ private fun WorkoutEditExerciseItem(
     onToggleComplete: (dev.kolas.nocapfit.data.db.entity.WorkoutSet) -> Unit,
     onUpdateNote: (Long, String?) -> Unit
 ) {
-    val id = exerciseWithSets.workoutExercise.id
-    val sets = exerciseWithSets.sets
-    val setsById = remember(sets) { sets.associateBy { it.id } }
-    val setUiModels = remember(sets) {
-        sets.map { ws ->
-            SetUiModel(
-                id = ws.id,
-                setIndex = ws.setIndex,
-                weightThousandths = ws.weightThousandths,
-                reps = ws.reps,
-                restTimeSeconds = ws.restTimeSeconds,
-                completed = ws.completed
-            )
-        }
-    }
+    val id = row.workoutExercise.id
+    val setsById = row.setsById
 
-    val currentSetsById by rememberUpdatedState(setsById)
-    val currentOnMoveExercise by rememberUpdatedState(onMoveExercise)
-    val currentOnRemoveExercise by rememberUpdatedState(onRemoveExercise)
-    val currentOnAddSet by rememberUpdatedState(onAddSet)
-    val currentOnUpdateSet by rememberUpdatedState(onUpdateSet)
-    val currentOnUpdateReps by rememberUpdatedState(onUpdateReps)
-    val currentOnToggleComplete by rememberUpdatedState(onToggleComplete)
-    val currentOnUpdateNote by rememberUpdatedState(onUpdateNote)
-
-    val onAddSetCb = remember { { currentOnAddSet(id) } }
-    val onRemoveExerciseCb = remember { { currentOnRemoveExercise(id) } }
-    val onWeightChangeCb = remember<(SetUiModel, Int) -> Unit> {
+    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, w ->
-            currentSetsById[model.id]?.let { currentOnUpdateSet(it, w) }
+            setsById[model.id]?.let { onUpdateSet(it, w) }
         }
     }
-    val onRepsChangeCb = remember<(SetUiModel, Int) -> Unit> {
+    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateReps) {
         {
                 model, r ->
-            currentSetsById[model.id]?.let { currentOnUpdateReps(it, r) }
+            setsById[model.id]?.let { onUpdateReps(it, r) }
         }
     }
-    val onToggleCompleteCb = remember<(SetUiModel) -> Unit> {
+    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onToggleComplete) {
         {
                 model ->
-            currentSetsById[model.id]?.let { currentOnToggleComplete(it) }
+            setsById[model.id]?.let { onToggleComplete(it) }
         }
     }
-    val onUpdateNoteCb = remember<(String?) -> Unit> {
+    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
+    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
+    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
         {
                 note ->
-            currentOnUpdateNote(id, note)
+            onUpdateNote(id, note)
         }
     }
 
     val canMoveUp = index > 0
     val canMoveDown = index < lastIndex
-    val onMoveUp = remember(canMoveUp) {
-        if (canMoveUp) {
-            { currentOnMoveExercise(id, -1) }
-        } else {
-            null
-        }
+    val moveUp = remember(canMoveUp, id, onMoveExercise) {
+        if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
     }
-    val onMoveDown = remember(canMoveDown) {
-        if (canMoveDown) {
-            { currentOnMoveExercise(id, 1) }
-        } else {
-            null
-        }
+    val moveDown = remember(canMoveDown, id, onMoveExercise) {
+        if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
     }
 
     ExerciseCard(
-        exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-        sets = setUiModels,
-        onAddSet = onAddSetCb,
-        onRemoveExercise = onRemoveExerciseCb,
-        onWeightChange = onWeightChangeCb,
-        onRepsChange = onRepsChangeCb,
-        onToggleComplete = onToggleCompleteCb,
+        exerciseName = row.workoutExercise.exerciseName,
+        sets = row.sets,
+        onAddSet = addSet,
+        onRemoveExercise = removeExercise,
+        onWeightChange = weightChange,
+        onRepsChange = repsChange,
+        onToggleComplete = toggleComplete,
         showRestTime = false,
-        onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
+        onMoveUp = moveUp,
+        onMoveDown = moveDown,
         showBottomDivider = canMoveDown,
-        note = exerciseWithSets.workoutExercise.note,
-        onUpdateNote = onUpdateNoteCb
+        note = row.workoutExercise.note,
+        onUpdateNote = updateNote
     )
 }

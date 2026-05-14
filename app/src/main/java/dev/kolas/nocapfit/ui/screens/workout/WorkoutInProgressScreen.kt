@@ -42,7 +42,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +55,8 @@ import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
 import dev.kolas.nocapfit.ui.components.rememberTimerRemainingMs
-import dev.kolas.nocapfit.ui.model.PreviousSetLookup
-import dev.kolas.nocapfit.ui.model.PreviousTextsForExercise
 import dev.kolas.nocapfit.ui.model.SetUiModel
-import dev.kolas.nocapfit.ui.model.buildPreviousTextsByExercise
+import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
 import dev.kolas.nocapfit.util.SECONDS_PER_HOUR
@@ -68,7 +65,6 @@ import dev.kolas.nocapfit.util.ceilSecondsFromMs
 import dev.kolas.nocapfit.util.formatMmSs
 import dev.kolas.nocapfit.util.restTimerFillProgress
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.StateFlow
 
 @Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,9 +76,9 @@ fun WorkoutInProgressScreen(
     onMinimize: (() -> Unit)? = null
 ) {
     val workout by viewModel.workout.collectAsState()
+    val exerciseRows by viewModel.exerciseRows.collectAsState()
     val timerState by viewModel.timerState.collectAsState()
     val availableExercises by viewModel.availableExercises.collectAsState()
-    val previousSets by viewModel.previousSets.collectAsState()
     var showFinishDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
     var showExercisePicker by remember { mutableStateOf(false) }
@@ -91,7 +87,7 @@ fun WorkoutInProgressScreen(
     BackHandler(onBack = onBack)
     KeepScreenOn()
     val lazyListState = rememberLazyListState()
-    val showTopBarTimer = rememberShowTopBarTimer(timerState, workout, lazyListState)
+    val showTopBarTimer = rememberShowTopBarTimer(timerState, exerciseRows, lazyListState)
     val runningState = timerState as? TimerCoordinator.TimerUiState.Running
     Scaffold(
         modifier = modifier,
@@ -115,9 +111,9 @@ fun WorkoutInProgressScreen(
     ) { padding ->
         WorkoutContent(
             padding = padding,
-            workout = workout,
-            timerStateFlow = viewModel.timerState,
-            previousSets = previousSets,
+            workoutLoaded = workout != null,
+            rows = exerciseRows,
+            timerState = timerState,
             lazyListState = lazyListState,
             onMoveExercise = viewModel::moveExercise,
             onRemoveExercise = viewModel::removeExercise,
@@ -190,15 +186,13 @@ private fun rememberElapsedTime(startTime: Long?): String {
 @Composable
 private fun rememberShowTopBarTimer(
     timerState: TimerCoordinator.TimerUiState,
-    workout: dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises?,
+    rows: List<WorkoutExerciseRow>,
     lazyListState: LazyListState
 ): Boolean {
-    val activeTimerExerciseId: Long? = remember(timerState, workout) {
+    val activeTimerExerciseId: Long? = remember(timerState, rows) {
         val setId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
             ?: return@remember null
-        workout?.exercises?.firstOrNull { ex ->
-            ex.sets.any { it.id == setId }
-        }?.workoutExercise?.id
+        rows.firstOrNull { row -> setId in row.setsById }?.workoutExercise?.id
     }
     val isVisible by remember(activeTimerExerciseId) {
         derivedStateOf {
@@ -215,9 +209,9 @@ private fun rememberShowTopBarTimer(
 @Composable
 private fun WorkoutContent(
     padding: PaddingValues,
-    workout: dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises?,
-    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
-    previousSets: PreviousSetLookup,
+    workoutLoaded: Boolean,
+    rows: List<WorkoutExerciseRow>,
+    timerState: TimerCoordinator.TimerUiState,
     lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
@@ -232,7 +226,7 @@ private fun WorkoutContent(
     onAddExerciseClick: () -> Unit,
     onFinishClick: () -> Unit
 ) {
-    if (workout == null) {
+    if (!workoutLoaded) {
         Box(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentAlignment = Alignment.Center
@@ -240,15 +234,10 @@ private fun WorkoutContent(
         return
     }
 
-    val sortedExercises = remember(workout.exercises) {
-        workout.exercises.sortedBy { it.workoutExercise.orderIndex }
-    }
-
     WorkoutExerciseList(
         modifier = Modifier.fillMaxSize().padding(padding),
-        sortedExercises = sortedExercises,
-        timerStateFlow = timerStateFlow,
-        previousSets = previousSets,
+        rows = rows,
+        timerState = timerState,
         lazyListState = lazyListState,
         onMoveExercise = onMoveExercise,
         onRemoveExercise = onRemoveExercise,
@@ -268,9 +257,8 @@ private fun WorkoutContent(
 @Suppress("LongParameterList")
 @Composable
 private fun WorkoutExerciseList(
-    sortedExercises: List<dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets>,
-    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
-    previousSets: PreviousSetLookup,
+    rows: List<WorkoutExerciseRow>,
+    timerState: TimerCoordinator.TimerUiState,
     lazyListState: LazyListState,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
@@ -286,15 +274,15 @@ private fun WorkoutExerciseList(
     onFinishClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val completedSets = remember(sortedExercises) {
-        sortedExercises.sumOf { ex -> ex.sets.count { it.completed } }
+    val completedSets = remember(rows) {
+        rows.sumOf { row -> row.sets.count { it.completed } }
     }
-    val totalSets = remember(sortedExercises) {
-        sortedExercises.sumOf { it.sets.size }
-    }
-    val previousTextsByExercise = remember(previousSets) {
-        buildPreviousTextsByExercise(previousSets)
-    }
+    val totalSets = remember(rows) { rows.sumOf { it.sets.size } }
+
+    val running = timerState as? TimerCoordinator.TimerUiState.Running
+    val activeTimerSetId: Long? = running?.workoutSetId
+    val timerEndAtEpochMs: Long = running?.endAtEpochMs ?: 0L
+    val timerTotalMs: Long = running?.totalMs ?: 0L
 
     LazyColumn(
         modifier = modifier,
@@ -306,29 +294,24 @@ private fun WorkoutExerciseList(
     ) {
         item(contentType = "summary") {
             WorkoutProgressStrip(
-                exerciseCount = sortedExercises.size,
+                exerciseCount = rows.size,
                 completedSets = completedSets,
                 totalSets = totalSets
             )
         }
 
         itemsIndexed(
-            sortedExercises,
+            rows,
             key = { _, item -> item.workoutExercise.id },
             contentType = { _, _ -> "exercise" }
-        ) { index, exerciseWithSets ->
-            val exId = exerciseWithSets.workoutExercise.exerciseId
-            val previousTexts = if (exId != null) {
-                previousTextsByExercise.forExercise(exId)
-            } else {
-                PreviousTextsForExercise.Empty
-            }
+        ) { index, row ->
             ExerciseCardItem(
-                exerciseWithSets = exerciseWithSets,
+                row = row,
                 index = index,
-                lastIndex = sortedExercises.lastIndex,
-                previousTexts = previousTexts,
-                timerStateFlow = timerStateFlow,
+                lastIndex = rows.lastIndex,
+                activeTimerSetId = activeTimerSetId,
+                timerEndAtEpochMs = timerEndAtEpochMs,
+                timerTotalMs = timerTotalMs,
                 onMoveExercise = onMoveExercise,
                 onRemoveExercise = onRemoveExercise,
                 onAddSet = onAddSet,
@@ -360,14 +343,15 @@ private fun WorkoutExerciseList(
     }
 }
 
-@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun ExerciseCardItem(
-    exerciseWithSets: dev.kolas.nocapfit.data.db.relation.WorkoutExerciseWithSets,
+    row: WorkoutExerciseRow,
     index: Int,
     lastIndex: Int,
-    previousTexts: PreviousTextsForExercise,
-    timerStateFlow: StateFlow<TimerCoordinator.TimerUiState>,
+    activeTimerSetId: Long?,
+    timerEndAtEpochMs: Long,
+    timerTotalMs: Long,
     onMoveExercise: (Long, Int) -> Unit,
     onRemoveExercise: (Long) -> Unit,
     onAddSet: (Long) -> Unit,
@@ -379,132 +363,86 @@ private fun ExerciseCardItem(
     onCancelTimer: () -> Unit,
     onExerciseTitleClick: (Long) -> Unit
 ) {
-    val id = exerciseWithSets.workoutExercise.id
-    val exId = exerciseWithSets.workoutExercise.exerciseId
-    val sets = exerciseWithSets.sets
-    val setsById = remember(sets) { sets.associateBy { it.id } }
+    val id = row.workoutExercise.id
+    val exId = row.workoutExercise.exerciseId
+    val setsById = row.setsById
+    val ownsActiveTimer = activeTimerSetId != null && activeTimerSetId in setsById
 
-    val timerUiState by timerStateFlow.collectAsState()
-    val setIds = remember(sets) { sets.map { it.id }.toSet() }
-    val activeTimer = remember(timerUiState, setIds) {
-        (timerUiState as? TimerCoordinator.TimerUiState.Running)
-            ?.takeIf { it.workoutSetId in setIds }
-    }
-
-    val setUiModels = remember(sets, previousTexts) {
-        sets.map { ws ->
-            SetUiModel(
-                id = ws.id,
-                setIndex = ws.setIndex,
-                weightThousandths = ws.weightThousandths,
-                reps = ws.reps,
-                restTimeSeconds = ws.restTimeSeconds,
-                completed = ws.completed,
-                previousText = previousTexts[ws.setIndex]
-            )
-        }
-    }
-
-    val currentSetsById by rememberUpdatedState(setsById)
-    val currentOnMoveExercise by rememberUpdatedState(onMoveExercise)
-    val currentOnRemoveExercise by rememberUpdatedState(onRemoveExercise)
-    val currentOnAddSet by rememberUpdatedState(onAddSet)
-    val currentOnUpdateSet by rememberUpdatedState(onUpdateSet)
-    val currentOnSetRestTimeForAll by rememberUpdatedState(onSetRestTimeForAll)
-    val currentOnUpdateNote by rememberUpdatedState(onUpdateNote)
-    val currentOnCompleteSet by rememberUpdatedState(onCompleteSet)
-    val currentOnRevertSet by rememberUpdatedState(onRevertSet)
-    val currentOnExerciseTitleClick by rememberUpdatedState(onExerciseTitleClick)
-    val currentOnCancelTimer by rememberUpdatedState(onCancelTimer)
-
-    val onAddSetCb = remember { { currentOnAddSet(id) } }
-    val onRemoveExerciseCb = remember { { currentOnRemoveExercise(id) } }
-    val onWeightChangeCb = remember<(SetUiModel, Int) -> Unit> {
+    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, w ->
-            currentSetsById[model.id]?.let { currentOnUpdateSet(it.copy(weightThousandths = w)) }
+            setsById[model.id]?.let { onUpdateSet(it.copy(weightThousandths = w)) }
         }
     }
-    val onRepsChangeCb = remember<(SetUiModel, Int) -> Unit> {
+    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, r ->
-            currentSetsById[model.id]?.let { currentOnUpdateSet(it.copy(reps = r)) }
+            setsById[model.id]?.let { onUpdateSet(it.copy(reps = r)) }
         }
     }
-    val onToggleCompleteCb = remember<(SetUiModel) -> Unit> {
+    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onCompleteSet, onRevertSet) {
         {
                 model ->
-            currentSetsById[model.id]?.let { ws ->
-                if (ws.completed) {
-                    currentOnRevertSet(ws.id)
-                } else {
-                    currentOnCompleteSet(ws.id, ws.restTimeSeconds)
-                }
+            setsById[model.id]?.let { ws ->
+                if (ws.completed) onRevertSet(ws.id) else onCompleteSet(ws.id, ws.restTimeSeconds)
             }
         }
     }
-    val onRestTimeChangeCb = remember<(SetUiModel, Int) -> Unit> {
+    val restTimeChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, s ->
-            currentSetsById[model.id]?.let { currentOnUpdateSet(it.copy(restTimeSeconds = s)) }
+            setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
         }
     }
-    val onSetRestTimeForAllCb = remember<(Int) -> Unit> {
+    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
+    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
+    val setRestTimeForAll = remember<(Int) -> Unit>(id, onSetRestTimeForAll) {
         {
                 seconds ->
-            currentOnSetRestTimeForAll(id, seconds)
+            onSetRestTimeForAll(id, seconds)
         }
     }
-    val onExerciseTitleClickCb = if (exId != null) {
-        remember(exId) { { currentOnExerciseTitleClick(exId) } }
-    } else {
-        null
-    }
-    val onCancelTimerCb = remember { { currentOnCancelTimer() } }
-    val onUpdateNoteCb = remember<(String?) -> Unit> {
+    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
         {
                 note ->
-            currentOnUpdateNote(id, note)
+            onUpdateNote(id, note)
         }
+    }
+    val titleClick: (() -> Unit)? = if (exId != null) {
+        remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
+    } else {
+        null
     }
 
     val canMoveUp = index > 0
     val canMoveDown = index < lastIndex
-    val onMoveUp = remember(canMoveUp) {
-        if (canMoveUp) {
-            { currentOnMoveExercise(id, -1) }
-        } else {
-            null
-        }
+    val moveUp = remember(canMoveUp, id, onMoveExercise) {
+        if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
     }
-    val onMoveDown = remember(canMoveDown) {
-        if (canMoveDown) {
-            { currentOnMoveExercise(id, 1) }
-        } else {
-            null
-        }
+    val moveDown = remember(canMoveDown, id, onMoveExercise) {
+        if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
     }
 
     ExerciseCard(
-        exerciseName = exerciseWithSets.workoutExercise.exerciseName,
-        sets = setUiModels,
-        onAddSet = onAddSetCb,
-        onRemoveExercise = onRemoveExerciseCb,
-        onWeightChange = onWeightChangeCb,
-        onRepsChange = onRepsChangeCb,
-        onToggleComplete = onToggleCompleteCb,
-        onRestTimeChange = onRestTimeChangeCb,
-        onSetRestTimeForAll = onSetRestTimeForAllCb,
-        activeTimerSetId = activeTimer?.workoutSetId,
-        timerEndAtEpochMs = activeTimer?.endAtEpochMs ?: 0L,
-        timerTotalMs = activeTimer?.totalMs ?: 0L,
-        onExerciseTitleClick = onExerciseTitleClickCb,
-        onCancelTimer = onCancelTimerCb,
-        onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
+        exerciseName = row.workoutExercise.exerciseName,
+        sets = row.sets,
+        onAddSet = addSet,
+        onRemoveExercise = removeExercise,
+        onWeightChange = weightChange,
+        onRepsChange = repsChange,
+        onToggleComplete = toggleComplete,
+        onRestTimeChange = restTimeChange,
+        onSetRestTimeForAll = setRestTimeForAll,
+        activeTimerSetId = if (ownsActiveTimer) activeTimerSetId else null,
+        timerEndAtEpochMs = if (ownsActiveTimer) timerEndAtEpochMs else 0L,
+        timerTotalMs = if (ownsActiveTimer) timerTotalMs else 0L,
+        onExerciseTitleClick = titleClick,
+        onCancelTimer = onCancelTimer,
+        onMoveUp = moveUp,
+        onMoveDown = moveDown,
         showBottomDivider = canMoveDown,
-        note = exerciseWithSets.workoutExercise.note,
-        onUpdateNote = onUpdateNoteCb
+        note = row.workoutExercise.note,
+        onUpdateNote = updateNote
     )
 }
 

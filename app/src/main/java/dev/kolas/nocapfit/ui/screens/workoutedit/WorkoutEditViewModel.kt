@@ -12,6 +12,9 @@ import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import dev.kolas.nocapfit.data.session.CurrentProfileHolder
+import dev.kolas.nocapfit.ui.model.PreviousSetLookup
+import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
+import dev.kolas.nocapfit.ui.model.buildWorkoutExerciseRows
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,6 +40,10 @@ class WorkoutEditViewModel @Inject constructor(
 
     private val _workout = MutableStateFlow<WorkoutWithExercises?>(null)
     val workout: StateFlow<WorkoutWithExercises?> = _workout.asStateFlow()
+
+    val exerciseRows: StateFlow<List<WorkoutExerciseRow>> = _workout
+        .map { w -> buildWorkoutExerciseRows(w?.exercises.orEmpty(), PreviousSetLookup(emptyMap())) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val availableExercises: StateFlow<List<Exercise>> = currentProfileHolder.profileId
         .flatMapLatest { profileId ->

@@ -16,6 +16,8 @@ import dev.kolas.nocapfit.ui.components.parseMmSsToSeconds
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
 import dev.kolas.nocapfit.ui.model.PreviousSetData
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
+import dev.kolas.nocapfit.ui.model.ProgramExerciseRow
+import dev.kolas.nocapfit.ui.model.buildProgramExerciseRows
 import dev.kolas.nocapfit.ui.util.formatWeightInput
 import dev.kolas.nocapfit.ui.util.parseWeight
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -74,7 +77,10 @@ class ProgramFormViewModel @Inject constructor(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
-    val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
+
+    val exerciseRows: StateFlow<List<ProgramExerciseRow>> = combine(_uiState, _previousSets) { state, prev ->
+        buildProgramExerciseRows(state.exercises, prev)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
         viewModelScope.launch {

@@ -290,6 +290,32 @@ class WorkoutEditViewModelTest {
     }
 
     @Test
+    fun exerciseRows_reflectsCurrentSnapshot() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.exerciseRows.test {
+            val rows = awaitItem()
+            assertEquals(listOf(50L, 51L), rows.map { it.workoutExercise.id })
+            assertEquals(60000, rows[0].sets[0].weightThousandths)
+            assertEquals(10, rows[0].sets[0].reps)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun exerciseRows_updatesAfterWeightEdit() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.exerciseRows.test {
+            awaitItem()
+            viewModel.updateSet(testSet.copy(weightThousandths = 70000))
+            val updated = awaitItem()
+            assertEquals(70000, updated[0].sets[0].weightThousandths)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun save_doesNothingWhenNoWorkout() = runTest {
         coEvery { profileRepository.getDefault() } returns testProfile
         coEvery { workoutRepository.getWithExercises(99L) } returns null

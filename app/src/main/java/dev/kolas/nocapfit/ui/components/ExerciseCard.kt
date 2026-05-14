@@ -39,6 +39,7 @@ import dev.kolas.nocapfit.ui.model.SetUiModel
 @Composable
 fun ExerciseCard(
     exerciseName: String,
+    /** Must be pre-sorted by [SetUiModel.setIndex]. */
     sets: List<SetUiModel>,
     onAddSet: () -> Unit,
     onRemoveExercise: () -> Unit,
@@ -122,8 +123,7 @@ fun ExerciseCard(
             modifier = Modifier.padding(horizontal = 8.dp)
         )
 
-        val sortedSets = remember(sets) { sets.sortedBy { it.setIndex } }
-        sortedSets.forEachIndexed { index, set ->
+        sets.forEachIndexed { index, set ->
             ExerciseSetItem(
                 index = index,
                 set = set,

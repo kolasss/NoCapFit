@@ -15,6 +15,10 @@ data class ProgramExerciseRow(
  * Stateful builder that caches per-exercise rows so a keystroke that changes one [ExerciseEntry]
  * does not re-parse strings for every other exercise in the program. Hold one instance per
  * ViewModel.
+ *
+ * **Not thread-safe.** Called from the `combine { ... }` operator on `viewModelScope`
+ * (`Dispatchers.Main.immediate`). Moving the upstream flow off the main thread requires
+ * adding a `Mutex` or `flowOn` confinement.
  */
 class ProgramExerciseRowBuilder {
     private var lastPreviousSets: PreviousSetLookup? = null

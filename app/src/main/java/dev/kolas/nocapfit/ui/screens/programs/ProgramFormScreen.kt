@@ -247,14 +247,14 @@ private fun ExerciseCardItem(
     val exId = exerciseEntry.exercise.id
     val entrySets = exerciseEntry.sets
 
-    val onWeightChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
+    val weightChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
         {
                 model, w ->
             val entry = entrySets[model.setIndex]
             onUpdateSet(exerciseIndex, model.setIndex, entry.copy(weight = formatWeightInput(w)))
         }
     }
-    val onRepsChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
+    val repsChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
         {
                 model, r ->
             val entry = entrySets[model.setIndex]
@@ -265,7 +265,7 @@ private fun ExerciseCardItem(
             )
         }
     }
-    val onRestTimeChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
+    val restTimeChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
         {
                 model, s ->
             val entry = entrySets[model.setIndex]
@@ -276,22 +276,22 @@ private fun ExerciseCardItem(
             )
         }
     }
-    val onRemoveSetCb = remember<(SetUiModel) -> Unit>(exerciseIndex, onRemoveSet) {
+    val removeSet = remember<(SetUiModel) -> Unit>(exerciseIndex, onRemoveSet) {
         {
                 model ->
             onRemoveSet(exerciseIndex, model.setIndex)
         }
     }
-    val onSetRestTimeForAllCb = remember<(Int) -> Unit>(exerciseIndex, onSetRestTimeForAll) {
+    val setRestTimeForAll = remember<(Int) -> Unit>(exerciseIndex, onSetRestTimeForAll) {
         {
                 seconds ->
             onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds))
         }
     }
-    val onAddSetCb = remember(exerciseIndex, onAddSet) { { onAddSet(exerciseIndex) } }
-    val onRemoveExerciseCb = remember(exerciseIndex, onRemoveExercise) { { onRemoveExercise(exerciseIndex) } }
-    val onExerciseTitleClickCb = remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
-    val onUpdateNoteCb = remember<(String?) -> Unit>(exerciseIndex, onUpdateNote) {
+    val addSet = remember(exerciseIndex, onAddSet) { { onAddSet(exerciseIndex) } }
+    val removeExercise = remember(exerciseIndex, onRemoveExercise) { { onRemoveExercise(exerciseIndex) } }
+    val titleClick = remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
+    val updateNote = remember<(String?) -> Unit>(exerciseIndex, onUpdateNote) {
         {
                 note ->
             onUpdateNote(exerciseIndex, note)
@@ -300,30 +300,30 @@ private fun ExerciseCardItem(
 
     val canMoveUp = exerciseIndex > 0
     val canMoveDown = exerciseIndex < lastIndex
-    val onMoveUp = remember(canMoveUp, exerciseIndex, onMoveExercise) {
+    val moveUp = remember(canMoveUp, exerciseIndex, onMoveExercise) {
         if (canMoveUp) ({ onMoveExercise(exerciseIndex, exerciseIndex - 1) }) else null
     }
-    val onMoveDown = remember(canMoveDown, exerciseIndex, onMoveExercise) {
+    val moveDown = remember(canMoveDown, exerciseIndex, onMoveExercise) {
         if (canMoveDown) ({ onMoveExercise(exerciseIndex, exerciseIndex + 1) }) else null
     }
 
     ExerciseCard(
         exerciseName = exerciseEntry.exercise.name,
         sets = row.sets,
-        onAddSet = onAddSetCb,
-        onRemoveExercise = onRemoveExerciseCb,
-        onWeightChange = onWeightChange,
-        onRepsChange = onRepsChange,
-        onRestTimeChange = onRestTimeChange,
-        onRemoveSet = onRemoveSetCb,
-        onSetRestTimeForAll = onSetRestTimeForAllCb,
-        onExerciseTitleClick = onExerciseTitleClickCb,
+        onAddSet = addSet,
+        onRemoveExercise = removeExercise,
+        onWeightChange = weightChange,
+        onRepsChange = repsChange,
+        onRestTimeChange = restTimeChange,
+        onRemoveSet = removeSet,
+        onSetRestTimeForAll = setRestTimeForAll,
+        onExerciseTitleClick = titleClick,
         showComplete = false,
         showAddSetButton = true,
-        onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
+        onMoveUp = moveUp,
+        onMoveDown = moveDown,
         showBottomDivider = canMoveDown,
         note = exerciseEntry.note,
-        onUpdateNote = onUpdateNoteCb
+        onUpdateNote = updateNote
     )
 }

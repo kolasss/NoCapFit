@@ -192,7 +192,7 @@ private fun rememberShowTopBarTimer(
     val activeTimerExerciseId: Long? = remember(timerState, rows) {
         val setId = (timerState as? TimerCoordinator.TimerUiState.Running)?.workoutSetId
             ?: return@remember null
-        rows.firstOrNull { row -> setId in row.setsById.keys }?.workoutExercise?.id
+        rows.firstOrNull { row -> setId in row.setsById }?.workoutExercise?.id
     }
     val isVisible by remember(activeTimerExerciseId) {
         derivedStateOf {
@@ -366,21 +366,21 @@ private fun ExerciseCardItem(
     val id = row.workoutExercise.id
     val exId = row.workoutExercise.exerciseId
     val setsById = row.setsById
-    val ownsActiveTimer = activeTimerSetId != null && activeTimerSetId in setsById.keys
+    val ownsActiveTimer = activeTimerSetId != null && activeTimerSetId in setsById
 
-    val onWeightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
+    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, w ->
             setsById[model.id]?.let { onUpdateSet(it.copy(weightThousandths = w)) }
         }
     }
-    val onRepsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
+    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, r ->
             setsById[model.id]?.let { onUpdateSet(it.copy(reps = r)) }
         }
     }
-    val onToggleComplete = remember<(SetUiModel) -> Unit>(setsById, onCompleteSet, onRevertSet) {
+    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onCompleteSet, onRevertSet) {
         {
                 model ->
             setsById[model.id]?.let { ws ->
@@ -388,27 +388,27 @@ private fun ExerciseCardItem(
             }
         }
     }
-    val onRestTimeChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
+    val restTimeChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, s ->
             setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
         }
     }
-    val onAddSetCb = remember(id, onAddSet) { { onAddSet(id) } }
-    val onRemoveExerciseCb = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
-    val onSetRestTimeForAllCb = remember<(Int) -> Unit>(id, onSetRestTimeForAll) {
+    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
+    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
+    val setRestTimeForAll = remember<(Int) -> Unit>(id, onSetRestTimeForAll) {
         {
                 seconds ->
             onSetRestTimeForAll(id, seconds)
         }
     }
-    val onUpdateNoteCb = remember<(String?) -> Unit>(id, onUpdateNote) {
+    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
         {
                 note ->
             onUpdateNote(id, note)
         }
     }
-    val onExerciseTitleClickCb: (() -> Unit)? = if (exId != null) {
+    val titleClick: (() -> Unit)? = if (exId != null) {
         remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
     } else {
         null
@@ -416,33 +416,33 @@ private fun ExerciseCardItem(
 
     val canMoveUp = index > 0
     val canMoveDown = index < lastIndex
-    val onMoveUp = remember(canMoveUp, id, onMoveExercise) {
+    val moveUp = remember(canMoveUp, id, onMoveExercise) {
         if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
     }
-    val onMoveDown = remember(canMoveDown, id, onMoveExercise) {
+    val moveDown = remember(canMoveDown, id, onMoveExercise) {
         if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
     }
 
     ExerciseCard(
         exerciseName = row.workoutExercise.exerciseName,
         sets = row.sets,
-        onAddSet = onAddSetCb,
-        onRemoveExercise = onRemoveExerciseCb,
-        onWeightChange = onWeightChange,
-        onRepsChange = onRepsChange,
-        onToggleComplete = onToggleComplete,
-        onRestTimeChange = onRestTimeChange,
-        onSetRestTimeForAll = onSetRestTimeForAllCb,
+        onAddSet = addSet,
+        onRemoveExercise = removeExercise,
+        onWeightChange = weightChange,
+        onRepsChange = repsChange,
+        onToggleComplete = toggleComplete,
+        onRestTimeChange = restTimeChange,
+        onSetRestTimeForAll = setRestTimeForAll,
         activeTimerSetId = if (ownsActiveTimer) activeTimerSetId else null,
         timerEndAtEpochMs = if (ownsActiveTimer) timerEndAtEpochMs else 0L,
         timerTotalMs = if (ownsActiveTimer) timerTotalMs else 0L,
-        onExerciseTitleClick = onExerciseTitleClickCb,
+        onExerciseTitleClick = titleClick,
         onCancelTimer = onCancelTimer,
-        onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
+        onMoveUp = moveUp,
+        onMoveDown = moveDown,
         showBottomDivider = canMoveDown,
         note = row.workoutExercise.note,
-        onUpdateNote = onUpdateNoteCb
+        onUpdateNote = updateNote
     )
 }
 

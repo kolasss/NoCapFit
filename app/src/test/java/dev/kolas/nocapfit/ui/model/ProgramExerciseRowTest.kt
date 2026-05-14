@@ -28,6 +28,7 @@ class ProgramExerciseRowTest {
 
     @Test
     fun parsesWeightFromString() {
+        // restTimeSeconds is stored as digit-string in mm:ss form: "130" = 1:30 = 90 sec.
         val rows = buildProgramExerciseRows(
             listOf(entry(1L, sets = listOf(SetEntry(weight = "60.5", reps = "8", restTimeSeconds = "130")))),
             PreviousSetLookup(emptyMap())

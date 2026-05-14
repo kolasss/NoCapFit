@@ -189,27 +189,27 @@ private fun WorkoutEditExerciseItem(
     val id = row.workoutExercise.id
     val setsById = row.setsById
 
-    val onWeightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
+    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
         {
                 model, w ->
             setsById[model.id]?.let { onUpdateSet(it, w) }
         }
     }
-    val onRepsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateReps) {
+    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateReps) {
         {
                 model, r ->
             setsById[model.id]?.let { onUpdateReps(it, r) }
         }
     }
-    val onToggleCompleteCb = remember<(SetUiModel) -> Unit>(setsById, onToggleComplete) {
+    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onToggleComplete) {
         {
                 model ->
             setsById[model.id]?.let { onToggleComplete(it) }
         }
     }
-    val onAddSetCb = remember(id, onAddSet) { { onAddSet(id) } }
-    val onRemoveExerciseCb = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
-    val onUpdateNoteCb = remember<(String?) -> Unit>(id, onUpdateNote) {
+    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
+    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
+    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
         {
                 note ->
             onUpdateNote(id, note)
@@ -218,26 +218,26 @@ private fun WorkoutEditExerciseItem(
 
     val canMoveUp = index > 0
     val canMoveDown = index < lastIndex
-    val onMoveUp = remember(canMoveUp, id, onMoveExercise) {
+    val moveUp = remember(canMoveUp, id, onMoveExercise) {
         if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
     }
-    val onMoveDown = remember(canMoveDown, id, onMoveExercise) {
+    val moveDown = remember(canMoveDown, id, onMoveExercise) {
         if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
     }
 
     ExerciseCard(
         exerciseName = row.workoutExercise.exerciseName,
         sets = row.sets,
-        onAddSet = onAddSetCb,
-        onRemoveExercise = onRemoveExerciseCb,
-        onWeightChange = onWeightChange,
-        onRepsChange = onRepsChange,
-        onToggleComplete = onToggleCompleteCb,
+        onAddSet = addSet,
+        onRemoveExercise = removeExercise,
+        onWeightChange = weightChange,
+        onRepsChange = repsChange,
+        onToggleComplete = toggleComplete,
         showRestTime = false,
-        onMoveUp = onMoveUp,
-        onMoveDown = onMoveDown,
+        onMoveUp = moveUp,
+        onMoveDown = moveDown,
         showBottomDivider = canMoveDown,
         note = row.workoutExercise.note,
-        onUpdateNote = onUpdateNoteCb
+        onUpdateNote = updateNote
     )
 }

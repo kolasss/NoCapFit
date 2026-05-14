@@ -107,6 +107,24 @@ class WorkoutExerciseRowTest {
     }
 
     @Test
+    fun builderReusesUnchangedRowAcrossEmissions() {
+        val builder = WorkoutExerciseRowBuilder()
+        val exA = exercise(id = 1L, orderIndex = 0, sets = listOf(set(10L, 0)))
+        val exB = exercise(id = 2L, orderIndex = 1, sets = listOf(set(20L, 0)))
+        val first = builder.build(listOf(exA, exB), PreviousSetLookup(emptyMap()))
+
+        // Re-emit with only exB's sets changed; exA is the same value
+        val exBChanged = exB.copy(sets = listOf(set(20L, 0, weightThousandths = 100)))
+        val second = builder.build(listOf(exA, exBChanged), PreviousSetLookup(emptyMap()))
+
+        // exA row must be reference-identical so Compose can skip its item body
+        assertTrue(first[0] === second[0])
+        // exB row must be a new instance (its content changed)
+        assertTrue(first[1] !== second[1])
+        assertEquals(100, second[1].sets[0].weightThousandths)
+    }
+
+    @Test
     fun setsByIdMatchesEverySet() {
         val rawSets = listOf(set(10L, 0), set(11L, 1), set(12L, 2))
         val rows = buildWorkoutExerciseRows(

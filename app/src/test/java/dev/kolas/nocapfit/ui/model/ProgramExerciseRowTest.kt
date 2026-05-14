@@ -94,6 +94,22 @@ class ProgramExerciseRowTest {
     }
 
     @Test
+    fun builderReusesUnchangedRowAcrossEmissions() {
+        val builder = ProgramExerciseRowBuilder()
+        val a = ExerciseEntry(exercise = exercise(1L), sets = listOf(SetEntry(weight = "10")))
+        val b = ExerciseEntry(exercise = exercise(2L), sets = listOf(SetEntry(weight = "20")))
+        val first = builder.build(listOf(a, b), PreviousSetLookup(emptyMap()))
+
+        // Only b's weight string changes (simulating a keystroke in exercise b's weight field)
+        val bChanged = b.copy(sets = listOf(SetEntry(weight = "25")))
+        val second = builder.build(listOf(a, bChanged), PreviousSetLookup(emptyMap()))
+
+        assertTrue(first[0] === second[0])
+        assertTrue(first[1] !== second[1])
+        assertEquals(25000, second[1].sets[0].weightThousandths)
+    }
+
+    @Test
     fun preservesExerciseOrder() {
         val rows = buildProgramExerciseRows(
             listOf(

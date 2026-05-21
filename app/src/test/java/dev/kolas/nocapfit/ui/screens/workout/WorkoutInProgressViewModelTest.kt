@@ -44,7 +44,6 @@ class WorkoutInProgressViewModelTest {
     }
     private val timerCoordinator = mockk<TimerCoordinator>(relaxUnitFun = true) {
         coEvery { timerState } returns MutableStateFlow(TimerCoordinator.TimerUiState.Idle)
-        coEvery { reconstructState() } returns Unit
     }
     private val ringtonePlayer = mockk<RingtonePlayer>(relaxUnitFun = true)
     private val themePreferences = mockk<ThemePreferences> {
@@ -256,6 +255,25 @@ class WorkoutInProgressViewModelTest {
     }
 
     @Test
+    fun setRestTimeForAll_usesBatchUpdate() = runTest {
+        val sets = listOf(
+            testSet.copy(id = 10L, restTimeSeconds = 60),
+            testSet.copy(id = 11L, setIndex = 1, restTimeSeconds = 90)
+        )
+        coEvery { workoutRepository.getSetsForExercise(100L) } returns sets
+
+        val viewModel = createViewModel()
+        viewModel.setRestTimeForAll(100L, 120)
+
+        coVerify(exactly = 1) {
+            workoutRepository.updateWorkoutSets(
+                match { updated -> updated.size == 2 && updated.all { it.restTimeSeconds == 120 } }
+            )
+        }
+        coVerify(exactly = 0) { workoutRepository.updateWorkoutSet(any()) }
+    }
+
+    @Test
     fun finishWorkout_setsEndTimeAndCancelsTimer() = runTest {
         val viewModel = createViewModel()
 
@@ -356,8 +374,6 @@ class WorkoutInProgressViewModelTest {
     @Test
     fun addExerciseFromDb_prefillsFromPreviousWorkout() = runTest {
         coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
-        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
-        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
 
         val viewModel = createViewModel()
         // Override the createViewModel `any()` default with a more specific stub
@@ -367,8 +383,9 @@ class WorkoutInProgressViewModelTest {
         viewModel.addExerciseFromDb(5L, "OHP")
 
         coVerify {
-            workoutRepository.insertWorkoutSet(
-                match { it.weightThousandths == 40000 && it.reps == 10 && it.restTimeSeconds == 60 }
+            workoutRepository.insertExerciseWithDefaultSet(
+                match { it.exerciseId == 5L && it.exerciseName == "OHP" && it.orderIndex == 2 },
+                match { it.weightThousandths == 40000 && it.reps == 10 && it.restTimeSeconds == 60 && it.setIndex == 0 }
             )
         }
     }
@@ -392,16 +409,15 @@ class WorkoutInProgressViewModelTest {
     @Test
     fun addExerciseFromDb_defaultsWhenNoPreviousWorkout() = runTest {
         coEvery { workoutRepository.getMaxOrderIndex(1L) } returns 1
-        coEvery { workoutRepository.insertWorkoutExercise(any()) } returns 300L
-        coEvery { workoutRepository.insertWorkoutSet(any()) } returns 31L
         coEvery { workoutRepository.getPreviousCompletedSets(listOf(5L)) } returns emptyList()
 
         val viewModel = createViewModel()
         viewModel.addExerciseFromDb(5L, "OHP")
 
         coVerify {
-            workoutRepository.insertWorkoutSet(
-                match { it.weightThousandths == 0 && it.reps == 0 && it.restTimeSeconds == 60 }
+            workoutRepository.insertExerciseWithDefaultSet(
+                match { it.exerciseId == 5L && it.exerciseName == "OHP" && it.orderIndex == 2 },
+                match { it.weightThousandths == 0 && it.reps == 0 && it.restTimeSeconds == 60 && it.setIndex == 0 }
             )
         }
     }

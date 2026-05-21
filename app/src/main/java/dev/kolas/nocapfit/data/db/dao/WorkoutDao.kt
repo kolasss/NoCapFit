@@ -107,6 +107,9 @@ interface WorkoutDao {
     @Update
     suspend fun updateWorkoutSet(set: WorkoutSet)
 
+    @Update
+    suspend fun updateWorkoutSets(sets: List<WorkoutSet>)
+
     @Query("DELETE FROM workout_sets WHERE id = :setId")
     suspend fun deleteWorkoutSet(setId: Long)
 
@@ -121,6 +124,12 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :exerciseId ORDER BY setIndex ASC")
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet>
+
+    @Transaction
+    suspend fun insertExerciseWithDefaultSet(exercise: WorkoutExercise, defaultSet: WorkoutSet) {
+        val weId = insertWorkoutExercise(exercise)
+        insertWorkoutSet(defaultSet.copy(workoutExerciseId = weId))
+    }
 
     @Transaction
     suspend fun insertWorkoutWithExercises(

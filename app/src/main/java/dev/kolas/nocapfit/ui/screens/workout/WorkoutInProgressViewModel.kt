@@ -76,7 +76,6 @@ class WorkoutInProgressViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             currentProfileHolder.ensureLoaded()
-            timerCoordinator.reconstructState()
             loadPreviousWorkoutData()
         }
     }
@@ -137,9 +136,9 @@ class WorkoutInProgressViewModel @Inject constructor(
     fun setRestTimeForAll(workoutExerciseId: Long, restTimeSeconds: Int) {
         viewModelScope.launch {
             val sets = workoutRepository.getSetsForExercise(workoutExerciseId)
-            for (set in sets) {
-                workoutRepository.updateWorkoutSet(set.copy(restTimeSeconds = restTimeSeconds))
-            }
+            workoutRepository.updateWorkoutSets(
+                sets.map { it.copy(restTimeSeconds = restTimeSeconds) }
+            )
         }
     }
 
@@ -163,19 +162,17 @@ class WorkoutInProgressViewModel @Inject constructor(
     fun addExerciseFromDb(exerciseId: Long, exerciseName: String) {
         viewModelScope.launch {
             val maxOrder = workoutRepository.getMaxOrderIndex(workoutId)
-            val weId = workoutRepository.insertWorkoutExercise(
-                WorkoutExercise(
+            val prev = workoutRepository.getPreviousCompletedSets(listOf(exerciseId))
+                .find { it.setIndex == 0 }
+            workoutRepository.insertExerciseWithDefaultSet(
+                exercise = WorkoutExercise(
                     workoutId = workoutId,
                     exerciseName = exerciseName,
                     exerciseId = exerciseId,
                     orderIndex = maxOrder + 1
-                )
-            )
-            val prev = workoutRepository.getPreviousCompletedSets(listOf(exerciseId))
-                .find { it.setIndex == 0 }
-            workoutRepository.insertWorkoutSet(
-                WorkoutSet(
-                    workoutExerciseId = weId,
+                ),
+                defaultSet = WorkoutSet(
+                    workoutExerciseId = 0L,
                     setIndex = 0,
                     weightThousandths = prev?.weightThousandths ?: 0,
                     reps = prev?.reps ?: 0,

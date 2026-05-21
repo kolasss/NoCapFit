@@ -40,6 +40,19 @@ class RestTimerService : Service() {
     private var startAtEpochMs: Long = 0L
     private var endAtEpochMs: Long = 0L
 
+    // Identical on every notification update (constant action, request code, flags), so build once.
+    private val cancelPendingIntent: PendingIntent by lazy {
+        val cancelIntent = Intent(this, RestTimerService::class.java).apply {
+            action = ACTION_CANCEL_TIMER
+        }
+        PendingIntent.getService(
+            this,
+            0,
+            cancelIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -101,16 +114,6 @@ class RestTimerService : Service() {
         val remainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
         val remainingSeconds = ceilSecondsFromMs(remainingMs)
         val elapsedSeconds = (totalSeconds - remainingSeconds).coerceIn(0, totalSeconds)
-
-        val cancelIntent = Intent(this, RestTimerService::class.java).apply {
-            action = ACTION_CANCEL_TIMER
-        }
-        val cancelPendingIntent = PendingIntent.getService(
-            this,
-            0,
-            cancelIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo_foreground)

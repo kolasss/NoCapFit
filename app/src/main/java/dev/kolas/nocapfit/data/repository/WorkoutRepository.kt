@@ -39,7 +39,10 @@ class WorkoutRepository @Inject constructor(
     suspend fun swapExerciseOrder(first: WorkoutExercise, second: WorkoutExercise) =
         workoutDao.swapExerciseOrder(first, second)
     suspend fun insertWorkoutSet(set: WorkoutSet): Long = workoutDao.insertWorkoutSet(set)
+    suspend fun insertExerciseWithDefaultSet(exercise: WorkoutExercise, defaultSet: WorkoutSet) =
+        workoutDao.insertExerciseWithDefaultSet(exercise, defaultSet)
     suspend fun updateWorkoutSet(set: WorkoutSet) = workoutDao.updateWorkoutSet(set)
+    suspend fun updateWorkoutSets(sets: List<WorkoutSet>) = workoutDao.updateWorkoutSets(sets)
     suspend fun getMaxOrderIndex(workoutId: Long): Int = workoutDao.getMaxOrderIndex(workoutId)
     suspend fun deleteWorkoutExercise(exerciseId: Long) = workoutDao.deleteWorkoutExercise(exerciseId)
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet> = workoutDao.getSetsForExercise(exerciseId)

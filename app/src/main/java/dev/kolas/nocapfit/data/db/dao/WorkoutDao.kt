@@ -125,6 +125,11 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sets WHERE workoutExerciseId = :exerciseId ORDER BY setIndex ASC")
     suspend fun getSetsForExercise(exerciseId: Long): List<WorkoutSet>
 
+    /**
+     * Inserts [exercise] and its first set in one transaction. [defaultSet]'s `workoutExerciseId`
+     * is ignored — it is assigned from the row id of the inserted [exercise] (mirrors
+     * [insertWorkoutWithExercises]/[saveWorkoutEdits], where child FKs are set inside the transaction).
+     */
     @Transaction
     suspend fun insertExerciseWithDefaultSet(exercise: WorkoutExercise, defaultSet: WorkoutSet) {
         val weId = insertWorkoutExercise(exercise)

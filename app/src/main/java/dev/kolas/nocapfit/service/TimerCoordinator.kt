@@ -94,8 +94,15 @@ class TimerCoordinator @Inject constructor(
         if (currentState is TimerUiState.Running) {
             cancelAlarm(currentState.timerId)
         }
-        // Delete unconditionally so a stale row (e.g. UI state out of sync after process
-        // restart) can't survive a cancel.
+        // Cancel by the DB row's id too: if UI state is out of sync (e.g. after process
+        // restart), cancelling only by state would delete the row but leave its alarm
+        // scheduled — a harmless but unnecessary wakeup later.
+        timerRepository.getRunning()?.let { row ->
+            if ((currentState as? TimerUiState.Running)?.timerId != row.id) {
+                cancelAlarm(row.id)
+            }
+        }
+        // Delete unconditionally so a stale row can't survive a cancel.
         timerRepository.cancelAllRunning()
         context.stopService(Intent(context, RestTimerService::class.java))
         _timerState.value = TimerUiState.Idle

@@ -10,7 +10,9 @@ interface ActiveTimerDao {
     @Insert
     suspend fun insert(timer: ActiveTimer): Long
 
-    @Query("SELECT * FROM active_timers LIMIT 1")
+    // Newest row wins deterministically in the unlikely case a start/cancel race ever
+    // leaves more than one row behind.
+    @Query("SELECT * FROM active_timers ORDER BY id DESC LIMIT 1")
     suspend fun getRunning(): ActiveTimer?
 
     /**

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -35,11 +35,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
+import dev.kolas.nocapfit.ui.components.exerciseCardItems
 import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
 import dev.kolas.nocapfit.ui.model.ProgramExerciseRow
-import dev.kolas.nocapfit.ui.model.SetUiModel
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatWeightInput
 import kotlinx.coroutines.launch
@@ -163,12 +162,8 @@ internal fun ProgramFormContent(
                 }
             }
 
-            itemsIndexed(
-                rows,
-                key = { _, row -> row.exerciseEntry.entryId },
-                contentType = { _, _ -> "exercise" }
-            ) { exerciseIndex, row ->
-                ExerciseCardItem(
+            rows.forEachIndexed { exerciseIndex, row ->
+                programExerciseCardItems(
                     exerciseIndex = exerciseIndex,
                     row = row,
                     lastIndex = rows.lastIndex,
@@ -228,9 +223,13 @@ internal fun ProgramFormTopBar(
     )
 }
 
+/**
+ * Emits one program exercise as flattened lazy items (header / sets / footer). Not composable:
+ * the adapter lambdas are plain allocations rebuilt only when the LazyColumn content re-runs;
+ * per-set identity stability is handled inside the shared items via rememberUpdatedState.
+ */
 @Suppress("LongParameterList", "LongMethod")
-@Composable
-private fun ExerciseCardItem(
+private fun LazyListScope.programExerciseCardItems(
     exerciseIndex: Int,
     row: ProgramExerciseRow,
     lastIndex: Int,
@@ -246,84 +245,53 @@ private fun ExerciseCardItem(
     val exerciseEntry = row.exerciseEntry
     val exId = exerciseEntry.exercise.id
     val entrySets = exerciseEntry.sets
+    val canMoveDown = exerciseIndex < lastIndex
 
-    val weightChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
-        {
-                model, w ->
+    exerciseCardItems(
+        keyPrefix = "pe-${exerciseEntry.entryId}",
+        exerciseName = exerciseEntry.exercise.name,
+        sets = row.sets,
+        onAddSet = { onAddSet(exerciseIndex) },
+        onRemoveExercise = { onRemoveExercise(exerciseIndex) },
+        onWeightChange = { model, w ->
             val entry = entrySets[model.setIndex]
             onUpdateSet(exerciseIndex, model.setIndex, entry.copy(weight = formatWeightInput(w)))
-        }
-    }
-    val repsChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
-        {
-                model, r ->
+        },
+        onRepsChange = { model, r ->
             val entry = entrySets[model.setIndex]
             onUpdateSet(
                 exerciseIndex,
                 model.setIndex,
                 entry.copy(reps = if (r == 0) "" else r.toString())
             )
-        }
-    }
-    val restTimeChange = remember<(SetUiModel, Int) -> Unit>(exerciseIndex, entrySets, onUpdateSet) {
-        {
-                model, s ->
+        },
+        onRestTimeChange = { model, s ->
             val entry = entrySets[model.setIndex]
             onUpdateSet(
                 exerciseIndex,
                 model.setIndex,
                 entry.copy(restTimeSeconds = secondsToMmSsDigits(s))
             )
-        }
-    }
-    val removeSet = remember<(SetUiModel) -> Unit>(exerciseIndex, onRemoveSet) {
-        {
-                model ->
-            onRemoveSet(exerciseIndex, model.setIndex)
-        }
-    }
-    val setRestTimeForAll = remember<(Int) -> Unit>(exerciseIndex, onSetRestTimeForAll) {
-        {
-                seconds ->
+        },
+        onRemoveSet = { model -> onRemoveSet(exerciseIndex, model.setIndex) },
+        onSetRestTimeForAll = { seconds ->
             onSetRestTimeForAll(exerciseIndex, secondsToMmSsDigits(seconds))
-        }
-    }
-    val addSet = remember(exerciseIndex, onAddSet) { { onAddSet(exerciseIndex) } }
-    val removeExercise = remember(exerciseIndex, onRemoveExercise) { { onRemoveExercise(exerciseIndex) } }
-    val titleClick = remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
-    val updateNote = remember<(String?) -> Unit>(exerciseIndex, onUpdateNote) {
-        {
-                note ->
-            onUpdateNote(exerciseIndex, note)
-        }
-    }
-
-    val canMoveUp = exerciseIndex > 0
-    val canMoveDown = exerciseIndex < lastIndex
-    val moveUp = remember(canMoveUp, exerciseIndex, onMoveExercise) {
-        if (canMoveUp) ({ onMoveExercise(exerciseIndex, exerciseIndex - 1) }) else null
-    }
-    val moveDown = remember(canMoveDown, exerciseIndex, onMoveExercise) {
-        if (canMoveDown) ({ onMoveExercise(exerciseIndex, exerciseIndex + 1) }) else null
-    }
-
-    ExerciseCard(
-        exerciseName = exerciseEntry.exercise.name,
-        sets = row.sets,
-        onAddSet = addSet,
-        onRemoveExercise = removeExercise,
-        onWeightChange = weightChange,
-        onRepsChange = repsChange,
-        onRestTimeChange = restTimeChange,
-        onRemoveSet = removeSet,
-        onSetRestTimeForAll = setRestTimeForAll,
-        onExerciseTitleClick = titleClick,
+        },
+        onExerciseTitleClick = { onExerciseTitleClick(exId) },
         showComplete = false,
         showAddSetButton = true,
-        onMoveUp = moveUp,
-        onMoveDown = moveDown,
+        onMoveUp = if (exerciseIndex > 0) {
+            { onMoveExercise(exerciseIndex, exerciseIndex - 1) }
+        } else {
+            null
+        },
+        onMoveDown = if (canMoveDown) {
+            { onMoveExercise(exerciseIndex, exerciseIndex + 1) }
+        } else {
+            null
+        },
         showBottomDivider = canMoveDown,
         note = exerciseEntry.note,
-        onUpdateNote = updateNote
+        onUpdateNote = { note -> onUpdateNote(exerciseIndex, note) }
     )
 }

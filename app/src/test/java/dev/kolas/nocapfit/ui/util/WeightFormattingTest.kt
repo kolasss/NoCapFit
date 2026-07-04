@@ -44,6 +44,26 @@ class WeightFormattingTest {
         assertEquals("0", formatWeightDisplay(0))
     }
 
+    @Test
+    fun formatWeightDisplay_smallFraction_returnsCorrectDecimal() {
+        assertEquals("2.25", formatWeightDisplay(2250))
+    }
+
+    @Test
+    fun formatWeightDisplay_subKiloFraction_returnsLeadingZero() {
+        assertEquals("0.5", formatWeightDisplay(500))
+    }
+
+    @Test
+    fun formatWeightDisplay_largeWholeNumber_returnsInteger() {
+        assertEquals("1000", formatWeightDisplay(1000000))
+    }
+
+    @Test
+    fun formatWeightInput_subKiloFraction_returnsLeadingZero() {
+        assertEquals("0.5", formatWeightInput(500))
+    }
+
     // --- parseWeight ---
 
     @Test

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,9 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
-import dev.kolas.nocapfit.ui.model.SetUiModel
+import dev.kolas.nocapfit.ui.components.exerciseCardItems
 import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -140,11 +139,8 @@ internal fun WorkoutEditContent(
             )
         }
 
-        itemsIndexed(
-            rows,
-            key = { _, item -> item.workoutExercise.id }
-        ) { index, row ->
-            WorkoutEditExerciseItem(
+        rows.forEachIndexed { index, row ->
+            workoutEditExerciseItems(
                 row = row,
                 index = index,
                 lastIndex = rows.lastIndex,
@@ -172,9 +168,13 @@ internal fun WorkoutEditContent(
     }
 }
 
-@Suppress("LongParameterList", "LongMethod")
-@Composable
-private fun WorkoutEditExerciseItem(
+/**
+ * Emits one exercise as flattened lazy items (header / sets / footer). Not composable: the
+ * adapter lambdas are plain allocations rebuilt only when the LazyColumn content re-runs;
+ * per-set identity stability is handled inside the shared items via rememberUpdatedState.
+ */
+@Suppress("LongParameterList")
+private fun LazyListScope.workoutEditExerciseItems(
     row: WorkoutExerciseRow,
     index: Int,
     lastIndex: Int,
@@ -188,56 +188,28 @@ private fun WorkoutEditExerciseItem(
 ) {
     val id = row.workoutExercise.id
     val setsById = row.setsById
-
-    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
-        {
-                model, w ->
-            setsById[model.id]?.let { onUpdateSet(it, w) }
-        }
-    }
-    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateReps) {
-        {
-                model, r ->
-            setsById[model.id]?.let { onUpdateReps(it, r) }
-        }
-    }
-    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onToggleComplete) {
-        {
-                model ->
-            setsById[model.id]?.let { onToggleComplete(it) }
-        }
-    }
-    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
-    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
-    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
-        {
-                note ->
-            onUpdateNote(id, note)
-        }
-    }
-
-    val canMoveUp = index > 0
     val canMoveDown = index < lastIndex
-    val moveUp = remember(canMoveUp, id, onMoveExercise) {
-        if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
-    }
-    val moveDown = remember(canMoveDown, id, onMoveExercise) {
-        if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
-    }
 
-    ExerciseCard(
+    exerciseCardItems(
+        keyPrefix = "wee-$id",
         exerciseName = row.workoutExercise.exerciseName,
         sets = row.sets,
-        onAddSet = addSet,
-        onRemoveExercise = removeExercise,
-        onWeightChange = weightChange,
-        onRepsChange = repsChange,
-        onToggleComplete = toggleComplete,
+        onAddSet = { onAddSet(id) },
+        onRemoveExercise = { onRemoveExercise(id) },
+        onWeightChange = { model, w ->
+            setsById[model.id]?.let { onUpdateSet(it, w) }
+        },
+        onRepsChange = { model, r ->
+            setsById[model.id]?.let { onUpdateReps(it, r) }
+        },
+        onToggleComplete = { model ->
+            setsById[model.id]?.let { onToggleComplete(it) }
+        },
         showRestTime = false,
-        onMoveUp = moveUp,
-        onMoveDown = moveDown,
+        onMoveUp = if (index > 0) ({ onMoveExercise(id, -1) }) else null,
+        onMoveDown = if (canMoveDown) ({ onMoveExercise(id, 1) }) else null,
         showBottomDivider = canMoveDown,
         note = row.workoutExercise.note,
-        onUpdateNote = updateNote
+        onUpdateNote = { note -> onUpdateNote(id, note) }
     )
 }

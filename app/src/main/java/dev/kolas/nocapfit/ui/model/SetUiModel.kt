@@ -1,7 +1,7 @@
 package dev.kolas.nocapfit.ui.model
 
 import androidx.compose.runtime.Immutable
-import dev.kolas.nocapfit.util.WEIGHT_DIVISOR
+import dev.kolas.nocapfit.ui.util.formatWeightDisplay
 
 @Immutable
 data class SetUiModel(
@@ -14,15 +14,8 @@ data class SetUiModel(
     val previousText: String? = null
 )
 
-fun formatPreviousSet(data: PreviousSetData): String {
-    val kg = data.weightThousandths / WEIGHT_DIVISOR
-    val weightStr = if (kg == kg.toLong().toDouble()) {
-        kg.toLong().toString()
-    } else {
-        kg.toBigDecimal().stripTrailingZeros().toPlainString()
-    }
-    return "${weightStr}x${data.reps}"
-}
+fun formatPreviousSet(data: PreviousSetData): String =
+    "${formatWeightDisplay(data.weightThousandths)}x${data.reps}"
 
 @Immutable
 data class PreviousSetData(val weightThousandths: Int, val reps: Int)

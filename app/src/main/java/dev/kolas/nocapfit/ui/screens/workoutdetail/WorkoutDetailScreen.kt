@@ -48,7 +48,7 @@ import dev.kolas.nocapfit.ui.components.SetSummaryRow
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatDateTime
 import dev.kolas.nocapfit.ui.util.formatDuration
-import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
+import dev.kolas.nocapfit.util.WEIGHT_MULTIPLIER
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,11 +180,12 @@ private fun WorkoutDetailContent(
     val totalSets = data.exercises.sumOf { ex ->
         ex.sets.count { it.completed }
     }
-    val totalVolume = data.exercises.sumOf { ex ->
+    val totalVolumeThousandths = data.exercises.sumOf { ex ->
         ex.sets.filter { it.completed }.sumOf { set ->
-            (set.weightThousandths.toLong() * set.reps) / MILLIS_PER_SECOND
+            set.weightThousandths.toLong() * set.reps
         }
     }
+    val totalVolume = totalVolumeThousandths / WEIGHT_MULTIPLIER
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {

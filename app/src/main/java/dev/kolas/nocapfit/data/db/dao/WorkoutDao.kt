@@ -9,6 +9,7 @@ import androidx.room.Update
 import dev.kolas.nocapfit.data.db.entity.Workout
 import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutSet
+import dev.kolas.nocapfit.data.db.relation.WorkoutWithExerciseNames
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import kotlinx.coroutines.flow.Flow
 
@@ -36,17 +37,24 @@ interface WorkoutDao {
     fun getWithExercisesFlow(id: Long): Flow<WorkoutWithExercises?>
 
     @Transaction
-    @Query("SELECT * FROM workouts WHERE profileId = :profileId ORDER BY startTime DESC")
-    fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>>
-
-    @Transaction
     @Query(
-        "SELECT DISTINCT w.* FROM workouts w " +
-            "INNER JOIN workout_exercises we ON w.id = we.workoutId " +
-            "WHERE we.exerciseId = :exerciseId AND w.endTime IS NOT NULL " +
-            "ORDER BY w.startTime DESC"
+        "SELECT * FROM workouts WHERE profileId = :profileId AND endTime IS NOT NULL " +
+            "ORDER BY startTime DESC"
     )
-    fun getFinishedByExerciseId(exerciseId: Long): Flow<List<WorkoutWithExercises>>
+    fun getFinishedWithExerciseNames(profileId: Long): Flow<List<WorkoutWithExerciseNames>>
+
+    // The same exercise can appear more than once in a workout (supersets), so sets are ordered
+    // by exercise position first — the ViewModel numbers them sequentially per workout.
+    @Query(
+        "SELECT w.id AS workoutId, w.programName AS programName, w.startTime AS startTime, " +
+            "ws.setIndex AS setIndex, ws.weightThousandths AS weightThousandths, ws.reps AS reps " +
+            "FROM workouts w " +
+            "INNER JOIN workout_exercises we ON we.workoutId = w.id " +
+            "LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id AND ws.completed = 1 " +
+            "WHERE we.exerciseId = :exerciseId AND w.endTime IS NOT NULL " +
+            "ORDER BY w.startTime DESC, we.orderIndex ASC, we.id ASC, ws.setIndex ASC"
+    )
+    fun getExerciseHistory(exerciseId: Long): Flow<List<ExerciseHistorySetRow>>
 
     @Query(
         "SELECT programId, MAX(startTime) as lastTime FROM workouts " +

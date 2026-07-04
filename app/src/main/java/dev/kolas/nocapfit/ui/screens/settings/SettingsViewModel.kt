@@ -1,16 +1,24 @@
 package dev.kolas.nocapfit.ui.screens.settings
 
+import android.content.Context
+import android.media.RingtoneManager
 import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kolas.nocapfit.data.backup.BackupManager
 import dev.kolas.nocapfit.data.preferences.ThemeMode
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
+import dev.kolas.nocapfit.util.SOUND_URI_SILENT
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,7 +35,8 @@ sealed interface BackupEvent {
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val themePreferences: ThemePreferences,
-    private val backupManager: BackupManager
+    private val backupManager: BackupManager,
+    @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = themePreferences.themeMode
@@ -41,6 +50,27 @@ class SettingsViewModel @Inject constructor(
 
     val completionSoundUri: StateFlow<String?> = themePreferences.completionSoundUri
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Ringtone title lookup is a binder/disk call — resolve off the main thread, not in composition.
+    val notificationSoundTitle: StateFlow<String> = themePreferences.notificationSoundUri
+        .map(::resolveSoundTitle)
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val completionSoundTitle: StateFlow<String> = themePreferences.completionSoundUri
+        .map(::resolveSoundTitle)
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    private fun resolveSoundTitle(soundUri: String?): String = when (soundUri) {
+        null -> "Default"
+        SOUND_URI_SILENT -> "Silent"
+        else -> try {
+            RingtoneManager.getRingtone(context, soundUri.toUri())?.getTitle(context) ?: "Unknown"
+        } catch (_: Exception) {
+            "Unknown"
+        }
+    }
 
     private val _backupEvent = MutableStateFlow<BackupEvent>(BackupEvent.Idle)
     val backupEvent: StateFlow<BackupEvent> = _backupEvent.asStateFlow()
@@ -94,7 +124,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun applyPendingBackup() {
+    suspend fun applyPendingBackup() {
         val bytes = pendingBackupBytes ?: return
         backupManager.applyBackup(bytes)
     }

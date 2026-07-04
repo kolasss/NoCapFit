@@ -61,7 +61,7 @@ class BackupManager @Inject constructor(
         }
     }
 
-    fun applyBackup(bytes: ByteArray) {
+    suspend fun applyBackup(bytes: ByteArray) = withContext(Dispatchers.IO) {
         database.close()
 
         val dbFile = context.getDatabasePath(DatabaseModule.DATABASE_NAME)

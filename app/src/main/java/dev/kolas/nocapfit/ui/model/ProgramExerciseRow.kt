@@ -11,72 +11,20 @@ data class ProgramExerciseRow(
     val sets: List<SetUiModel>
 )
 
-/**
- * Stateful builder that caches per-exercise rows so a keystroke that changes one [ExerciseEntry]
- * does not re-parse strings for every other exercise in the program. Hold one instance per
- * ViewModel.
- *
- * **Not thread-safe.** Called from a single-dispatcher flow operator (`map`/`combine`) on
- * `viewModelScope` (`Dispatchers.Main.immediate`). Moving the upstream flow off the main
- * thread requires adding a `Mutex` or `flowOn` confinement.
- */
-class ProgramExerciseRowBuilder {
-    private var lastPreviousSets: PreviousSetLookup? = null
-    private var lastPreviousTextsByExercise: PreviousTextsByExercise = PreviousTextsByExercise.Empty
-    private var lastEntries: Map<Long, CacheEntry> = emptyMap()
-
-    private data class CacheEntry(
-        val source: ExerciseEntry,
-        val previousTexts: PreviousTextsForExercise,
-        val row: ProgramExerciseRow
-    )
-
-    fun build(
-        exercises: List<ExerciseEntry>,
-        previousSets: PreviousSetLookup
-    ): List<ProgramExerciseRow> {
-        if (exercises.isEmpty()) {
-            lastEntries = emptyMap()
-            return emptyList()
-        }
-        val previousTextsByExercise = if (previousSets === lastPreviousSets) {
-            lastPreviousTextsByExercise
-        } else {
-            buildPreviousTextsByExercise(previousSets).also {
-                lastPreviousSets = previousSets
-                lastPreviousTextsByExercise = it
-            }
-        }
-        val newEntries = mutableMapOf<Long, CacheEntry>()
-        val result = exercises.map { entry ->
-            val previousTexts = previousTextsByExercise.forExercise(entry.exercise.id)
-            val key = entry.entryId
-            val cached = lastEntries[key]
-            val row = if (cached != null &&
-                cached.source == entry &&
-                cached.previousTexts == previousTexts
-            ) {
-                cached.row
-            } else {
-                buildSingleProgramRow(entry, previousTexts)
-            }
-            newEntries[key] = CacheEntry(entry, previousTexts, row)
-            row
-        }
-        lastEntries = newEntries
-        return result
-    }
-}
-
-/** Stateless one-shot builder, primarily for tests. */
 fun buildProgramExerciseRows(
     exercises: List<ExerciseEntry>,
     previousSets: PreviousSetLookup
-): List<ProgramExerciseRow> = ProgramExerciseRowBuilder().build(exercises, previousSets)
+): List<ProgramExerciseRow> {
+    if (exercises.isEmpty()) return emptyList()
+    val previousTextsByExercise = buildPreviousTextsByExercise(previousSets)
+    return exercises.map { entry ->
+        buildSingleProgramRow(entry, previousTextsByExercise[entry.exercise.id].orEmpty())
+    }
+}
 
 private fun buildSingleProgramRow(
     entry: ExerciseEntry,
-    previousTexts: PreviousTextsForExercise
+    previousTexts: Map<Int, String>
 ): ProgramExerciseRow =
     ProgramExerciseRow(
         exerciseEntry = entry,

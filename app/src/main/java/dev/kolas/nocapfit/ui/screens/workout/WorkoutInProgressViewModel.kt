@@ -18,7 +18,7 @@ import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.model.PreviousSetData
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
-import dev.kolas.nocapfit.ui.model.WorkoutExerciseRowBuilder
+import dev.kolas.nocapfit.ui.model.buildWorkoutExerciseRows
 import dev.kolas.nocapfit.util.DEFAULT_REST_TIME_SECONDS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,10 +67,8 @@ class WorkoutInProgressViewModel @Inject constructor(
     private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
     val previousSets: StateFlow<PreviousSetLookup> = _previousSets.asStateFlow()
 
-    private val rowBuilder = WorkoutExerciseRowBuilder()
-
     val exerciseRows: StateFlow<List<WorkoutExerciseRow>> = combine(workout, _previousSets) { w, prev ->
-        rowBuilder.build(w?.exercises.orEmpty(), prev)
+        buildWorkoutExerciseRows(w?.exercises.orEmpty(), prev)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {

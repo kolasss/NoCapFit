@@ -41,13 +41,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
-import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.EmptyState
 import dev.kolas.nocapfit.ui.components.SubtleSectionHeader
 import dev.kolas.nocapfit.ui.navigation.Screen
-import dev.kolas.nocapfit.ui.util.formatDateTime
-import dev.kolas.nocapfit.ui.util.formatDuration
-import dev.kolas.nocapfit.ui.util.formatMonth
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,15 +53,9 @@ fun WorkoutHistoryScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkoutHistoryViewModel = hiltViewModel()
 ) {
-    val completedWorkouts by viewModel.completedWorkouts.collectAsState()
+    val historyGroups by viewModel.historyGroups.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val hasActiveWorkout by viewModel.hasActiveWorkout.collectAsState()
-
-    val grouped = remember(completedWorkouts) {
-        completedWorkouts
-            .filter { it.workout.endTime != null }
-            .groupBy { formatMonth(it.workout.startTime) }
-    }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isScrolled by remember { derivedStateOf { scrollBehavior.state.collapsedFraction > 0.5f } }
@@ -98,7 +88,7 @@ fun WorkoutHistoryScreen(
     ) { padding ->
         WorkoutHistoryContent(
             isLoading = isLoading,
-            grouped = grouped,
+            groups = historyGroups,
             onStartWorkout = { navController.navigate(Screen.AddWorkout.route) },
             onWorkoutClick = { workoutId ->
                 navController.navigate(Screen.WorkoutDetail.createRoute(workoutId))
@@ -112,7 +102,7 @@ fun WorkoutHistoryScreen(
 @Composable
 internal fun WorkoutHistoryContent(
     isLoading: Boolean,
-    grouped: Map<String, List<WorkoutWithExercises>>,
+    groups: List<WorkoutHistoryMonthGroup>,
     onStartWorkout: () -> Unit,
     onWorkoutClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -127,7 +117,7 @@ internal fun WorkoutHistoryContent(
                 CircularProgressIndicator()
             }
         }
-        grouped.isEmpty() -> {
+        groups.isEmpty() -> {
             EmptyState(
                 icon = Icons.Default.History,
                 title = "No workouts yet",
@@ -139,14 +129,14 @@ internal fun WorkoutHistoryContent(
         }
         else -> {
             LazyColumn(modifier = modifier.fillMaxSize()) {
-                grouped.forEach { (dateHeader, workouts) ->
-                    item(key = "header-$dateHeader") {
-                        SubtleSectionHeader(text = dateHeader.uppercase(Locale.ROOT))
+                groups.forEach { group ->
+                    item(key = "header-${group.month}") {
+                        SubtleSectionHeader(text = group.month.uppercase(Locale.ROOT))
                     }
-                    items(workouts, key = { it.workout.id }) { workoutWithExercises ->
+                    items(group.workouts, key = { it.id }) { item ->
                         WorkoutHistoryItem(
-                            workoutWithExercises = workoutWithExercises,
-                            onClick = { onWorkoutClick(workoutWithExercises.workout.id) },
+                            item = item,
+                            onClick = { onWorkoutClick(item.id) },
                             modifier = Modifier.animateItem()
                         )
                     }
@@ -159,20 +149,10 @@ internal fun WorkoutHistoryContent(
 
 @Composable
 internal fun WorkoutHistoryItem(
-    workoutWithExercises: WorkoutWithExercises,
+    item: WorkoutHistoryItemUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val workout = workoutWithExercises.workout
-    val dateTimeText = formatDateTime(workout.startTime)
-
-    val durationMs = (workout.endTime ?: workout.startTime) - workout.startTime
-    val durationText = formatDuration(durationMs)
-
-    val exerciseSummary = workoutWithExercises.exercises
-        .sortedBy { it.workoutExercise.orderIndex }
-        .joinToString(", ") { it.workoutExercise.exerciseName }
-
     Column(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -183,7 +163,7 @@ internal fun WorkoutHistoryItem(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = workout.programName ?: "Free Workout",
+                    text = item.title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -193,21 +173,21 @@ internal fun WorkoutHistoryItem(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = durationText,
+                    text = item.durationText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = dateTimeText,
+                text = item.dateTimeText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            if (exerciseSummary.isNotBlank()) {
+            if (item.exerciseSummary.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = exerciseSummary,
+                    text = item.exerciseSummary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

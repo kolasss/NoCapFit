@@ -42,11 +42,9 @@ import androidx.navigation.NavController
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.model.markdownPadding
 import dev.kolas.nocapfit.data.db.entity.Exercise
-import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
 import dev.kolas.nocapfit.ui.components.SetSummaryRow
 import dev.kolas.nocapfit.ui.navigation.Screen
-import dev.kolas.nocapfit.ui.util.formatDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +108,6 @@ fun ExerciseDetailScreen(
             when (selectedTab) {
                 0 -> ExerciseInfoContent(exercise = exercise)
                 1 -> ExerciseHistoryContent(
-                    exerciseId = exercise?.id,
                     history = exerciseHistory,
                     onWorkoutClick = { workoutId ->
                         navController.navigate(Screen.WorkoutDetail.createRoute(workoutId))
@@ -185,8 +182,7 @@ private fun ExerciseInfoContent(exercise: Exercise?) {
 
 @Composable
 private fun ExerciseHistoryContent(
-    exerciseId: Long?,
-    history: List<WorkoutWithExercises>,
+    history: List<ExerciseHistoryEntryUi>,
     onWorkoutClick: (Long) -> Unit
 ) {
     if (history.isEmpty()) {
@@ -204,11 +200,10 @@ private fun ExerciseHistoryContent(
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(history, key = { it.workout.id }) { workoutWithExercises ->
+        items(history, key = { it.workoutId }) { entry ->
             ExerciseHistoryItem(
-                workoutWithExercises = workoutWithExercises,
-                exerciseId = exerciseId,
-                onClick = { onWorkoutClick(workoutWithExercises.workout.id) }
+                entry = entry,
+                onClick = { onWorkoutClick(entry.workoutId) }
             )
         }
         item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -217,18 +212,9 @@ private fun ExerciseHistoryContent(
 
 @Composable
 private fun ExerciseHistoryItem(
-    workoutWithExercises: WorkoutWithExercises,
-    exerciseId: Long?,
+    entry: ExerciseHistoryEntryUi,
     onClick: () -> Unit
 ) {
-    val workout = workoutWithExercises.workout
-    val matchingExercise = workoutWithExercises.exercises
-        .find { it.workoutExercise.exerciseId == exerciseId }
-    val completedSets = matchingExercise?.sets
-        ?.filter { it.completed }
-        ?.sortedBy { it.setIndex }
-        ?: emptyList()
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -238,23 +224,23 @@ private fun ExerciseHistoryItem(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Text(
-                text = workout.programName ?: "Free Workout",
+                text = entry.title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = formatDateTime(workout.startTime),
+                text = entry.dateTimeText,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (completedSets.isNotEmpty()) {
+            if (entry.sets.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    completedSets.forEach { set ->
+                    entry.sets.forEach { set ->
                         SetSummaryRow(
-                            setNumber = set.setIndex + 1,
+                            setNumber = set.setNumber,
                             weightThousandths = set.weightThousandths,
                             reps = set.reps
                         )

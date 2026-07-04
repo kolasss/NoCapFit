@@ -82,18 +82,18 @@ class ProgramExerciseRowTest {
     }
 
     @Test
-    fun builderReusesUnchangedRowAcrossEmissions() {
-        val builder = ProgramExerciseRowBuilder()
+    fun unchangedEntryProducesEqualRowAcrossEmissions() {
         val a = entry(entryId = 1L, sets = listOf(SetEntry(weight = "10")))
         val b = entry(entryId = 2L, sets = listOf(SetEntry(weight = "20")))
-        val first = builder.build(listOf(a, b), PreviousSetLookup(emptyMap()))
+        val first = buildProgramExerciseRows(listOf(a, b), PreviousSetLookup(emptyMap()))
 
         // Only b's weight string changes (simulating a keystroke in exercise b's weight field)
         val bChanged = b.copy(sets = listOf(SetEntry(weight = "25")))
-        val second = builder.build(listOf(a, bChanged), PreviousSetLookup(emptyMap()))
+        val second = buildProgramExerciseRows(listOf(a, bChanged), PreviousSetLookup(emptyMap()))
 
-        assertTrue(first[0] === second[0])
-        assertTrue(first[1] !== second[1])
+        // a's row is structurally equal, so Compose can skip its item body
+        assertEquals(first[0], second[0])
+        assertTrue(first[1] != second[1])
         assertEquals(25000, second[1].sets[0].weightThousandths)
     }
 
@@ -110,23 +110,22 @@ class ProgramExerciseRowTest {
     }
 
     @Test
-    fun duplicateExerciseIdsCacheIndependently() {
+    fun duplicateExerciseIdsProduceIndependentRows() {
         // Same Exercise can be added twice (e.g. supersets). Distinct entryIds keep their rows
-        // separate in the cache.
-        val builder = ProgramExerciseRowBuilder()
+        // separate.
         val a = entry(entryId = 1L, exerciseId = 5L, sets = listOf(SetEntry(weight = "10")))
         val b = entry(entryId = 2L, exerciseId = 5L, sets = listOf(SetEntry(weight = "20")))
-        val first = builder.build(listOf(a, b), PreviousSetLookup(emptyMap()))
+        val first = buildProgramExerciseRows(listOf(a, b), PreviousSetLookup(emptyMap()))
 
         assertEquals(2, first.size)
         assertEquals(10000, first[0].sets[0].weightThousandths)
         assertEquals(20000, first[1].sets[0].weightThousandths)
 
-        // Edit only a; b's row must stay reference-equal even though they share exercise.id.
+        // Edit only a; b's row stays equal even though they share exercise.id.
         val aChanged = a.copy(sets = listOf(SetEntry(weight = "12")))
-        val second = builder.build(listOf(aChanged, b), PreviousSetLookup(emptyMap()))
+        val second = buildProgramExerciseRows(listOf(aChanged, b), PreviousSetLookup(emptyMap()))
 
-        assertTrue(first[1] === second[1])
+        assertEquals(first[1], second[1])
         assertEquals(12000, second[0].sets[0].weightThousandths)
         assertNotNull(second[0])
     }

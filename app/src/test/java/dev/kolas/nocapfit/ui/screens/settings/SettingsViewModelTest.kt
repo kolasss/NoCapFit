@@ -25,13 +25,14 @@ class SettingsViewModelTest {
 
     private val themePreferences = mockk<ThemePreferences>(relaxUnitFun = true)
     private val backupManager = mockk<BackupManager>(relaxUnitFun = true)
+    private val context = mockk<android.content.Context>(relaxed = true)
 
     private fun createViewModel(): SettingsViewModel {
         every { themePreferences.themeMode } returns flowOf(ThemeMode.SYSTEM)
         every { themePreferences.notificationSoundUri } returns flowOf(null)
         every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
-        return SettingsViewModel(themePreferences, backupManager)
+        return SettingsViewModel(themePreferences, backupManager, context)
     }
 
     @Test
@@ -41,7 +42,7 @@ class SettingsViewModelTest {
         every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
 
-        val viewModel = SettingsViewModel(themePreferences, backupManager)
+        val viewModel = SettingsViewModel(themePreferences, backupManager, context)
 
         viewModel.themeMode.test {
             assertEquals(ThemeMode.DARK, awaitItem())
@@ -149,7 +150,7 @@ class SettingsViewModelTest {
         every { themePreferences.completionSoundUri } returns flowOf(null)
         every { themePreferences.dynamicColor } returns flowOf(false)
 
-        val viewModel = SettingsViewModel(themePreferences, backupManager)
+        val viewModel = SettingsViewModel(themePreferences, backupManager, context)
 
         viewModel.notificationSoundUri.test {
             assertEquals("content://some/sound", awaitItem())
@@ -171,7 +172,7 @@ class SettingsViewModelTest {
         every { themePreferences.completionSoundUri } returns flowOf("content://set/sound")
         every { themePreferences.dynamicColor } returns flowOf(false)
 
-        val viewModel = SettingsViewModel(themePreferences, backupManager)
+        val viewModel = SettingsViewModel(themePreferences, backupManager, context)
 
         viewModel.completionSoundUri.test {
             assertEquals("content://set/sound", awaitItem())

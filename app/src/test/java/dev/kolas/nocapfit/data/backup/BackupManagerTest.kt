@@ -112,7 +112,7 @@ class BackupManagerTest {
     }
 
     @Test
-    fun applyBackup_closesDatabaseAndWritesFile() {
+    fun applyBackup_closesDatabaseAndWritesFile() = runTest {
         val validHeader = "SQLite format 3\u0000".toByteArray() + ByteArray(100)
 
         backupManager.applyBackup(validHeader)
@@ -122,7 +122,7 @@ class BackupManagerTest {
     }
 
     @Test
-    fun applyBackup_deletesWalAndShmFiles() {
+    fun applyBackup_deletesWalAndShmFiles() = runTest {
         val walFile = File(dbFile.path + "-wal")
         val shmFile = File(dbFile.path + "-shm")
         walFile.writeText("wal data")

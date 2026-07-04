@@ -3,9 +3,8 @@ package dev.kolas.nocapfit.ui.screens.exercises
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.kolas.nocapfit.MainDispatcherRule
+import dev.kolas.nocapfit.data.db.dao.ExerciseHistorySetRow
 import dev.kolas.nocapfit.data.db.entity.Exercise
-import dev.kolas.nocapfit.data.db.entity.Workout
-import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import io.mockk.coVerify
@@ -38,7 +37,7 @@ class ExerciseDetailViewModelTest {
 
     private fun createViewModel(): ExerciseDetailViewModel {
         every { exerciseRepository.getByIdFlow(1L) } returns flowOf(testExercise)
-        every { workoutRepository.getFinishedByExerciseId(1L) } returns flowOf(emptyList())
+        every { workoutRepository.getExerciseHistory(1L) } returns flowOf(emptyList())
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 1L))
         return ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
     }
@@ -88,20 +87,47 @@ class ExerciseDetailViewModelTest {
     }
 
     @Test
-    fun exerciseHistory_loadsFromRepository() = runTest {
-        val testHistory = listOf(
-            WorkoutWithExercises(
-                workout = Workout(id = 10L, profileId = 1L, startTime = 1000L, endTime = 2000L),
-                exercises = emptyList()
+    fun exerciseHistory_groupsRowsByWorkout() = runTest {
+        val rows = listOf(
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 0,
+                weightThousandths = 60000,
+                reps = 10
+            ),
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 1,
+                weightThousandths = 65000,
+                reps = 8
+            ),
+            // Workout with the exercise but no completed sets (LEFT JOIN null row)
+            ExerciseHistorySetRow(
+                workoutId = 11L,
+                programName = null,
+                startTime = 2000L,
+                setIndex = null,
+                weightThousandths = null,
+                reps = null
             )
         )
         every { exerciseRepository.getByIdFlow(1L) } returns flowOf(testExercise)
-        every { workoutRepository.getFinishedByExerciseId(1L) } returns flowOf(testHistory)
+        every { workoutRepository.getExerciseHistory(1L) } returns flowOf(rows)
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 1L))
         val viewModel = ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
 
         viewModel.exerciseHistory.test {
-            assertEquals(testHistory, awaitItem())
+            val entries = awaitItem()
+            assertEquals(2, entries.size)
+            assertEquals("Push Day", entries[0].title)
+            assertEquals(2, entries[0].sets.size)
+            assertEquals(60000, entries[0].sets[0].weightThousandths)
+            assertEquals("Free Workout", entries[1].title)
+            assertTrue(entries[1].sets.isEmpty())
         }
     }
 
@@ -110,7 +136,7 @@ class ExerciseDetailViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.exerciseHistory.test {
-            assertEquals(emptyList<WorkoutWithExercises>(), awaitItem())
+            assertEquals(emptyList<ExerciseHistoryEntryUi>(), awaitItem())
         }
     }
 
@@ -143,7 +169,7 @@ class ExerciseDetailViewModelTest {
     @Test
     fun exercise_returnsNullWhenNotFound() = runTest {
         every { exerciseRepository.getByIdFlow(99L) } returns flowOf(null)
-        every { workoutRepository.getFinishedByExerciseId(99L) } returns flowOf(emptyList())
+        every { workoutRepository.getExerciseHistory(99L) } returns flowOf(emptyList())
         val savedStateHandle = SavedStateHandle(mapOf("exerciseId" to 99L))
         val viewModel = ExerciseDetailViewModel(exerciseRepository, workoutRepository, savedStateHandle)
 

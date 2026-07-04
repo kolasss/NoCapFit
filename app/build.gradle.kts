@@ -87,6 +87,8 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
+    // Not used directly, but pins the transitive espresso-core pulled in by compose-ui-test:
+    // its default 3.5.0 crashes on API 34+ (removed InputManager.getInstance reflection).
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

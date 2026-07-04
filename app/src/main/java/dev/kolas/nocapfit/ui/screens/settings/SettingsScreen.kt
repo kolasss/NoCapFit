@@ -69,8 +69,11 @@ fun SettingsScreen(
     val backupEvent by viewModel.backupEvent.collectAsState()
     val notificationSoundUri by viewModel.notificationSoundUri.collectAsState()
     val completionSoundUri by viewModel.completionSoundUri.collectAsState()
+    val notificationSoundTitle by viewModel.notificationSoundTitle.collectAsState()
+    val completionSoundTitle by viewModel.completionSoundTitle.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     var importUri by remember { mutableStateOf<Uri?>(null) }
     var hasActiveWorkout by remember { mutableStateOf(false) }
@@ -85,9 +88,11 @@ fun SettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            importUri = uri
+            // Resolve the flag before showing the dialog so the active-workout
+            // warning is never missing from it.
             scope.launch {
                 hasActiveWorkout = viewModel.hasActiveWorkout()
+                importUri = uri
             }
         }
     }
@@ -122,7 +127,13 @@ fun SettingsScreen(
             viewModel.importDatabase(uri)
         },
         onImportDismiss = { importUri = null },
-        onApplyAndRestart = { viewModel.applyPendingBackup() }
+        onApplyAndRestart = {
+            // The restart must not happen before the backup is fully written to disk.
+            scope.launch {
+                viewModel.applyPendingBackup()
+                restartApp(context)
+            }
+        }
     )
 
     Scaffold(
@@ -144,11 +155,11 @@ fun SettingsScreen(
             onThemeModeChange = { viewModel.setThemeMode(it) },
             dynamicColor = dynamicColor,
             onDynamicColorChange = { viewModel.setDynamicColor(it) },
-            notificationSoundUri = notificationSoundUri,
+            notificationSoundTitle = notificationSoundTitle,
             onTimerSoundClick = {
                 ringtoneLauncher.launch(createRingtonePickerIntent(notificationSoundUri))
             },
-            completionSoundUri = completionSoundUri,
+            completionSoundTitle = completionSoundTitle,
             onCompletionSoundClick = {
                 completionRingtoneLauncher.launch(createRingtonePickerIntent(completionSoundUri))
             },
@@ -208,24 +219,25 @@ private fun ImportConfirmDialog(
 }
 
 @Composable
-private fun RestartDialog(context: android.content.Context, onApplyAndRestart: () -> Unit) {
+private fun RestartDialog(onApplyAndRestart: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
         title = { Text("Data Restored") },
         text = { Text("Data restored successfully. The app will restart.") },
         confirmButton = {
-            TextButton(onClick = {
-                onApplyAndRestart()
-                val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                context.startActivity(intent)
-                @Suppress("ExitOutsideMain")
-                Runtime.getRuntime().exit(0)
-            }) {
+            TextButton(onClick = onApplyAndRestart) {
                 Text("OK")
             }
         }
     )
+}
+
+private fun restartApp(context: android.content.Context) {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    context.startActivity(intent)
+    @Suppress("ExitOutsideMain")
+    Runtime.getRuntime().exit(0)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -235,9 +247,9 @@ internal fun SettingsContent(
     onThemeModeChange: (ThemeMode) -> Unit,
     dynamicColor: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
-    notificationSoundUri: String?,
+    notificationSoundTitle: String,
     onTimerSoundClick: () -> Unit,
-    completionSoundUri: String?,
+    completionSoundTitle: String,
     onCompletionSoundClick: () -> Unit,
     isBackupInProgress: Boolean,
     onExportClick: () -> Unit,
@@ -264,13 +276,13 @@ internal fun SettingsContent(
 
         SoundPickerItem(
             headline = "Timer Sound",
-            soundUri = notificationSoundUri,
+            soundName = notificationSoundTitle,
             onClick = onTimerSoundClick
         )
 
         SoundPickerItem(
             headline = "Set Completion Sound",
-            soundUri = completionSoundUri,
+            soundName = completionSoundTitle,
             onClick = onCompletionSoundClick
         )
 
@@ -332,10 +344,7 @@ private fun BackupDialogs(
     }
 
     if (backupEvent is BackupEvent.RestartRequired) {
-        RestartDialog(
-            context = LocalContext.current,
-            onApplyAndRestart = onApplyAndRestart
-        )
+        RestartDialog(onApplyAndRestart = onApplyAndRestart)
     }
 }
 
@@ -420,21 +429,7 @@ private fun ThemeSection(
 }
 
 @Composable
-private fun SoundPickerItem(headline: String, soundUri: String?, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val soundName = remember(soundUri) {
-        when (soundUri) {
-            null -> "Default"
-            SOUND_URI_SILENT -> "Silent"
-            else -> try {
-                val uri = soundUri.toUri()
-                RingtoneManager.getRingtone(context, uri)?.getTitle(context) ?: "Unknown"
-            } catch (_: Exception) {
-                "Unknown"
-            }
-        }
-    }
-
+private fun SoundPickerItem(headline: String, soundName: String, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(headline) },
         supportingContent = { Text(soundName) },

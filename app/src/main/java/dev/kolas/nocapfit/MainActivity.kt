@@ -2,6 +2,8 @@ package dev.kolas.nocapfit
 
 import android.Manifest
 import android.os.Bundle
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,7 +25,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
-import dev.kolas.nocapfit.data.preferences.ThemeMode
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.ui.components.BottomNavBar
 import dev.kolas.nocapfit.ui.components.MiniWorkoutPanel
@@ -46,13 +48,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        var themeLoaded = false
         setContent {
-            val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            val dynamicColor by themePreferences.dynamicColor.collectAsState(initial = false)
-            NoCapFitTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
-                MainContent()
+            val themeMode by themePreferences.themeMode.collectAsState(initial = null)
+            val dynamicColor by themePreferences.dynamicColor.collectAsState(initial = null)
+            val mode = themeMode
+            val dynamic = dynamicColor
+            if (mode != null && dynamic != null) {
+                SideEffect { themeLoaded = true }
+                NoCapFitTheme(themeMode = mode, dynamicColor = dynamic) {
+                    MainContent()
+                }
             }
         }
+        // Hold the first frame (keeping the system splash visible) until the theme preference
+        // is loaded, so the app never flashes the wrong theme on cold start.
+        val content = findViewById<View>(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean = if (themeLoaded) {
+                    content.viewTreeObserver.removeOnPreDrawListener(this)
+                    true
+                } else {
+                    false
+                }
+            }
+        )
     }
 }
 

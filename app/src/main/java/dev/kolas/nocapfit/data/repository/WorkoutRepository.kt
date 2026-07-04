@@ -1,10 +1,12 @@
 package dev.kolas.nocapfit.data.repository
 
+import dev.kolas.nocapfit.data.db.dao.ExerciseHistorySetRow
 import dev.kolas.nocapfit.data.db.dao.PreviousCompletedSet
 import dev.kolas.nocapfit.data.db.dao.WorkoutDao
 import dev.kolas.nocapfit.data.db.entity.Workout
 import dev.kolas.nocapfit.data.db.entity.WorkoutExercise
 import dev.kolas.nocapfit.data.db.entity.WorkoutSet
+import dev.kolas.nocapfit.data.db.relation.WorkoutWithExerciseNames
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -24,11 +26,10 @@ class WorkoutRepository @Inject constructor(
     fun getLastWorkoutTimeByProgram() = workoutDao.getLastWorkoutTimeByProgram()
     suspend fun getLastFinishedByProgramId(programId: Long, excludeWorkoutId: Long) =
         workoutDao.getLastFinishedByProgramId(programId, excludeWorkoutId)
-    fun getFinishedByExerciseId(exerciseId: Long): Flow<List<WorkoutWithExercises>> =
-        workoutDao.getFinishedByExerciseId(exerciseId)
-    fun getAllWithExercises(profileId: Long): Flow<List<WorkoutWithExercises>> = workoutDao.getAllWithExercises(
-        profileId
-    )
+    fun getExerciseHistory(exerciseId: Long): Flow<List<ExerciseHistorySetRow>> =
+        workoutDao.getExerciseHistory(exerciseId)
+    fun getFinishedWithExerciseNames(profileId: Long): Flow<List<WorkoutWithExerciseNames>> =
+        workoutDao.getFinishedWithExerciseNames(profileId)
     suspend fun getPreviousCompletedSets(exerciseIds: List<Long>): List<PreviousCompletedSet> =
         if (exerciseIds.isEmpty()) emptyList() else workoutDao.getPreviousCompletedSets(exerciseIds)
     suspend fun getActiveWorkout(): Workout? = workoutDao.getActiveWorkout()

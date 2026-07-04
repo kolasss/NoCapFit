@@ -418,18 +418,12 @@ private fun WorkoutTopAppBar(
     timerEndAtEpochMs: Long = 0L,
     timerTotalMs: Long = 0L
 ) {
-    val elapsedText = rememberElapsedTime(startTime = startTime)
-    val timerRemainingMs = rememberTimerRemainingMs(showTimer, timerEndAtEpochMs)
-    val timerProgress = if (showTimer) {
-        restTimerFillProgress(timerRemainingMs, timerTotalMs)
-    } else {
-        0f
-    }
-
+    // Ticking state is read only inside TopBarTitle/TimerProgressIndicator so the
+    // per-second updates don't recompose the whole top bar.
     Column {
         TopAppBar(
             title = {
-                TopBarTitle(showTimer, elapsedText, timerRemainingMs)
+                TopBarTitle(showTimer, startTime, timerEndAtEpochMs)
             },
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
@@ -457,19 +451,27 @@ private fun WorkoutTopAppBar(
             }
         )
         if (showTimer) {
-            LinearProgressIndicator(
-                progress = { timerProgress },
-                modifier = Modifier.fillMaxWidth().height(3.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                trackColor = Color.Transparent,
-                drawStopIndicator = {}
-            )
+            TimerProgressIndicator(timerEndAtEpochMs, timerTotalMs)
         }
     }
 }
 
 @Composable
-private fun TopBarTitle(showTimer: Boolean, elapsedText: String, timerRemainingMs: Long) {
+private fun TimerProgressIndicator(timerEndAtEpochMs: Long, timerTotalMs: Long) {
+    val timerRemainingMs = rememberTimerRemainingMs(true, timerEndAtEpochMs)
+    LinearProgressIndicator(
+        progress = { restTimerFillProgress(timerRemainingMs, timerTotalMs) },
+        modifier = Modifier.fillMaxWidth().height(3.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        trackColor = Color.Transparent,
+        drawStopIndicator = {}
+    )
+}
+
+@Composable
+private fun TopBarTitle(showTimer: Boolean, startTime: Long?, timerEndAtEpochMs: Long) {
+    val elapsedText = rememberElapsedTime(startTime = startTime)
+    val timerRemainingMs = rememberTimerRemainingMs(showTimer, timerEndAtEpochMs)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(elapsedText)
         if (showTimer) {

@@ -30,31 +30,13 @@ data class PreviousSetLookup(
     fun entries(): Set<Map.Entry<Pair<Long, Int>, PreviousSetData>> = map.entries
 }
 
-@Immutable
-data class PreviousTextsByExercise(private val byExId: Map<Long, Map<Int, String>>) {
-    fun forExercise(exId: Long): PreviousTextsForExercise =
-        byExId[exId]?.let(::PreviousTextsForExercise) ?: PreviousTextsForExercise.Empty
-
-    companion object {
-        val Empty = PreviousTextsByExercise(emptyMap())
-    }
-}
-
-@Immutable
-data class PreviousTextsForExercise(private val byIndex: Map<Int, String>) {
-    operator fun get(setIndex: Int): String? = byIndex[setIndex]
-
-    companion object {
-        val Empty = PreviousTextsForExercise(emptyMap())
-    }
-}
-
-fun buildPreviousTextsByExercise(lookup: PreviousSetLookup): PreviousTextsByExercise {
-    if (lookup.isEmpty()) return PreviousTextsByExercise.Empty
+/** Previous-set display texts keyed by exerciseId, then setIndex. */
+fun buildPreviousTextsByExercise(lookup: PreviousSetLookup): Map<Long, Map<Int, String>> {
+    if (lookup.isEmpty()) return emptyMap()
     val accumulator = mutableMapOf<Long, MutableMap<Int, String>>()
     for ((key, data) in lookup.entries()) {
         val (exId, setIndex) = key
         accumulator.getOrPut(exId) { mutableMapOf() }[setIndex] = formatPreviousSet(data)
     }
-    return PreviousTextsByExercise(accumulator.mapValues { it.value.toMap() })
+    return accumulator
 }

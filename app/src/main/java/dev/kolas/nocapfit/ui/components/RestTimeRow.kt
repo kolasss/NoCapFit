@@ -27,15 +27,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -97,22 +93,10 @@ fun RestTimeRow(
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val progressColor = MaterialTheme.colorScheme.tertiaryContainer
 
-    var rowWindowLeft by remember { mutableFloatStateOf(0f) }
-    var rowWidthPx by remember { mutableIntStateOf(0) }
-    val positionTracker = if (isTimerActive) {
-        Modifier.onGloballyPositioned { coords ->
-            rowWindowLeft = coords.positionInWindow().x
-            rowWidthPx = coords.size.width
-        }
-    } else {
-        Modifier
-    }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(40.dp)
-            .then(positionTracker)
             .drawBehind {
                 drawRect(
                     if (isCompleted && !isTimerActive) completedColor else surfaceColor
@@ -135,8 +119,6 @@ fun RestTimeRow(
                 timerEndAtEpochMs = timerEndAtEpochMs,
                 remainingMs = remainingMs,
                 fillProgress = fillProgress,
-                rowWindowLeft = rowWindowLeft,
-                rowWidthPx = rowWidthPx,
                 accentTint = accentTint,
                 modifier = Modifier.align(Alignment.Center)
             )
@@ -197,41 +179,38 @@ private fun StaticCenterContent(
     }
 }
 
-@Suppress("LongParameterList")
 @Composable
 private fun ActiveFillCenterContent(
     timerEndAtEpochMs: Long,
     remainingMs: Long,
     fillProgress: Float,
-    rowWindowLeft: Float,
-    rowWidthPx: Int,
     accentTint: Color,
     modifier: Modifier = Modifier
 ) {
     val coveredColor = MaterialTheme.colorScheme.onSurface
-    val density = LocalDensity.current
-    val transitionHalfPx = remember(density) { with(density) { 4.dp.toPx() } }
-
-    var iconWindowLeft by remember { mutableFloatStateOf(0f) }
-    var iconWidthPx by remember { mutableIntStateOf(0) }
-
-    val fillParams = FillOverlayParams(
-        fillProgress = fillProgress,
-        rowWindowLeft = rowWindowLeft,
-        rowWidthPx = rowWidthPx,
-        coveredColor = coveredColor,
-        transitionHalfPx = transitionHalfPx
-    )
-    val iconBrush = remember(fillParams, iconWindowLeft, iconWidthPx, accentTint) {
-        buildFillGradientBrush(
-            params = fillParams,
-            childWindowLeft = iconWindowLeft,
-            childWidthPx = iconWidthPx,
-            originalColor = accentTint
-        )
-    }
+    var contentLeftPx by remember { mutableFloatStateOf(0f) }
+    var rowWidthPx by remember { mutableIntStateOf(0) }
     Row(
-        modifier = modifier,
+        modifier = modifier
+            .onPlaced { coords ->
+                contentLeftPx = coords.positionInParent().x
+                rowWidthPx = coords.parentLayoutCoordinates?.size?.width ?: 0
+            }
+            // Gradually repaint the icon and countdown as the background fill sweeps past them:
+            // composite the content offscreen, then SrcAtop the covered color up to the fill
+            // edge so only the already-covered part of the glyphs changes color.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                val fillEdgeLocal = rowWidthPx * fillProgress - contentLeftPx
+                if (fillEdgeLocal > 0f) {
+                    drawRect(
+                        color = coveredColor,
+                        size = Size(fillEdgeLocal.coerceAtMost(size.width), size.height),
+                        blendMode = BlendMode.SrcAtop
+                    )
+                }
+            },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -239,21 +218,13 @@ private fun ActiveFillCenterContent(
             Icons.Default.Timer,
             contentDescription = "Rest time",
             tint = accentTint,
-            modifier = Modifier
-                .size(18.dp)
-                .onGloballyPositioned { iconWindowLeft = it.positionInWindow().x }
-                .onSizeChanged { iconWidthPx = it.width }
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                .drawWithContent {
-                    drawContent()
-                    drawRect(brush = iconBrush, blendMode = BlendMode.SrcAtop)
-                }
+            modifier = Modifier.size(18.dp)
         )
         if (timerEndAtEpochMs > 0) {
-            RestTimerCountdown(
-                remainingMs = remainingMs,
-                color = accentTint,
-                fillParams = fillParams
+            Text(
+                text = formatMmSs(ceilSecondsFromMs(remainingMs)),
+                style = MaterialTheme.typography.bodyLarge,
+                color = accentTint
             )
         }
     }
@@ -290,64 +261,4 @@ fun RestTimeInput(
     )
 }
 
-@Composable
-private fun RestTimerCountdown(
-    remainingMs: Long,
-    color: Color,
-    fillParams: FillOverlayParams
-) {
-    var textWindowLeft by remember { mutableFloatStateOf(0f) }
-    var textWidthPx by remember { mutableIntStateOf(0) }
-    val brush = remember(fillParams, textWindowLeft, textWidthPx, color) {
-        buildFillGradientBrush(
-            params = fillParams,
-            childWindowLeft = textWindowLeft,
-            childWidthPx = textWidthPx,
-            originalColor = color
-        )
-    }
-    Text(
-        text = formatMmSs(ceilSecondsFromMs(remainingMs)),
-        style = MaterialTheme.typography.bodyLarge.copy(brush = brush),
-        modifier = Modifier
-            .onGloballyPositioned { textWindowLeft = it.positionInWindow().x }
-            .onSizeChanged { textWidthPx = it.width }
-    )
-}
-
 private val mmSsTransformation = MmSsVisualTransformation()
-
-private data class FillOverlayParams(
-    val fillProgress: Float,
-    val rowWindowLeft: Float,
-    val rowWidthPx: Int,
-    val coveredColor: Color,
-    val transitionHalfPx: Float
-)
-
-private fun buildFillGradientBrush(
-    params: FillOverlayParams,
-    childWindowLeft: Float,
-    childWidthPx: Int,
-    originalColor: Color
-): Brush {
-    if (params.fillProgress <= 0f || childWidthPx <= 0 || params.rowWidthPx <= 0) {
-        return SolidColor(originalColor)
-    }
-    val fillEndInWindow = params.rowWindowLeft + params.rowWidthPx * params.fillProgress
-    val fillEndLocal = fillEndInWindow - childWindowLeft
-    val halfFraction = params.transitionHalfPx / childWidthPx
-    val fraction = fillEndLocal / childWidthPx
-    return when {
-        fraction + halfFraction <= 0f -> SolidColor(originalColor)
-        fraction - halfFraction >= 1f -> SolidColor(params.coveredColor)
-        else -> Brush.horizontalGradient(
-            colorStops = arrayOf(
-                0f to params.coveredColor,
-                (fraction - halfFraction).coerceIn(0f, 1f) to params.coveredColor,
-                (fraction + halfFraction).coerceIn(0f, 1f) to originalColor,
-                1f to originalColor
-            )
-        )
-    }
-}

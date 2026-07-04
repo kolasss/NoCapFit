@@ -17,7 +17,7 @@ import dev.kolas.nocapfit.ui.components.secondsToMmSsDigits
 import dev.kolas.nocapfit.ui.model.PreviousSetData
 import dev.kolas.nocapfit.ui.model.PreviousSetLookup
 import dev.kolas.nocapfit.ui.model.ProgramExerciseRow
-import dev.kolas.nocapfit.ui.model.ProgramExerciseRowBuilder
+import dev.kolas.nocapfit.ui.model.buildProgramExerciseRows
 import dev.kolas.nocapfit.ui.util.formatWeightInput
 import dev.kolas.nocapfit.ui.util.parseWeight
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -84,10 +84,8 @@ class ProgramFormViewModel @Inject constructor(
 
     private val _previousSets = MutableStateFlow(PreviousSetLookup(emptyMap()))
 
-    private val rowBuilder = ProgramExerciseRowBuilder()
-
     val exerciseRows: StateFlow<List<ProgramExerciseRow>> = combine(_uiState, _previousSets) { state, prev ->
-        rowBuilder.build(state.exercises, prev)
+        buildProgramExerciseRows(state.exercises, prev)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {

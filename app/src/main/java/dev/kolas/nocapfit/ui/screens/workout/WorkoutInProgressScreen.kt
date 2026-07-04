@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -52,10 +52,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import dev.kolas.nocapfit.service.TimerCoordinator
 import dev.kolas.nocapfit.ui.components.ConfirmDialog
-import dev.kolas.nocapfit.ui.components.ExerciseCard
 import dev.kolas.nocapfit.ui.components.ExercisePickerSheet
+import dev.kolas.nocapfit.ui.components.exerciseCardItems
 import dev.kolas.nocapfit.ui.components.rememberTimerRemainingMs
-import dev.kolas.nocapfit.ui.model.SetUiModel
 import dev.kolas.nocapfit.ui.model.WorkoutExerciseRow
 import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
@@ -196,10 +195,11 @@ private fun rememberShowTopBarTimer(
         rows.firstOrNull { row -> setId in row.setsById }?.workoutExercise?.id
     }
     val isVisible by remember(activeTimerExerciseId) {
+        val keyPrefix = activeTimerExerciseId?.let { "we-$it-" }
         derivedStateOf {
-            activeTimerExerciseId != null &&
+            keyPrefix != null &&
                 lazyListState.layoutInfo.visibleItemsInfo.any {
-                    it.key == activeTimerExerciseId
+                    (it.key as? String)?.startsWith(keyPrefix) == true
                 }
         }
     }
@@ -301,12 +301,8 @@ private fun WorkoutExerciseList(
             )
         }
 
-        itemsIndexed(
-            rows,
-            key = { _, item -> item.workoutExercise.id },
-            contentType = { _, _ -> "exercise" }
-        ) { index, row ->
-            ExerciseCardItem(
+        rows.forEachIndexed { index, row ->
+            workoutExerciseCardItems(
                 row = row,
                 index = index,
                 lastIndex = rows.lastIndex,
@@ -344,9 +340,13 @@ private fun WorkoutExerciseList(
     }
 }
 
+/**
+ * Emits one exercise as flattened lazy items (header / sets / footer). Not composable: the
+ * adapter lambdas are plain allocations rebuilt only when the LazyColumn content re-runs;
+ * per-set identity stability is handled inside the shared items via [rememberUpdatedState].
+ */
 @Suppress("LongParameterList", "LongMethod")
-@Composable
-private fun ExerciseCardItem(
+private fun LazyListScope.workoutExerciseCardItems(
     row: WorkoutExerciseRow,
     index: Int,
     lastIndex: Int,
@@ -368,82 +368,39 @@ private fun ExerciseCardItem(
     val exId = row.workoutExercise.exerciseId
     val setsById = row.setsById
     val ownsActiveTimer = activeTimerSetId != null && activeTimerSetId in setsById
+    val canMoveDown = index < lastIndex
 
-    val weightChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
-        {
-                model, w ->
+    exerciseCardItems(
+        keyPrefix = "we-$id",
+        exerciseName = row.workoutExercise.exerciseName,
+        sets = row.sets,
+        onAddSet = { onAddSet(id) },
+        onRemoveExercise = { onRemoveExercise(id) },
+        onWeightChange = { model, w ->
             setsById[model.id]?.let { onUpdateSet(it.copy(weightThousandths = w)) }
-        }
-    }
-    val repsChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
-        {
-                model, r ->
+        },
+        onRepsChange = { model, r ->
             setsById[model.id]?.let { onUpdateSet(it.copy(reps = r)) }
-        }
-    }
-    val toggleComplete = remember<(SetUiModel) -> Unit>(setsById, onCompleteSet, onRevertSet) {
-        {
-                model ->
+        },
+        onToggleComplete = { model ->
             setsById[model.id]?.let { ws ->
                 if (ws.completed) onRevertSet(ws.id) else onCompleteSet(ws.id, ws.restTimeSeconds)
             }
-        }
-    }
-    val restTimeChange = remember<(SetUiModel, Int) -> Unit>(setsById, onUpdateSet) {
-        {
-                model, s ->
+        },
+        onRestTimeChange = { model, s ->
             setsById[model.id]?.let { onUpdateSet(it.copy(restTimeSeconds = s)) }
-        }
-    }
-    val addSet = remember(id, onAddSet) { { onAddSet(id) } }
-    val removeExercise = remember(id, onRemoveExercise) { { onRemoveExercise(id) } }
-    val setRestTimeForAll = remember<(Int) -> Unit>(id, onSetRestTimeForAll) {
-        {
-                seconds ->
-            onSetRestTimeForAll(id, seconds)
-        }
-    }
-    val updateNote = remember<(String?) -> Unit>(id, onUpdateNote) {
-        {
-                note ->
-            onUpdateNote(id, note)
-        }
-    }
-    val titleClick: (() -> Unit)? = if (exId != null) {
-        remember(exId, onExerciseTitleClick) { { onExerciseTitleClick(exId) } }
-    } else {
-        null
-    }
-
-    val canMoveUp = index > 0
-    val canMoveDown = index < lastIndex
-    val moveUp = remember(canMoveUp, id, onMoveExercise) {
-        if (canMoveUp) ({ onMoveExercise(id, -1) }) else null
-    }
-    val moveDown = remember(canMoveDown, id, onMoveExercise) {
-        if (canMoveDown) ({ onMoveExercise(id, 1) }) else null
-    }
-
-    ExerciseCard(
-        exerciseName = row.workoutExercise.exerciseName,
-        sets = row.sets,
-        onAddSet = addSet,
-        onRemoveExercise = removeExercise,
-        onWeightChange = weightChange,
-        onRepsChange = repsChange,
-        onToggleComplete = toggleComplete,
-        onRestTimeChange = restTimeChange,
-        onSetRestTimeForAll = setRestTimeForAll,
+        },
+        onSetRestTimeForAll = { seconds -> onSetRestTimeForAll(id, seconds) },
         activeTimerSetId = if (ownsActiveTimer) activeTimerSetId else null,
         timerEndAtEpochMs = if (ownsActiveTimer) timerEndAtEpochMs else 0L,
         timerTotalMs = if (ownsActiveTimer) timerTotalMs else 0L,
-        onExerciseTitleClick = titleClick,
+        onExerciseTitleClick = if (exId != null) ({ onExerciseTitleClick(exId) }) else null,
         onCancelTimer = onCancelTimer,
-        onMoveUp = moveUp,
-        onMoveDown = moveDown,
+        onMoveUp = if (index > 0) ({ onMoveExercise(id, -1) }) else null,
+        onMoveDown = if (canMoveDown) ({ onMoveExercise(id, 1) }) else null,
         showBottomDivider = canMoveDown,
         note = row.workoutExercise.note,
-        onUpdateNote = updateNote
+        onUpdateNote = { note -> onUpdateNote(id, note) }
     )
 }
 

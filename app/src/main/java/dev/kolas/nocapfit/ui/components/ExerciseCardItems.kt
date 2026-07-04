@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +37,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.kolas.nocapfit.ui.model.SetUiModel
 
+/**
+ * Emits an exercise card as one LazyColumn item per row (header, each set, footer) so an
+ * exercise entering the viewport composes a single row per frame instead of the whole card.
+ * [keyPrefix] must be unique per exercise within the list (e.g. "we-12").
+ */
 @Suppress("LongParameterList", "LongMethod")
-@Composable
-fun ExerciseCard(
+fun LazyListScope.exerciseCardItems(
+    keyPrefix: String,
     exerciseName: String,
     /** Must be pre-sorted by [SetUiModel.setIndex]. */
     sets: List<SetUiModel>,
@@ -45,7 +52,6 @@ fun ExerciseCard(
     onRemoveExercise: () -> Unit,
     onWeightChange: (SetUiModel, Int) -> Unit,
     onRepsChange: (SetUiModel, Int) -> Unit,
-    modifier: Modifier = Modifier,
     showComplete: Boolean = true,
     onToggleComplete: ((SetUiModel) -> Unit)? = null,
     onRestTimeChange: ((SetUiModel, Int) -> Unit)? = null,
@@ -64,66 +70,24 @@ fun ExerciseCard(
     note: String? = null,
     onUpdateNote: ((String?) -> Unit)? = null
 ) {
-    var showRemoveDialog by remember { mutableStateOf(false) }
-    var showNoteDialog by remember { mutableStateOf(false) }
-    var showRestTimeDialog by remember { mutableStateOf(false) }
-    val dividerColor = MaterialTheme.colorScheme.outlineVariant
-    val dividerPx = with(LocalDensity.current) { 1.dp.toPx() }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .drawBehind {
-                if (showBottomDivider) {
-                    drawRect(
-                        color = dividerColor,
-                        topLeft = Offset(0f, size.height - dividerPx),
-                        size = Size(size.width, dividerPx)
-                    )
-                }
-            }
-    ) {
-        ExerciseCardHeader(
+    item(key = "$keyPrefix-header", contentType = "exHeader") {
+        ExerciseHeaderItem(
             exerciseName = exerciseName,
-            onExerciseTitleClick = onExerciseTitleClick,
+            note = note,
+            showSetHeaderTrailingIcon = showComplete || onRemoveSet != null,
             onAddSet = onAddSet,
-            onRemoveExercise = { showRemoveDialog = true },
+            onRemoveExercise = onRemoveExercise,
             onMoveUp = onMoveUp,
             onMoveDown = onMoveDown,
-            onSetRestTimeForAll = if (onSetRestTimeForAll != null) {
-                { showRestTimeDialog = true }
-            } else {
-                null
-            },
-            onEditNote = if (onUpdateNote != null) {
-                { showNoteDialog = true }
-            } else {
-                null
-            },
-            hasNote = !note.isNullOrBlank(),
-            showAddSetMenuItem = !showAddSetButton,
-            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp)
+            onSetRestTimeForAll = onSetRestTimeForAll,
+            onExerciseTitleClick = onExerciseTitleClick,
+            onUpdateNote = onUpdateNote,
+            showAddSetMenuItem = !showAddSetButton
         )
+    }
 
-        if (!note.isNullOrBlank()) {
-            Text(
-                text = note,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        SetHeaderRow(
-            showTrailingIcon = showComplete || onRemoveSet != null,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-
-        sets.forEachIndexed { index, set ->
+    sets.forEachIndexed { index, set ->
+        item(key = "$keyPrefix-set-${set.id}", contentType = "setRow") {
             ExerciseSetItem(
                 index = index,
                 set = set,
@@ -142,21 +106,77 @@ fun ExerciseCard(
                 rowHorizontalPadding = 16.dp
             )
         }
+    }
 
-        if (showAddSetButton) {
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedButton(
-                onClick = onAddSet,
+    item(key = "$keyPrefix-footer", contentType = "exFooter") {
+        ExerciseFooterItem(
+            showAddSetButton = showAddSetButton,
+            onAddSet = onAddSet,
+            showBottomDivider = showBottomDivider
+        )
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun ExerciseHeaderItem(
+    exerciseName: String,
+    note: String?,
+    showSetHeaderTrailingIcon: Boolean,
+    onAddSet: () -> Unit,
+    onRemoveExercise: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+    onSetRestTimeForAll: ((Int) -> Unit)?,
+    onExerciseTitleClick: (() -> Unit)?,
+    onUpdateNote: ((String?) -> Unit)?,
+    showAddSetMenuItem: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var showRemoveDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
+    var showRestTimeDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        ExerciseCardHeader(
+            exerciseName = exerciseName,
+            onExerciseTitleClick = onExerciseTitleClick,
+            onAddSet = onAddSet,
+            onRemoveExercise = { showRemoveDialog = true },
+            onMoveUp = onMoveUp,
+            onMoveDown = onMoveDown,
+            onSetRestTimeForAll = if (onSetRestTimeForAll != null) {
+                { showRestTimeDialog = true }
+            } else {
+                null
+            },
+            onEditNote = if (onUpdateNote != null) {
+                { showNoteDialog = true }
+            } else {
+                null
+            },
+            hasNote = !note.isNullOrBlank(),
+            showAddSetMenuItem = showAddSetMenuItem,
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 10.dp)
+        )
+
+        if (!note.isNullOrBlank()) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Add Set")
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-        } else {
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
             Spacer(modifier = Modifier.height(10.dp))
         }
+
+        SetHeaderRow(
+            showTrailingIcon = showSetHeaderTrailingIcon,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
     }
 
     RemoveExerciseDialog(
@@ -188,6 +208,45 @@ fun ExerciseCard(
                 onSetRestTimeForAll(seconds)
             }
         )
+    }
+}
+
+@Composable
+private fun ExerciseFooterItem(
+    showAddSetButton: Boolean,
+    onAddSet: () -> Unit,
+    showBottomDivider: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val dividerColor = MaterialTheme.colorScheme.outlineVariant
+    val dividerPx = with(LocalDensity.current) { 1.dp.toPx() }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (showBottomDivider) {
+                    drawRect(
+                        color = dividerColor,
+                        topLeft = Offset(0f, size.height - dividerPx),
+                        size = Size(size.width, dividerPx)
+                    )
+                }
+            }
+    ) {
+        if (showAddSetButton) {
+            Spacer(modifier = Modifier.height(6.dp))
+            OutlinedButton(
+                onClick = onAddSet,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Add Set")
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        } else {
+            Spacer(modifier = Modifier.height(10.dp))
+        }
     }
 }
 
@@ -254,28 +313,34 @@ private fun ExerciseSetItem(
     onCancelTimer: (() -> Unit)?,
     rowHorizontalPadding: Dp = 8.dp
 ) {
+    // rememberUpdatedState keeps these adapter lambdas identity-stable (so SetRow skips)
+    // while still invoking the latest callback instance on each emission.
+    val currentOnWeightChange by rememberUpdatedState(onWeightChange)
+    val currentOnRepsChange by rememberUpdatedState(onRepsChange)
+    val currentOnToggleComplete by rememberUpdatedState(onToggleComplete)
+    val currentOnRemoveSet by rememberUpdatedState(onRemoveSet)
     val rememberedOnWeightChange = remember(set) {
         {
                 newWeight: Int ->
-            onWeightChange(set, newWeight)
+            currentOnWeightChange(set, newWeight)
         }
     }
     val rememberedOnRepsChange = remember(set) {
         {
                 newReps: Int ->
-            onRepsChange(set, newReps)
+            currentOnRepsChange(set, newReps)
         }
     }
-    val rememberedOnToggleComplete = remember(set) {
+    val rememberedOnToggleComplete = remember(set, onToggleComplete != null) {
         if (onToggleComplete != null) {
-            { onToggleComplete(set) }
+            { currentOnToggleComplete?.invoke(set) ?: Unit }
         } else {
             null
         }
     }
-    val rememberedOnRemove = remember(set, canRemoveSet) {
+    val rememberedOnRemove = remember(set, canRemoveSet && onRemoveSet != null) {
         if (canRemoveSet && onRemoveSet != null) {
-            { onRemoveSet(set) }
+            { currentOnRemoveSet?.invoke(set) ?: Unit }
         } else {
             null
         }
@@ -291,9 +356,10 @@ private fun ExerciseSetItem(
         contentHorizontalPadding = rowHorizontalPadding
     )
     if (showRestTime) {
-        val rememberedOnRestTimeChange = remember(set, onRestTimeChange) {
+        val currentOnRestTimeChange by rememberUpdatedState(onRestTimeChange)
+        val rememberedOnRestTimeChange = remember(set, onRestTimeChange != null) {
             if (onRestTimeChange != null) {
-                { newSeconds: Int -> onRestTimeChange(set, newSeconds) }
+                { newSeconds: Int -> currentOnRestTimeChange?.invoke(set, newSeconds) ?: Unit }
             } else {
                 null
             }

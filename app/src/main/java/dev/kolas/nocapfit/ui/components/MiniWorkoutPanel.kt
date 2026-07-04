@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun MiniWorkoutPanel(
@@ -44,7 +45,7 @@ fun MiniWorkoutPanel(
             val minutes = (totalSeconds % 3600) / 60
             val seconds = totalSeconds % 60
             elapsedText = "%02d:%02d:%02d".format(hours, minutes, seconds)
-            delay(1000)
+            delay(1000.milliseconds)
         }
     }
 

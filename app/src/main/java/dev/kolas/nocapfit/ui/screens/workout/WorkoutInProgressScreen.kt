@@ -65,6 +65,7 @@ import dev.kolas.nocapfit.util.ceilSecondsFromMs
 import dev.kolas.nocapfit.util.formatMmSs
 import dev.kolas.nocapfit.util.restTimerFillProgress
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -177,7 +178,7 @@ private fun rememberElapsedTime(startTime: Long?): String {
         while (true) {
             val elapsed = System.currentTimeMillis() - startTime
             elapsedText = formatElapsedTime(elapsed)
-            delay(MILLIS_PER_SECOND)
+            delay(MILLIS_PER_SECOND.milliseconds)
         }
     }
     return elapsedText

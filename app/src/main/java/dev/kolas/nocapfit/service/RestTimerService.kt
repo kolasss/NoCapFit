@@ -21,6 +21,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class RestTimerService : Service() {
@@ -92,7 +93,7 @@ class RestTimerService : Service() {
                 notificationManager.notify(NOTIFICATION_ID, buildNotification())
                 val remaining = endAtEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) break
-                delay(remaining.coerceAtMost(MILLIS_PER_SECOND))
+                delay(remaining.coerceAtMost(MILLIS_PER_SECOND).milliseconds)
             }
             // Detach the notification from the service before posting the completion update.
             // Otherwise stopSelf removes the notification, wiping "Rest Complete!" with it.

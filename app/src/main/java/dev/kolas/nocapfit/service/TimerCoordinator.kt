@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val LONG_HIGH_BITS_SHIFT = 32
 
@@ -106,7 +107,7 @@ class TimerCoordinator @Inject constructor(
         cancelAlarm(timerId)
         _timerState.value = TimerUiState.Finished
         scope.launch {
-            delay(TIMER_FINISHED_DISPLAY_MS)
+            delay(TIMER_FINISHED_DISPLAY_MS.milliseconds)
             if (_timerState.value is TimerUiState.Finished) {
                 _timerState.value = TimerUiState.Idle
             }

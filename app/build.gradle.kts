@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "dev.kolas.nocapfit"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.kolas.nocapfit"
@@ -38,8 +38,6 @@ android {
         compose = true
         buildConfig = true
     }
-    compileSdkMinor = 1
-    buildToolsVersion = "36.1.0"
 }
 
 ksp {
@@ -72,6 +70,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    compileOnly(libs.error.prone.annotations)
     implementation(libs.androidx.hilt.navigation.compose)
 
     // DataStore

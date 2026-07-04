@@ -21,6 +21,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimerCoordinatorTest {
@@ -121,7 +122,7 @@ class TimerCoordinatorTest {
         coordinator.onTimerCompleted(1L)
         assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
 
-        advanceTimeBy(2100)
+        advanceTimeBy(2100.milliseconds)
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
     }
 

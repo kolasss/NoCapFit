@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun rememberTimerRemainingMs(isActive: Boolean, endAtEpochMs: Long): Long {
@@ -25,7 +26,7 @@ fun rememberTimerRemainingMs(isActive: Boolean, endAtEpochMs: Long): Long {
             while (true) {
                 remainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
                 if (remainingMs <= 0) break
-                delay(MILLIS_PER_SECOND)
+                delay(MILLIS_PER_SECOND.milliseconds)
             }
         }
     }

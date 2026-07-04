@@ -6,8 +6,10 @@ import kotlin.math.roundToInt
 
 fun formatWeightDisplay(thousandths: Int): String {
     val sign = if (thousandths < 0) "-" else ""
-    val whole = abs(thousandths) / WEIGHT_MULTIPLIER
-    val frac = abs(thousandths) % WEIGHT_MULTIPLIER
+    // Long intermediate: abs(Int.MIN_VALUE) overflows on Int
+    val absValue = abs(thousandths.toLong())
+    val whole = absValue / WEIGHT_MULTIPLIER
+    val frac = (absValue % WEIGHT_MULTIPLIER).toInt()
     return if (frac == 0) {
         "$sign$whole"
     } else {

@@ -60,6 +60,16 @@ class WeightFormattingTest {
     }
 
     @Test
+    fun formatWeightDisplay_negativeFraction_returnsNegativeDecimal() {
+        assertEquals("-5.5", formatWeightDisplay(-5500))
+    }
+
+    @Test
+    fun formatWeightDisplay_intMinValue_doesNotOverflow() {
+        assertEquals("-2147483.648", formatWeightDisplay(Int.MIN_VALUE))
+    }
+
+    @Test
     fun formatWeightInput_subKiloFraction_returnsLeadingZero() {
         assertEquals("0.5", formatWeightInput(500))
     }

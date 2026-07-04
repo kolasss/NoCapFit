@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.kolas.nocapfit.data.db.entity.ActiveTimer
-import dev.kolas.nocapfit.data.db.entity.TimerStatus
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
 import dev.kolas.nocapfit.util.TIMER_FINISHED_DISPLAY_MS
@@ -30,6 +29,7 @@ internal fun stableRequestCode(timerId: Long): Int =
 @Singleton
 class TimerCoordinator @Inject constructor(
     private val timerRepository: TimerRepository,
+    private val timerNotifier: TimerNotifier,
     @param:ApplicationContext private val context: Context
 ) {
 
@@ -67,9 +67,7 @@ class TimerCoordinator @Inject constructor(
             workoutId = workoutId,
             workoutSetId = workoutSetId,
             startedAtEpochMs = now,
-            endAtEpochMs = endAtEpochMs,
-            status = TimerStatus.RUNNING,
-            notificationId = TimerNotifier.TIMER_NOTIFICATION_ID
+            endAtEpochMs = endAtEpochMs
         )
         val timerId = timerRepository.insert(timer)
 
@@ -94,11 +92,25 @@ class TimerCoordinator @Inject constructor(
     suspend fun cancelTimer() {
         val currentState = _timerState.value
         if (currentState is TimerUiState.Running) {
-            timerRepository.cancelAllRunning()
             cancelAlarm(currentState.timerId)
-            context.stopService(Intent(context, RestTimerService::class.java))
         }
+        // Delete unconditionally so a stale row (e.g. UI state out of sync after process
+        // restart) can't survive a cancel.
+        timerRepository.cancelAllRunning()
+        context.stopService(Intent(context, RestTimerService::class.java))
         _timerState.value = TimerUiState.Idle
+    }
+
+    /**
+     * Deletes the timer row and fires completion side effects (sound, vibration, notification).
+     * Called by both the foreground service (primary owner) and the AlarmManager backstop;
+     * the row delete is atomic, so only the first caller runs the side effects.
+     */
+    suspend fun completeIfRunning(timerId: Long) {
+        if (timerRepository.completeTimer(timerId)) {
+            timerNotifier.notifyCompletion()
+            onTimerCompleted(timerId)
+        }
     }
 
     fun onTimerCompleted(timerId: Long) {
@@ -135,33 +147,16 @@ class TimerCoordinator @Inject constructor(
         }
     }
 
+    // The foreground service owns completion; this alarm is only a backstop for process death
+    // (and CPU sleep delaying the service's delay), so the inexact-while-idle tier is enough.
+    // Exact alarms would need the SCHEDULE_EXACT_ALARM permission flow for no practical gain.
     private fun scheduleAlarm(timerId: Long, endAtEpochMs: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = createAlarmIntent(timerId)
-        try {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setAlarmClock(
-                    AlarmManager.AlarmClockInfo(endAtEpochMs, null),
-                    intent
-                )
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    endAtEpochMs,
-                    intent
-                )
-            }
-        } catch (_: SecurityException) {
-            try {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    endAtEpochMs,
-                    intent
-                )
-            } catch (_: SecurityException) {
-                // Best effort
-            }
-        }
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            endAtEpochMs,
+            createAlarmIntent(timerId)
+        )
     }
 
     private fun cancelAlarm(timerId: Long) {

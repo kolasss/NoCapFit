@@ -2,7 +2,6 @@ package dev.kolas.nocapfit.service
 
 import android.content.Context
 import dev.kolas.nocapfit.data.db.entity.ActiveTimer
-import dev.kolas.nocapfit.data.db.entity.TimerStatus
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,6 +27,7 @@ class TimerCoordinatorTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val timerRepository = mockk<TimerRepository>(relaxUnitFun = true)
+    private val timerNotifier = mockk<TimerNotifier>(relaxUnitFun = true)
     private val context = mockk<Context>(relaxed = true)
 
     @Before
@@ -41,7 +41,7 @@ class TimerCoordinatorTest {
     }
 
     private fun createCoordinator(): TimerCoordinator {
-        return TimerCoordinator(timerRepository, context)
+        return TimerCoordinator(timerRepository, timerNotifier, context)
     }
 
     @Test
@@ -62,9 +62,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
-            endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = futureEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -86,9 +84,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis() - 60_000L,
-            endAtEpochMs = pastEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = pastEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
         coEvery { timerRepository.completeTimer(1L) } returns true
@@ -108,9 +104,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
-            endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = futureEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -124,6 +118,56 @@ class TimerCoordinatorTest {
 
         advanceTimeBy(2100.milliseconds)
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+    }
+
+    @Test
+    fun completeIfRunning_winner_firesSideEffectsOnce() = runTest(testDispatcher) {
+        val futureEnd = System.currentTimeMillis() + 30_000L
+        val timer = ActiveTimer(
+            id = 1L,
+            workoutId = 10L,
+            workoutSetId = 20L,
+            startedAtEpochMs = System.currentTimeMillis(),
+            endAtEpochMs = futureEnd
+        )
+        coEvery { timerRepository.getRunning() } returns timer
+        coEvery { timerRepository.completeTimer(1L) } returns true
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        coordinator.completeIfRunning(1L)
+
+        coVerify(exactly = 1) { timerNotifier.notifyCompletion() }
+        assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
+    }
+
+    @Test
+    fun completeIfRunning_rowAlreadyGone_noSideEffects() = runTest(testDispatcher) {
+        coEvery { timerRepository.getRunning() } returns null
+        coEvery { timerRepository.completeTimer(1L) } returns false
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        coordinator.completeIfRunning(1L)
+
+        coVerify(exactly = 0) { timerNotifier.notifyCompletion() }
+        assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
+    }
+
+    @Test
+    fun cancelTimer_deletesRowsEvenWhenStateIsIdle() = runTest(testDispatcher) {
+        coEvery { timerRepository.getRunning() } returns null
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        coordinator.cancelTimer()
+        advanceUntilIdle()
+
+        // Stale rows (UI state out of sync after process restart) must not survive a cancel.
+        coVerify { timerRepository.cancelAllRunning() }
     }
 
     @Test
@@ -147,9 +191,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 42L,
             startedAtEpochMs = System.currentTimeMillis(),
-            endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = futureEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -183,9 +225,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis(),
-            endAtEpochMs = futureEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = futureEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
 
@@ -207,9 +247,7 @@ class TimerCoordinatorTest {
             workoutId = 10L,
             workoutSetId = 20L,
             startedAtEpochMs = System.currentTimeMillis() - 60_000L,
-            endAtEpochMs = pastEnd,
-            status = TimerStatus.RUNNING,
-            notificationId = 1001
+            endAtEpochMs = pastEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
         coEvery { timerRepository.completeTimer(2L) } returns true

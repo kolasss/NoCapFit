@@ -10,7 +10,6 @@ import dev.kolas.nocapfit.data.db.entity.WorkoutSet
 import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
-import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import dev.kolas.nocapfit.data.session.CurrentProfileHolder
 import dev.kolas.nocapfit.service.RingtonePlayer
@@ -38,7 +37,6 @@ import javax.inject.Inject
 @HiltViewModel
 class WorkoutInProgressViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
-    private val timerRepository: TimerRepository,
     private val exerciseRepository: ExerciseRepository,
     currentProfileHolder: CurrentProfileHolder,
     savedStateHandle: SavedStateHandle,
@@ -217,7 +215,6 @@ class WorkoutInProgressViewModel @Inject constructor(
         viewModelScope.launch {
             val workoutData = workout.value ?: return@launch
             timerCoordinator.cancelTimer()
-            timerRepository.deleteByWorkoutId(workoutId)
             workoutRepository.delete(workoutData.workout)
         }
     }

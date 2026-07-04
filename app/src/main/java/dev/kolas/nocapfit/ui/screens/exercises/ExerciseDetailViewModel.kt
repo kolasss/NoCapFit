@@ -21,7 +21,7 @@ import javax.inject.Inject
 
 @Immutable
 data class ExerciseHistorySetUi(
-    val setIndex: Int,
+    val setNumber: Int,
     val weightThousandths: Int,
     val reps: Int
 )
@@ -37,16 +37,22 @@ data class ExerciseHistoryEntryUi(
 internal fun groupExerciseHistory(rows: List<ExerciseHistorySetRow>): List<ExerciseHistoryEntryUi> =
     rows.groupBy { it.workoutId }.map { (workoutId, workoutRows) ->
         val first = workoutRows.first()
+        // The exercise can appear more than once in a workout (supersets), so per-instance
+        // setIndex values may repeat. Rows arrive ordered by exercise position, then setIndex —
+        // number them sequentially across the whole workout.
+        val sets = workoutRows.filter {
+            it.setIndex != null && it.weightThousandths != null && it.reps != null
+        }
         ExerciseHistoryEntryUi(
             workoutId = workoutId,
             title = first.programName ?: "Free Workout",
             dateTimeText = formatDateTime(first.startTime),
-            sets = workoutRows.mapNotNull { row ->
-                if (row.setIndex == null || row.weightThousandths == null || row.reps == null) {
-                    null
-                } else {
-                    ExerciseHistorySetUi(row.setIndex, row.weightThousandths, row.reps)
-                }
+            sets = sets.mapIndexed { index, row ->
+                ExerciseHistorySetUi(
+                    setNumber = index + 1,
+                    weightThousandths = checkNotNull(row.weightThousandths),
+                    reps = checkNotNull(row.reps)
+                )
             }
         )
     }

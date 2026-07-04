@@ -43,6 +43,8 @@ interface WorkoutDao {
     )
     fun getFinishedWithExerciseNames(profileId: Long): Flow<List<WorkoutWithExerciseNames>>
 
+    // The same exercise can appear more than once in a workout (supersets), so sets are ordered
+    // by exercise position first — the ViewModel numbers them sequentially per workout.
     @Query(
         "SELECT w.id AS workoutId, w.programName AS programName, w.startTime AS startTime, " +
             "ws.setIndex AS setIndex, ws.weightThousandths AS weightThousandths, ws.reps AS reps " +
@@ -50,7 +52,7 @@ interface WorkoutDao {
             "INNER JOIN workout_exercises we ON we.workoutId = w.id " +
             "LEFT JOIN workout_sets ws ON ws.workoutExerciseId = we.id AND ws.completed = 1 " +
             "WHERE we.exerciseId = :exerciseId AND w.endTime IS NOT NULL " +
-            "ORDER BY w.startTime DESC, ws.setIndex ASC"
+            "ORDER BY w.startTime DESC, we.orderIndex ASC, we.id ASC, ws.setIndex ASC"
     )
     fun getExerciseHistory(exerciseId: Long): Flow<List<ExerciseHistorySetRow>>
 

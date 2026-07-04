@@ -240,7 +240,7 @@ private fun ExerciseHistoryItem(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     entry.sets.forEach { set ->
                         SetSummaryRow(
-                            setNumber = set.setIndex + 1,
+                            setNumber = set.setNumber,
                             weightThousandths = set.weightThousandths,
                             reps = set.reps
                         )

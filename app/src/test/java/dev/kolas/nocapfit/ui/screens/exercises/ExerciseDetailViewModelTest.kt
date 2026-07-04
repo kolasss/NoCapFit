@@ -126,9 +126,59 @@ class ExerciseDetailViewModelTest {
             assertEquals("Push Day", entries[0].title)
             assertEquals(2, entries[0].sets.size)
             assertEquals(60000, entries[0].sets[0].weightThousandths)
+            assertEquals(listOf(1, 2), entries[0].sets.map { it.setNumber })
             assertEquals("Free Workout", entries[1].title)
             assertTrue(entries[1].sets.isEmpty())
         }
+    }
+
+    @Test
+    fun exerciseHistory_numbersSetsSequentiallyWhenExerciseAppearsTwiceInWorkout() {
+        // Same exercise added twice to one workout (superset): per-instance setIndex repeats.
+        // Rows arrive in query order (exercise position, then setIndex).
+        val rows = listOf(
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 0,
+                weightThousandths = 60000,
+                reps = 10
+            ),
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 1,
+                weightThousandths = 65000,
+                reps = 8
+            ),
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 0,
+                weightThousandths = 40000,
+                reps = 12
+            ),
+            ExerciseHistorySetRow(
+                workoutId = 10L,
+                programName = "Push Day",
+                startTime = 1000L,
+                setIndex = 1,
+                weightThousandths = 45000,
+                reps = 10
+            )
+        )
+
+        val entries = groupExerciseHistory(rows)
+
+        assertEquals(1, entries.size)
+        assertEquals(listOf(1, 2, 3, 4), entries.single().sets.map { it.setNumber })
+        assertEquals(
+            listOf(60000, 65000, 40000, 45000),
+            entries.single().sets.map { it.weightThousandths }
+        )
     }
 
     @Test

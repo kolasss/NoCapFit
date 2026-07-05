@@ -121,7 +121,7 @@ class TimerCoordinatorTest {
     }
 
     @Test
-    fun completeIfRunning_winner_firesSideEffectsOnce() = runTest(testDispatcher) {
+    fun completeIfRunning_calledByBothOwners_firesSideEffectsExactlyOnce() = runTest(testDispatcher) {
         val futureEnd = System.currentTimeMillis() + 30_000L
         val timer = ActiveTimer(
             id = 1L,
@@ -131,11 +131,14 @@ class TimerCoordinatorTest {
             endAtEpochMs = futureEnd
         )
         coEvery { timerRepository.getRunning() } returns timer
-        coEvery { timerRepository.completeTimer(1L) } returns true
+        // The row delete is atomic: the first caller claims the row, the second gets false.
+        coEvery { timerRepository.completeTimer(1L) } returns true andThen false
 
         val coordinator = createCoordinator()
         advanceUntilIdle()
 
+        // Service (primary owner) and alarm backstop both reach completion.
+        coordinator.completeIfRunning(1L)
         coordinator.completeIfRunning(1L)
 
         coVerify(exactly = 1) { timerNotifier.notifyCompletion() }

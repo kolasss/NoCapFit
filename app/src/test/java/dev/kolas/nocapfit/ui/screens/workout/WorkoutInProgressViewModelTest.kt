@@ -12,7 +12,6 @@ import dev.kolas.nocapfit.data.db.relation.WorkoutWithExercises
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.data.repository.ExerciseRepository
 import dev.kolas.nocapfit.data.repository.ProfileRepository
-import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.data.repository.WorkoutRepository
 import dev.kolas.nocapfit.data.session.CurrentProfileHolder
 import dev.kolas.nocapfit.service.RingtonePlayer
@@ -35,7 +34,6 @@ class WorkoutInProgressViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val workoutRepository = mockk<WorkoutRepository>(relaxUnitFun = true)
-    private val timerRepository = mockk<TimerRepository>(relaxUnitFun = true)
     private val exerciseRepository = mockk<ExerciseRepository>(relaxUnitFun = true) {
         coEvery { getAllByProfile(any()) } returns flowOf(emptyList())
     }
@@ -98,7 +96,6 @@ class WorkoutInProgressViewModelTest {
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         return WorkoutInProgressViewModel(
             workoutRepository,
-            timerRepository,
             exerciseRepository,
             CurrentProfileHolder(profileRepository),
             savedStateHandle,
@@ -159,7 +156,6 @@ class WorkoutInProgressViewModelTest {
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         val viewModel = WorkoutInProgressViewModel(
             workoutRepository,
-            timerRepository,
             exerciseRepository,
             CurrentProfileHolder(profileRepository),
             savedStateHandle,
@@ -288,14 +284,13 @@ class WorkoutInProgressViewModelTest {
     }
 
     @Test
-    fun cancelWorkout_deletesWorkoutAndTimers() = runTest {
+    fun cancelWorkout_deletesWorkoutAndCancelsTimer() = runTest {
         val viewModel = createViewModel()
 
         viewModel.workout.test { awaitItem() }
         viewModel.cancelWorkout()
 
         coVerify { timerCoordinator.cancelTimer() }
-        coVerify { timerRepository.deleteByWorkoutId(1L) }
         coVerify { workoutRepository.delete(testWorkout) }
     }
 
@@ -349,7 +344,6 @@ class WorkoutInProgressViewModelTest {
         val savedStateHandle = SavedStateHandle(mapOf("workoutId" to 1L))
         val viewModel = WorkoutInProgressViewModel(
             workoutRepository,
-            timerRepository,
             exerciseRepository,
             CurrentProfileHolder(profileRepository),
             savedStateHandle,

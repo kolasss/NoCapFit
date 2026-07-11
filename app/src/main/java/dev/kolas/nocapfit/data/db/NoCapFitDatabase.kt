@@ -2,7 +2,6 @@ package dev.kolas.nocapfit.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import dev.kolas.nocapfit.data.db.dao.ActiveTimerDao
 import dev.kolas.nocapfit.data.db.dao.ExerciseDao
 import dev.kolas.nocapfit.data.db.dao.ProfileDao
@@ -30,10 +29,9 @@ import dev.kolas.nocapfit.data.db.entity.WorkoutSet
         WorkoutSet::class,
         ActiveTimer::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
-@TypeConverters(Converters::class)
 abstract class NoCapFitDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun exerciseDao(): ExerciseDao

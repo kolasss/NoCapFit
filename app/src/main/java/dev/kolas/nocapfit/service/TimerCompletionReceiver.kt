@@ -10,11 +10,16 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Backstop completion path. The foreground service normally completes the timer and deletes
+ * its row; this alarm only wins if the service didn't get there (process death, or CPU sleep
+ * delaying the service's delay) — otherwise the row is already gone and this is a no-op.
+ */
 @AndroidEntryPoint
 class TimerCompletionReceiver : BroadcastReceiver() {
 
     @Inject
-    lateinit var timerCompletionHandler: TimerCompletionHandler
+    lateinit var timerCoordinator: TimerCoordinator
 
     override fun onReceive(context: Context, intent: Intent) {
         val timerId = intent.getLongExtra(EXTRA_TIMER_ID, -1L)
@@ -24,11 +29,7 @@ class TimerCompletionReceiver : BroadcastReceiver() {
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         scope.launch {
             try {
-                // Don't stopService here — the service's polling loop will reach
-                // `remaining <= 0` within milliseconds and stop itself after calling
-                // stopForeground(STOP_FOREGROUND_DETACH). Forcing a stop here would
-                // cancel the service's coroutine mid-`delay` and wipe the notification.
-                timerCompletionHandler.completeIfRunning(timerId)
+                timerCoordinator.completeIfRunning(timerId)
             } finally {
                 pendingResult.finish()
             }

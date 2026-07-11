@@ -32,16 +32,8 @@ class RestTimerService : Service() {
     @Inject
     lateinit var timerCoordinator: TimerCoordinator
 
-    @Inject
-    lateinit var timerCompletionHandler: TimerCompletionHandler
-
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    private var timerId: Long = -1L
-    private var startAtEpochMs: Long = 0L
-    private var endAtEpochMs: Long = 0L
-
-    // Identical on every notification update (constant action, request code, flags), so build once.
     private val cancelPendingIntent: PendingIntent by lazy {
         val cancelIntent = Intent(this, RestTimerService::class.java).apply {
             action = ACTION_CANCEL_TIMER
@@ -65,7 +57,7 @@ class RestTimerService : Service() {
             return START_NOT_STICKY
         }
 
-        timerId = intent?.getLongExtra(EXTRA_TIMER_ID, -1L) ?: -1L
+        val timerId = intent?.getLongExtra(EXTRA_TIMER_ID, -1L) ?: -1L
         if (timerId == -1L) {
             stopSelf()
             return START_NOT_STICKY
@@ -77,28 +69,31 @@ class RestTimerService : Service() {
                 stopSelf()
                 return@launch
             }
-            startAtEpochMs = timer.startedAtEpochMs
-            endAtEpochMs = timer.endAtEpochMs
 
             startForeground(
                 NOTIFICATION_ID,
-                buildNotification(),
+                buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
             )
 
+            // The chronometer text ticks by itself in SystemUI; this loop only refreshes the
+            // progress bar. Notify-then-delay so the iteration after remaining reaches 0 posts
+            // a final notification with the bar at 100%.
             val notificationManager = getSystemService(NotificationManager::class.java)
-            // Notify-then-delay so the iteration after remaining reaches 0 always posts a final
-            // notification with elapsed == totalSeconds (progress bar fills 100%).
             while (true) {
-                notificationManager.notify(NOTIFICATION_ID, buildNotification())
-                val remaining = endAtEpochMs - System.currentTimeMillis()
+                notificationManager.notify(
+                    NOTIFICATION_ID,
+                    buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs)
+                )
+                val remaining = timer.endAtEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) break
                 delay(remaining.coerceAtMost(MILLIS_PER_SECOND).milliseconds)
             }
+
             // Detach the notification from the service before posting the completion update.
             // Otherwise stopSelf removes the notification, wiping "Rest Complete!" with it.
             stopForeground(STOP_FOREGROUND_DETACH)
-            timerCompletionHandler.completeIfRunning(timerId)
+            timerCoordinator.completeIfRunning(timerId)
             stopSelf()
         }
 
@@ -110,7 +105,7 @@ class RestTimerService : Service() {
         serviceScope.cancel()
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(startAtEpochMs: Long, endAtEpochMs: Long): Notification {
         val totalSeconds = ((endAtEpochMs - startAtEpochMs) / MILLIS_PER_SECOND).toInt()
         val remainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
         val remainingSeconds = ceilSecondsFromMs(remainingMs)

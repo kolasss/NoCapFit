@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.kolas.nocapfit.MainActivity
 import dev.kolas.nocapfit.R
 import dev.kolas.nocapfit.data.preferences.ThemePreferences
 import dev.kolas.nocapfit.util.VIBRATION_DURATION_MS
@@ -19,10 +20,10 @@ class TimerNotifier @Inject constructor(
     private val themePreferences: ThemePreferences,
     private val ringtonePlayer: RingtonePlayer
 ) {
-    suspend fun notifyCompletion() {
+    suspend fun notifyCompletion(workoutId: Long) {
         playSound()
         vibrate()
-        postCompletionNotification()
+        postCompletionNotification(workoutId)
     }
 
     private suspend fun playSound() {
@@ -36,12 +37,13 @@ class TimerNotifier @Inject constructor(
         } catch (_: Exception) { }
     }
 
-    private fun postCompletionNotification() {
+    private fun postCompletionNotification(workoutId: Long) {
         try {
             val notification = Notification.Builder(context, TIMER_CHANNEL_ID)
                 .setSmallIcon(R.drawable.logo_foreground)
                 .setContentTitle("Rest Complete!")
                 .setContentText("Time to start your next set")
+                .setContentIntent(MainActivity.openWorkoutPendingIntent(context, workoutId))
                 .setAutoCancel(true)
                 .build()
             val notificationManager = context.getSystemService(NotificationManager::class.java)

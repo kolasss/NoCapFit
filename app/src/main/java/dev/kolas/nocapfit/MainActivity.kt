@@ -1,6 +1,9 @@
 package dev.kolas.nocapfit
 
 import android.Manifest
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewTreeObserver
@@ -16,9 +19,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -44,9 +50,14 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { /* no action needed on result */ }
 
+    // Workout to open, set when the activity is launched from a rest timer notification.
+    private var pendingWorkoutId by mutableStateOf<Long?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // On recreation the launch intent is redelivered; the nav back stack is already restored.
+        if (savedInstanceState == null) pendingWorkoutId = intent.workoutIdExtra()
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         var themeLoaded = false
         setContent {
@@ -57,7 +68,10 @@ class MainActivity : ComponentActivity() {
             if (mode != null && dynamic != null) {
                 SideEffect { themeLoaded = true }
                 NoCapFitTheme(themeMode = mode, dynamicColor = dynamic) {
-                    MainContent()
+                    MainContent(
+                        pendingWorkoutId = pendingWorkoutId,
+                        onPendingWorkoutOpened = { pendingWorkoutId = null }
+                    )
                 }
             }
         }
@@ -75,6 +89,35 @@ class MainActivity : ComponentActivity() {
             }
         )
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.workoutIdExtra()?.let { pendingWorkoutId = it }
+    }
+
+    companion object {
+        private const val EXTRA_WORKOUT_ID = "workout_id"
+
+        private fun Intent.workoutIdExtra(): Long? =
+            getLongExtra(EXTRA_WORKOUT_ID, -1L).takeIf { it != -1L }
+
+        /** Opens the app on the in-progress screen of [workoutId]; used as a notification tap action. */
+        fun openWorkoutPendingIntent(context: Context, workoutId: Long): PendingIntent {
+            // SINGLE_TOP + CLEAR_TOP reuse the running activity (delivered via onNewIntent).
+            val intent = Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_WORKOUT_ID, workoutId)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+                )
+            return PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+    }
 }
 
 private val BOTTOM_NAV_ROUTES = listOf(
@@ -85,9 +128,16 @@ private val BOTTOM_NAV_ROUTES = listOf(
 
 @Composable
 private fun MainContent(
+    pendingWorkoutId: Long?,
+    onPendingWorkoutOpened: () -> Unit,
     activeWorkoutViewModel: ActiveWorkoutViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
+    LaunchedEffect(pendingWorkoutId) {
+        val workoutId = pendingWorkoutId ?: return@LaunchedEffect
+        navController.navigateBottomNav(Screen.WorkoutInProgress.createRoute(workoutId))
+        onPendingWorkoutOpened()
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val activeWorkout by activeWorkoutViewModel.activeWorkout.collectAsState()

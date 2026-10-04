@@ -10,6 +10,7 @@ import android.graphics.drawable.Icon
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import dev.kolas.nocapfit.BuildConfig
+import dev.kolas.nocapfit.MainActivity
 import dev.kolas.nocapfit.R
 import dev.kolas.nocapfit.data.repository.TimerRepository
 import dev.kolas.nocapfit.util.MILLIS_PER_SECOND
@@ -70,9 +71,10 @@ class RestTimerService : Service() {
                 return@launch
             }
 
+            val contentIntent = MainActivity.openWorkoutPendingIntent(this@RestTimerService, timer.workoutId)
             startForeground(
                 NOTIFICATION_ID,
-                buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs),
+                buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs, contentIntent),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
             )
 
@@ -83,7 +85,7 @@ class RestTimerService : Service() {
             while (true) {
                 notificationManager.notify(
                     NOTIFICATION_ID,
-                    buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs)
+                    buildNotification(timer.startedAtEpochMs, timer.endAtEpochMs, contentIntent)
                 )
                 val remaining = timer.endAtEpochMs - System.currentTimeMillis()
                 if (remaining <= 0) break
@@ -105,7 +107,11 @@ class RestTimerService : Service() {
         serviceScope.cancel()
     }
 
-    private fun buildNotification(startAtEpochMs: Long, endAtEpochMs: Long): Notification {
+    private fun buildNotification(
+        startAtEpochMs: Long,
+        endAtEpochMs: Long,
+        contentIntent: PendingIntent
+    ): Notification {
         val totalSeconds = ((endAtEpochMs - startAtEpochMs) / MILLIS_PER_SECOND).toInt()
         val remainingMs = (endAtEpochMs - System.currentTimeMillis()).coerceAtLeast(0)
         val remainingSeconds = ceilSecondsFromMs(remainingMs)
@@ -116,6 +122,7 @@ class RestTimerService : Service() {
             .setContentTitle("Rest Timer")
             .setProgress(totalSeconds, elapsedSeconds, false)
             .setOngoing(true)
+            .setContentIntent(contentIntent)
             // Chronometer formats as floor(delta/1000); offset by (1s - 1ms) so it displays ceil.
             .setWhen(endAtEpochMs + MILLIS_PER_SECOND - 1)
             .setUsesChronometer(remainingSeconds > 0)

@@ -117,8 +117,9 @@ class TimerCoordinator @Inject constructor(
      * the row delete is atomic, so only the first caller runs the side effects.
      */
     suspend fun completeIfRunning(timerId: Long) {
+        val workoutId = timerRepository.getRunning()?.takeIf { it.id == timerId }?.workoutId ?: return
         if (timerRepository.completeTimer(timerId)) {
-            timerNotifier.notifyCompletion()
+            timerNotifier.notifyCompletion(workoutId)
             onTimerCompleted(timerId)
         }
     }

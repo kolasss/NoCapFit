@@ -142,7 +142,7 @@ class TimerCoordinatorTest {
         coordinator.completeIfRunning(1L)
         coordinator.completeIfRunning(1L)
 
-        coVerify(exactly = 1) { timerNotifier.notifyCompletion() }
+        coVerify(exactly = 1) { timerNotifier.notifyCompletion(10L) }
         assertEquals(TimerCoordinator.TimerUiState.Finished, coordinator.timerState.value)
     }
 
@@ -156,7 +156,7 @@ class TimerCoordinatorTest {
 
         coordinator.completeIfRunning(1L)
 
-        coVerify(exactly = 0) { timerNotifier.notifyCompletion() }
+        coVerify(exactly = 0) { timerNotifier.notifyCompletion(any()) }
         assertEquals(TimerCoordinator.TimerUiState.Idle, coordinator.timerState.value)
     }
 

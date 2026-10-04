@@ -6,6 +6,7 @@ import dev.kolas.nocapfit.data.repository.TimerRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -171,6 +172,19 @@ class TimerCoordinatorTest {
 
         // Stale rows (UI state out of sync after process restart) must not survive a cancel.
         coVerify { timerRepository.cancelAllRunning() }
+    }
+
+    @Test
+    fun cancelTimer_dismissesCompletionNotification() = runTest(testDispatcher) {
+        coEvery { timerRepository.getRunning() } returns null
+
+        val coordinator = createCoordinator()
+        advanceUntilIdle()
+
+        coordinator.cancelTimer()
+        advanceUntilIdle()
+
+        verify { timerNotifier.dismissCompletion() }
     }
 
     @Test

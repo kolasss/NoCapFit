@@ -105,6 +105,9 @@ class TimerCoordinator @Inject constructor(
         // Delete unconditionally so a stale row can't survive a cancel.
         timerRepository.cancelAllRunning()
         context.stopService(Intent(context, RestTimerService::class.java))
+        // The "Rest Complete!" notification is detached from the service, so stopping the
+        // service doesn't remove it.
+        timerNotifier.dismissCompletion()
         _timerState.value = TimerUiState.Idle
     }
 

@@ -49,6 +49,10 @@ class TimerNotifier @Inject constructor(
         } catch (_: SecurityException) { }
     }
 
+    fun dismissCompletion() {
+        context.getSystemService(NotificationManager::class.java)?.cancel(TIMER_NOTIFICATION_ID)
+    }
+
     companion object {
         const val TIMER_CHANNEL_ID = "rest_timer_channel"
         const val TIMER_NOTIFICATION_ID = 1001

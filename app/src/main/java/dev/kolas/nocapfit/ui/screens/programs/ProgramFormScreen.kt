@@ -43,7 +43,6 @@ import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatWeightInput
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgramFormScreen(
     navController: NavController,

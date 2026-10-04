@@ -91,7 +91,7 @@ class RestTimerService : Service() {
             }
 
             // Detach the notification from the service before posting the completion update.
-            // Otherwise stopSelf removes the notification, wiping "Rest Complete!" with it.
+            // Otherwise, stopSelf removes the notification, wiping "Rest Complete!" with it.
             stopForeground(STOP_FOREGROUND_DETACH)
             timerCoordinator.completeIfRunning(timerId)
             stopSelf()

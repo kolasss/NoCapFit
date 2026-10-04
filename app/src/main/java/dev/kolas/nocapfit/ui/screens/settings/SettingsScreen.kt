@@ -240,7 +240,6 @@ private fun restartApp(context: android.content.Context) {
     Runtime.getRuntime().exit(0)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsContent(
     themeMode: ThemeMode,
@@ -374,7 +373,6 @@ private fun createRingtonePickerIntent(currentUri: String?): Intent {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ThemeSection(
     themeMode: ThemeMode,

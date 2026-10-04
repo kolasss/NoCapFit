@@ -93,7 +93,6 @@ fun ExerciseListScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExerciseListContent(
     exercises: List<Exercise>,

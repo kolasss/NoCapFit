@@ -67,7 +67,6 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("LongMethod")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutInProgressScreen(
     navController: NavController,
@@ -343,7 +342,7 @@ private fun WorkoutExerciseList(
 /**
  * Emits one exercise as flattened lazy items (header / sets / footer). Not composable: the
  * adapter lambdas are plain allocations rebuilt only when the LazyColumn content re-runs;
- * per-set identity stability is handled inside the shared items via [rememberUpdatedState].
+ * per-set identity stability is handled inside the shared items via [androidx.compose.runtime.rememberUpdatedState].
  */
 @Suppress("LongParameterList", "LongMethod")
 private fun LazyListScope.workoutExerciseCardItems(

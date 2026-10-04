@@ -46,7 +46,6 @@ import dev.kolas.nocapfit.ui.navigation.Screen
 import dev.kolas.nocapfit.ui.util.formatRelativeDate
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkoutScreen(
     navController: NavController,
